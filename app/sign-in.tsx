@@ -4,6 +4,7 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { supabase } from '@/lib/supabase';
 import { FontAwesome } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
@@ -45,9 +46,16 @@ export default function SignInScreen() {
 
     const handleSkipAuth = async () => {
         setLoading(true);
-        // Show loading for 2 seconds
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        router.replace('/(tabs)');
+        try {
+            // Set skip login flag in AsyncStorage
+            await AsyncStorage.setItem('skipLogin', 'true');
+            // Show loading for 1 second
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            router.replace('/(tabs)');
+        } catch (error) {
+            console.error('Error skipping auth:', error);
+            setLoading(false);
+        }
     };
 
     if (loading) {

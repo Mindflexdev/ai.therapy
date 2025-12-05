@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -24,16 +25,22 @@ export default function RootLayout() {
   const [isReady, setIsReady] = useState(false);
 
   const [session, setSession] = useState<Session | null>(null);
+  const [skipLogin, setSkipLogin] = useState(false);
   const [showLoading, setShowLoading] = useState(true); // Start with loading
   const router = useRouter();
   const segments = useSegments();
 
   // Check initial session and listen for auth changes
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Get initial session and skip login flag
+    Promise.all([
+      supabase.auth.getSession(),
+      AsyncStorage.getItem('skipLogin')
+    ]).then(([{ data: { session } }, skipLoginValue]) => {
       console.log('Initial session:', session ? 'Logged in' : 'Not logged in');
+      console.log('Skip login:', skipLoginValue === 'true');
       setSession(session);
+      setSkipLogin(skipLoginValue === 'true');
       setShowLoading(false);
       SplashScreen.hideAsync();
       setIsReady(true);
@@ -43,6 +50,11 @@ export default function RootLayout() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       console.log('Auth state changed:', _event, session ? 'Logged in' : 'Not logged in');
       setSession(session);
+      // Clear skip login if user actually signs in
+      if (session) {
+        AsyncStorage.removeItem('skipLogin');
+        setSkipLogin(false);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -53,18 +65,18 @@ export default function RootLayout() {
     if (!isReady) return;
 
     const inAuthGroup = segments[0] === 'sign-in';
-    console.log('Navigation check:', { session: !!session, inAuthGroup, segments });
+    console.log('Navigation check:', { session: !!session, skipLogin, inAuthGroup, segments });
 
-    if (session && inAuthGroup) {
-      // User is signed in but on sign-in page -> redirect to app
-      console.log('Redirecting to app (user is signed in)');
+    if ((session || skipLogin) && inAuthGroup) {
+      // User is signed in or skipped login but on sign-in page -> redirect to app
+      console.log('Redirecting to app (user is signed in or skipped)');
       router.replace('/(tabs)');
-    } else if (!session && !inAuthGroup) {
-      // User is not signed in but trying to access app -> redirect to sign-in
+    } else if (!session && !skipLogin && !inAuthGroup) {
+      // User is not signed in and didn't skip login but trying to access app -> redirect to sign-in
       console.log('Redirecting to sign-in (user not signed in)');
       router.replace('/sign-in');
     }
-  }, [session, segments, isReady]);
+  }, [session, skipLogin, segments, isReady]);
 
   // Show loading screen after sign-in
   if (showLoading) {
