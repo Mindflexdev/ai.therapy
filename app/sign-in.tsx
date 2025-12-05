@@ -45,12 +45,22 @@ export default function SignInScreen() {
     };
 
     const handleSkipAuth = async () => {
+        console.log('Skip login clicked');
         setLoading(true);
         try {
             // Set skip login flag in AsyncStorage
             await AsyncStorage.setItem('skipLogin', 'true');
-            // Show loading for 1 second
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            console.log('Skip login flag set in AsyncStorage');
+
+            // Verify it was set
+            const value = await AsyncStorage.getItem('skipLogin');
+            console.log('Verified skip login value:', value);
+
+            // Small delay to ensure storage is written
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // Navigate to app
+            console.log('Navigating to tabs...');
             router.replace('/(tabs)');
         } catch (error) {
             console.error('Error skipping auth:', error);

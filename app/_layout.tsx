@@ -64,6 +64,18 @@ export default function RootLayout() {
   useEffect(() => {
     if (!isReady) return;
 
+    // Re-check skip login flag whenever we navigate
+    const checkSkipLogin = async () => {
+      const skipLoginValue = await AsyncStorage.getItem('skipLogin');
+      const shouldSkip = skipLoginValue === 'true';
+      console.log('Re-checking skip login:', shouldSkip);
+      if (shouldSkip !== skipLogin) {
+        setSkipLogin(shouldSkip);
+      }
+    };
+
+    checkSkipLogin();
+
     const inAuthGroup = segments[0] === 'sign-in';
     console.log('Navigation check:', { session: !!session, skipLogin, inAuthGroup, segments });
 
