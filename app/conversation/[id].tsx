@@ -1,29 +1,28 @@
-import React, { useState, useRef, useEffect } from 'react';
-import {
-    StyleSheet,
-    View,
-    TouchableOpacity,
-    FlatList,
-    TextInput,
-    KeyboardAvoidingView,
-    Platform,
-    ActivityIndicator,
-    Alert,
-    Modal,
-    ScrollView,
-} from 'react-native';
 import { Image } from 'expo-image';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+    ActivityIndicator,
+    FlatList,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    TextInput,
+    TouchableOpacity,
+    View
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { TOPICS } from '@/constants/data';
-import { supabase } from '@/lib/supabase';
-import { createJWT } from '@/lib/jwt';
+import { Colors } from '@/constants/theme';
 import { ALL_THERAPY_OPTIONS } from '@/constants/therapy';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { createJWT } from '@/lib/jwt';
+import { supabase } from '@/lib/supabase';
 
 interface Message {
     id: string;
@@ -285,7 +284,7 @@ export default function ConversationScreen() {
                         {character.name}
                     </ThemedText>
                     <ThemedText style={styles.creatorText}>
-                        @therapy.ai
+                        @ai.therapy
                     </ThemedText>
                 </View>
             </View>

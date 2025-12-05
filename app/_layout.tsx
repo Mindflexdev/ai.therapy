@@ -1,18 +1,17 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { View, StyleSheet, Animated } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import 'react-native-reanimated';
 
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { ThemedText } from '@/components/themed-text';
-import { supabase } from '@/lib/supabase';
 import { LoadingDots } from '@/components/loading-dots';
-import { useRouter, useSegments } from 'expo-router';
+import { ThemedText } from '@/components/themed-text';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { supabase } from '@/lib/supabase';
 import { Session } from '@supabase/supabase-js';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRouter, useSegments } from 'expo-router';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -71,7 +70,7 @@ export default function RootLayout() {
   if (showLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ThemedText style={styles.loadingText}>therapy.ai</ThemedText>
+        <ThemedText style={styles.loadingText}>ai.therapy</ThemedText>
         <LoadingDots />
       </View>
     );

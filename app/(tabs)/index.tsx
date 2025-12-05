@@ -1,16 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, View, TouchableOpacity, FlatList, Dimensions, ViewToken } from 'react-native';
 import { Image } from 'expo-image';
+import { useRouter } from 'expo-router';
+import React, { useEffect, useRef, useState } from 'react';
+import { Dimensions, FlatList, StyleSheet, TouchableOpacity, View, ViewToken } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, useFocusEffect } from 'expo-router';
 
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { Character, Topic, TOPICS } from '@/constants/data';
+import { getAllCharactersGroupedByTopic, UserCharacter } from '@/constants/storage';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { TOPICS, Topic, Character } from '@/constants/data';
-import { getAllCharactersGroupedByTopic, UserCharacter } from '@/constants/storage';
 
 const { width } = Dimensions.get('window');
 // Calculate card width: ensure 2 per row, max 200px each
@@ -172,12 +171,12 @@ export default function HomeScreen() {
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <ThemedText type="title" style={styles.logoText}>
-            therapy.ai
+            ai.therapy
           </ThemedText>
           <TouchableOpacity
             style={styles.premiumButton}
             onPress={() => router.push('/subscribe' as any)}>
-            <ThemedText style={styles.premiumButtonText}>Get therapy.ai +</ThemedText>
+            <ThemedText style={styles.premiumButtonText}>Get ai.therapy +</ThemedText>
           </TouchableOpacity>
         </View>
         <View style={styles.headerRight}>

@@ -1,14 +1,14 @@
-import React from 'react';
-import { StyleSheet, View, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import React from 'react';
+import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { IconSymbol } from '@/components/ui/icon-symbol';
 
 // Mock User Data
 const USER_STREAK = 3; // Current user streak in days
@@ -356,7 +356,7 @@ export default function MindGymScreen() {
                     <IconSymbol name="building.2.fill" size={64} color={theme.primary} />
                     <ThemedText type="title" style={styles.overlayTitle}>Coming Soon</ThemedText>
                     <ThemedText style={styles.overlayText}>
-                        Create any guided meditation you want, read out loud by any therapy.ai character.
+                        Create any guided meditation you want, read out loud by any ai.therapy character.
                     </ThemedText>
                 </View>
             </View>

@@ -1,15 +1,15 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, TouchableOpacity, ScrollView, Dimensions, ImageBackground } from 'react-native';
 import { Image } from 'expo-image';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import { Dimensions, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { MOCK_CHATS } from '@/constants/data';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { MOCK_CHATS, TOPICS } from '@/constants/data';
 
 const { width } = Dimensions.get('window');
 
@@ -56,7 +56,7 @@ export default function SubscribeScreen() {
         {
             icon: 'ticket.fill',
             title: 'Exclusive Benefits',
-            description: 'Unlock new features first & join the therapy.ai+ community.',
+            description: 'Unlock new features first & join the ai.therapy+ community.',
         },
         {
             icon: 'bolt.fill',
@@ -96,7 +96,7 @@ export default function SubscribeScreen() {
                     contentContainerStyle={styles.scrollContent}
                 >
                     <ThemedText type="title" style={styles.title}>
-                        Upgrade to therapy.ai +
+                        Upgrade to ai.therapy +
                     </ThemedText>
 
                     {/* Toggle Switch */}

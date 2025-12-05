@@ -1,14 +1,13 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, TouchableOpacity, Dimensions, Platform } from 'react-native';
-import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
+import { LoadingDots } from '@/components/loading-dots';
 import { ThemedText } from '@/components/themed-text';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { supabase } from '@/lib/supabase';
 import { FontAwesome } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { LoadingDots } from '@/components/loading-dots';
+import { Image } from 'expo-image';
+import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import { Dimensions, Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 const { width } = Dimensions.get('window');
 
@@ -54,7 +53,7 @@ export default function SignInScreen() {
     if (loading) {
         return (
             <View style={styles.loadingContainer}>
-                <ThemedText style={styles.loadingText}>therapy.ai</ThemedText>
+                <ThemedText style={styles.loadingText}>ai.therapy</ThemedText>
                 <LoadingDots />
             </View>
         );
@@ -65,7 +64,7 @@ export default function SignInScreen() {
             <View style={styles.content}>
                 {/* Logo Section */}
                 <View style={styles.logoContainer}>
-                    <ThemedText style={styles.logoText}>therapy.ai</ThemedText>
+                    <ThemedText style={styles.logoText}>ai.therapy</ThemedText>
                 </View>
 
                 {/* Hero Image - Centered */}
@@ -90,7 +89,7 @@ export default function SignInScreen() {
 
                     <TouchableOpacity
                         style={styles.authButton}
-                        onPress={handleSkipAuth}
+                        onPress={() => handleSignIn('facebook')}
                         disabled={loading}
                     >
                         <FontAwesome name="facebook" size={20} color="#4267B2" style={styles.authIcon} />

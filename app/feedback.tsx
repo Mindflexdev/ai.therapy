@@ -1,21 +1,20 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, TouchableOpacity, ScrollView, Linking, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Image } from 'expo-image';
+import React from 'react';
+import { Alert, Linking, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { IconSymbol } from '@/components/ui/icon-symbol';
 
 export default function FeedbackScreen() {
     const router = useRouter();
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme ?? 'light'];
 
-    const email = 'hello@therapy.ai';
-    const whatsappUrl = 'https://api.whatsapp.com/send?phone=4915223885561&text=Hey!%20I%E2%80%99m%20using%20therapy.ai%20and%20I%E2%80%99ve%20got%20a%20question%20or%20some%20feedback%20%F0%9F%92%AC';
+    const email = 'hello@ai.therapy';
+    const whatsappUrl = 'https://api.whatsapp.com/send?phone=4915223885561&text=Hey!%20I%E2%80%99m%20using%20ai.therapy%20and%20I%E2%80%99ve%20got%20a%20question%20or%20some%20feedback%20%F0%9F%92%AC';
 
     const handleCopyEmail = async () => {
         try {

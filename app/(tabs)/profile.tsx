@@ -1,14 +1,14 @@
-import React from 'react';
-import { useRouter } from 'expo-router';
-import { StyleSheet, View, TouchableOpacity, ScrollView, Linking } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
+import React from 'react';
+import { Linking, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { IconSymbol } from '@/components/ui/icon-symbol';
 
 // Mock tracking data
 const TRACKING_DATA = [
@@ -100,7 +100,7 @@ export default function ProfileScreen() {
     const theme = Colors[colorScheme ?? 'light'];
 
     const handleEmailPress = () => {
-        Linking.openURL('mailto:hello@therapy.ai');
+        Linking.openURL('mailto:hello@ai.therapy');
     };
 
     const renderTrackingCard = (item: typeof TRACKING_DATA[0]) => (
@@ -197,7 +197,7 @@ export default function ProfileScreen() {
                             </View>
                             <TouchableOpacity style={[styles.premiumButton, { backgroundColor: theme.primary }]}>
                                 <IconSymbol name="plus" size={16} color="#fff" />
-                                <ThemedText style={styles.premiumButtonText}>Get therapy.ai</ThemedText>
+                                <ThemedText style={styles.premiumButtonText}>Get ai.therapy</ThemedText>
                             </TouchableOpacity>
                         </View>
                     </View>
