@@ -7,6 +7,8 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { supabase } from '@/lib/supabase';
 import { FontAwesome } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { LoadingDots } from '@/components/loading-dots';
 
 const { width } = Dimensions.get('window');
 
@@ -19,44 +21,61 @@ export default function SignInScreen() {
     const handleSignIn = async (provider: 'google' | 'facebook' | 'apple') => {
         setLoading(true);
         try {
+            const redirectTo = Platform.OS === 'web'
+                ? window.location.origin // For web, redirect back to current origin
+                : 'therapyai://login-callback'; // For mobile, use deep link
+
             const { data, error } = await supabase.auth.signInWithOAuth({
                 provider: provider,
                 options: {
-                    redirectTo: 'therapyai://login-callback', // This needs to be configured in Supabase and app.json
+                    redirectTo: redirectTo,
                 },
             });
 
             if (error) throw error;
-            // The actual navigation happens via the onAuthStateChange listener in _layout.tsx
+
+            // On web, the redirect happens automatically
+            // On mobile, navigation happens via onAuthStateChange listener in _layout.tsx
         } catch (error) {
             console.error('Error signing in:', error);
-        } finally {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            alert(`Sign-in failed: ${errorMessage}`);
             setLoading(false);
         }
     };
 
+    const handleSkipAuth = async () => {
+        setLoading(true);
+        // Show loading for 2 seconds
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        router.replace('/(tabs)');
+    };
+
+    if (loading) {
+        return (
+            <View style={styles.loadingContainer}>
+                <ThemedText style={styles.loadingText}>therapy.ai</ThemedText>
+                <LoadingDots />
+            </View>
+        );
+    }
+
     return (
         <View style={styles.container}>
-            {/* Background Image or Gradient */}
-            <Image
-                source={{ uri: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop' }}
-                style={styles.backgroundImage}
-                contentFit="cover"
-            />
-            <View style={styles.overlay} />
-
             <View style={styles.content}>
                 {/* Logo Section */}
                 <View style={styles.logoContainer}>
-                    <View style={styles.logoRow}>
-                        <Image source={{ uri: '/icon.png' }} style={styles.logo} />
-                        <ThemedText style={styles.logoText}>Therapy.AI</ThemedText>
-                    </View>
-                    <ThemedText style={styles.tagline}>CHAT + AI</ThemedText>
+                    <ThemedText style={styles.logoText}>therapy.ai</ThemedText>
                 </View>
 
-                {/* Spacer */}
-                <View style={{ flex: 1 }} />
+                {/* Hero Image - Centered */}
+                <View style={styles.heroContainer}>
+                    <Image
+                        source={require('@/assets/images/characters-hero.png')}
+                        style={styles.heroImage}
+                        contentFit="contain"
+                    />
+                </View>
 
                 {/* Auth Buttons */}
                 <View style={styles.authContainer}>
@@ -71,7 +90,7 @@ export default function SignInScreen() {
 
                     <TouchableOpacity
                         style={styles.authButton}
-                        onPress={() => handleSignIn('facebook')}
+                        onPress={handleSkipAuth}
                         disabled={loading}
                     >
                         <FontAwesome name="facebook" size={20} color="#4267B2" style={styles.authIcon} />
@@ -86,29 +105,29 @@ export default function SignInScreen() {
                         <FontAwesome name="apple" size={20} color="#000" style={styles.authIcon} />
                         <ThemedText style={styles.authButtonText}>Sign in with Apple</ThemedText>
                     </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[styles.authButton, { backgroundColor: 'transparent', borderWidth: 1, borderColor: '#ccc', elevation: 0 }]}
+                        onPress={handleSkipAuth}
+                        disabled={loading}
+                    >
+                        <FontAwesome name="user-secret" size={20} color="#666" style={styles.authIcon} />
+                        <ThemedText style={[styles.authButtonText, { color: '#666' }]}>Skip Login (Test Mode)</ThemedText>
+                    </TouchableOpacity>
                 </View>
 
                 <View style={{ height: 40 }} />
             </View>
-        </View>
+        </View >
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#000',
+        backgroundColor: '#F5F7FA',
     },
-    backgroundImage: {
-        ...StyleSheet.absoluteFillObject,
-        opacity: 0.6,
-    },
-    overlay: {
-        ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(0,0,0,0.4)',
-        backgroundImage: 'linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.8) 100%)', // Note: This is web syntax, for RN we need LinearGradient component if we want gradient. 
-        // But for now, simple overlay is fine or I'll use a solid color with opacity.
-    },
+
     content: {
         flex: 1,
         padding: 24,
@@ -122,7 +141,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 12,
-        marginBottom: 16,
     },
     logo: {
         width: 40,
@@ -132,14 +150,20 @@ const styles = StyleSheet.create({
     logoText: {
         fontSize: 24,
         fontWeight: 'bold',
-        color: '#fff',
+        color: '#1a1a1a',
         letterSpacing: 1,
     },
-    tagline: {
-        fontSize: 32,
-        fontWeight: '300',
-        color: '#fff',
-        letterSpacing: 2,
+    heroContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingVertical: 40,
+    },
+    heroImage: {
+        width: '100%',
+        height: '100%',
+        maxWidth: 500,
+        maxHeight: 500,
     },
     authContainer: {
         gap: 16,
@@ -161,9 +185,9 @@ const styles = StyleSheet.create({
             width: 0,
             height: 2,
         },
-        shadowOpacity: 0.25,
+        shadowOpacity: 0.1,
         shadowRadius: 3.84,
-        elevation: 5,
+        elevation: 3,
     },
     authIcon: {
         marginRight: 12,
@@ -174,5 +198,16 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '600',
         color: '#000',
+    },
+    loadingContainer: {
+        flex: 1,
+        backgroundColor: '#F5F7FA',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    loadingText: {
+        fontSize: 32,
+        fontWeight: 'bold',
+        color: '#2D3436',
     },
 });

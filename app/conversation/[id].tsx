@@ -9,6 +9,8 @@ import {
     Platform,
     ActivityIndicator,
     Alert,
+    Modal,
+    ScrollView,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,6 +21,9 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { TOPICS } from '@/constants/data';
+import { supabase } from '@/lib/supabase';
+import { createJWT } from '@/lib/jwt';
+import { ALL_THERAPY_OPTIONS } from '@/constants/therapy';
 
 interface Message {
     id: string;
@@ -27,7 +32,15 @@ interface Message {
     timestamp: Date;
 }
 
-const WEBHOOK_URL = 'https://mindflex.app.n8n.cloud/webhook-test/b4d0ede8-b771-4c33-aceb-83dcb44b0bf5';
+interface Character {
+    id: string;
+    name: string;
+    image: string;
+    description: string;
+    greeting?: string;
+}
+
+const WEBHOOK_URL = 'https://mindflex.app.n8n.cloud/webhook/b4d0ede8-b771-4c33-aceb-83dcb44b0bf5';
 
 export default function ConversationScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -36,19 +49,56 @@ export default function ConversationScreen() {
     const theme = Colors[colorScheme ?? 'light'];
     const flatListRef = useRef<FlatList>(null);
 
-    // Find the character
-    const character = TOPICS.flatMap((topic) => topic.characters).find((c) => c.id === id);
+    const [character, setCharacter] = useState<Character | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [activeTherapyStyle, setActiveTherapyStyle] = useState('Integrative Therapy (AI decides)');
+    const [isStyleModalVisible, setIsStyleModalVisible] = useState(false);
 
-    const [messages, setMessages] = useState<Message[]>([
-        {
-            id: '1',
-            text: `Hello! I'm ${character?.name}. ${character?.description} I'm here to support you on your journey. How are you feeling today?`,
-            isUser: false,
-            timestamp: new Date(),
-        },
-    ]);
+    // Fetch character from Supabase
+    useEffect(() => {
+        const fetchCharacter = async () => {
+            try {
+                const { data, error } = await supabase
+                    .from('characters')
+                    .select('*')
+                    .eq('id', id)
+                    .single();
+
+                if (error) throw error;
+                setCharacter(data);
+            } catch (error) {
+                console.error('Error fetching character:', error);
+                // Fallback to TOPICS if Supabase fails
+                const fallbackChar = TOPICS.flatMap((topic) => topic.characters).find((c) => c.id === id);
+                if (fallbackChar) {
+                    setCharacter(fallbackChar as Character);
+                }
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchCharacter();
+    }, [id]);
+
+    const [messages, setMessages] = useState<Message[]>([]);
     const [inputText, setInputText] = useState('');
     const [isTyping, setIsTyping] = useState(false);
+
+    // Initialize greeting message when character loads
+    useEffect(() => {
+        if (character) {
+            if (messages.length === 0) {
+                const greeting = character.greeting || `Hello! I'm ${character.name}. ${character.description} I'm here to support you on your journey. How are you feeling today?`;
+                setMessages([{
+                    id: '1',
+                    text: greeting,
+                    isUser: false,
+                    timestamp: new Date(),
+                }]);
+            }
+        }
+    }, [character]);
 
     const scrollToBottom = () => {
         setTimeout(() => {
@@ -73,16 +123,23 @@ export default function ConversationScreen() {
         scrollToBottom();
 
         try {
+            // Create JWT token for authentication
+            const token = await createJWT({
+                userId: 'user-session-1', // You might want to use real user ID here
+                action: 'chat_message',
+            });
+
             // Call n8n webhook
             const response = await fetch(WEBHOOK_URL, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
                 },
                 body: JSON.stringify({
                     message: userMsgText,
                     characterName: character?.name,
-                    characterDescription: character?.description,
+                    characterDescription: `${character?.description}\n\n[IMPORTANT: Conduct this session using ${activeTherapyStyle} style.]`,
                     sessionId: 'user-session-1', // You might want to generate a real unique ID per user
                     timestamp: new Date().toISOString(),
                 }),
@@ -96,7 +153,6 @@ export default function ConversationScreen() {
             const data = await response.json();
 
             // Expecting the webhook to return { "output": "AI response text" } or similar
-            // Adjust this based on your actual n8n workflow output
             const aiText = data.output || data.text || data.response || data.message || "I'm listening...";
 
             const aiResponse: Message = {
@@ -109,7 +165,6 @@ export default function ConversationScreen() {
             setMessages((prev) => [...prev, aiResponse]);
         } catch (error: any) {
             console.error('Error sending message:', error);
-            // Fallback with error details for debugging
             const errorMessage = error instanceof Error ? error.message : String(error);
             const fallbackResponse: Message = {
                 id: (Date.now() + 1).toString(),
@@ -145,10 +200,44 @@ export default function ConversationScreen() {
         );
     };
 
+    // Show loading state
+    if (isLoading) {
+        return (
+            <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
+                <View style={[styles.header, { borderBottomColor: theme.icon }]}>
+                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                        <IconSymbol name="chevron.right" size={24} color={theme.text} style={{ transform: [{ rotate: '180deg' }] }} />
+                    </TouchableOpacity>
+                </View>
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                    <ActivityIndicator size="large" color={theme.primary} />
+                    <ThemedText style={{ marginTop: 16 }}>Loading character...</ThemedText>
+                </View>
+            </SafeAreaView>
+        );
+    }
+
+    // Show error state
     if (!character) {
         return (
-            <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-                <ThemedText>Character not found</ThemedText>
+            <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
+                <View style={[styles.header, { borderBottomColor: theme.icon }]}>
+                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                        <IconSymbol name="chevron.right" size={24} color={theme.text} style={{ transform: [{ rotate: '180deg' }] }} />
+                    </TouchableOpacity>
+                </View>
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+                    <ThemedText type="title" style={{ marginBottom: 8 }}>Character not found</ThemedText>
+                    <ThemedText style={{ textAlign: 'center', opacity: 0.7 }}>
+                        This character doesn't exist or couldn't be loaded.
+                    </ThemedText>
+                    <TouchableOpacity
+                        style={{ backgroundColor: theme.primary, paddingVertical: 12, paddingHorizontal: 24, borderRadius: 20, marginTop: 24 }}
+                        onPress={() => router.back()}
+                    >
+                        <ThemedText style={{ color: '#fff', fontWeight: '600' }}>Go Back</ThemedText>
+                    </TouchableOpacity>
+                </View>
             </SafeAreaView>
         );
     }
@@ -156,33 +245,116 @@ export default function ConversationScreen() {
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
             <View style={[styles.header, { borderBottomColor: theme.icon }]}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <IconSymbol name="chevron.right" size={24} color={theme.text} style={{ transform: [{ rotate: '180deg' }] }} />
-                </TouchableOpacity>
-                <View style={styles.headerInfo}>
-                    <Image source={{ uri: character.image }} style={styles.headerAvatar} contentFit="cover" />
-                    <ThemedText type="defaultSemiBold" style={styles.headerName}>
-                        {character.name}
-                    </ThemedText>
-                </View>
-                <View style={styles.headerActions}>
-                    <TouchableOpacity style={styles.headerButton}>
-                        <IconSymbol name="magnifyingglass" size={20} color={theme.text} />
+                {/* Left: Back Button */}
+                <View style={styles.headerLeft}>
+                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                        <IconSymbol name="chevron.right" size={24} color={theme.text} style={{ transform: [{ rotate: '180deg' }] }} />
                     </TouchableOpacity>
+                </View>
+
+                {/* Center: Style Selector */}
+                <View style={styles.headerCenter}>
+                    <TouchableOpacity
+                        style={[styles.styleSelector, { backgroundColor: theme.card }]}
+                        onPress={() => setIsStyleModalVisible(true)}
+                    >
+                        <IconSymbol name="sparkles" size={14} color={theme.primary} />
+                        <ThemedText style={styles.styleSelectorText} numberOfLines={1}>
+                            {activeTherapyStyle.split('(')[0].trim()}
+                        </ThemedText>
+                        <IconSymbol name="chevron.down" size={12} color={theme.icon} />
+                    </TouchableOpacity>
+                </View>
+
+                {/* Right: Feedback Button */}
+                <View style={styles.headerRight}>
                     <TouchableOpacity
                         style={[styles.feedbackButton, { backgroundColor: theme.primary }]}
                         onPress={() => router.push('/feedback')}
                     >
-                        <ThemedText style={styles.feedbackButtonText}>Feedback?</ThemedText>
+                        <ThemedText style={styles.feedbackButtonText}>Feedback</ThemedText>
                     </TouchableOpacity>
                 </View>
             </View>
 
-            <View style={[styles.creatorInfo, { backgroundColor: theme.card }]}>
-                <ThemedText style={styles.creatorText}>
-                    {character.name} was created by @therapy.ai
-                </ThemedText>
+            {/* Sub-header for Character Info */}
+            <View style={[styles.characterBar, { backgroundColor: theme.background, borderBottomColor: `rgba(${theme.text}, 0.1)` }]}>
+                <Image source={{ uri: character.image }} style={styles.headerAvatar} contentFit="cover" />
+                <View>
+                    <ThemedText type="defaultSemiBold" style={styles.headerName}>
+                        {character.name}
+                    </ThemedText>
+                    <ThemedText style={styles.creatorText}>
+                        @therapy.ai
+                    </ThemedText>
+                </View>
             </View>
+
+            <Modal
+                visible={isStyleModalVisible}
+                transparent={true}
+                animationType="slide"
+                onRequestClose={() => setIsStyleModalVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={[styles.modalContent, { backgroundColor: theme.background }]}>
+                        <View style={[styles.modalHeader, { borderBottomColor: theme.icon }]}>
+                            <ThemedText type="title" style={{ fontSize: 18 }}>Select Therapy Style</ThemedText>
+                            <TouchableOpacity onPress={() => setIsStyleModalVisible(false)}>
+                                <IconSymbol name="xmark.circle.fill" size={24} color={theme.icon} />
+                            </TouchableOpacity>
+                        </View>
+
+                        <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
+                            {ALL_THERAPY_OPTIONS.map((category) => (
+                                <View key={category.category} style={styles.modalCategory}>
+                                    <ThemedText type="defaultSemiBold" style={styles.modalCategoryTitle}>
+                                        {category.category}
+                                    </ThemedText>
+                                    {category.styles.map((style) => {
+                                        const isSelected = activeTherapyStyle === style.name;
+                                        return (
+                                            <TouchableOpacity
+                                                key={style.name}
+                                                style={[
+                                                    styles.modalOption,
+                                                    {
+                                                        backgroundColor: isSelected ? theme.primary : theme.card,
+                                                        borderColor: isSelected ? theme.primary : theme.icon
+                                                    }
+                                                ]}
+                                                onPress={() => {
+                                                    setActiveTherapyStyle(style.name);
+                                                    setIsStyleModalVisible(false);
+                                                }}
+                                            >
+                                                <View style={{ flex: 1 }}>
+                                                    <ThemedText style={[
+                                                        styles.modalOptionName,
+                                                        { color: isSelected ? '#fff' : theme.text }
+                                                    ]}>
+                                                        {style.name}
+                                                    </ThemedText>
+                                                    <ThemedText style={[
+                                                        styles.modalOptionDesc,
+                                                        { color: isSelected ? 'rgba(255,255,255,0.9)' : theme.icon }
+                                                    ]}>
+                                                        {style.description}
+                                                    </ThemedText>
+                                                </View>
+                                                {isSelected && (
+                                                    <IconSymbol name="checkmark.circle.fill" size={20} color="#fff" />
+                                                )}
+                                            </TouchableOpacity>
+                                        );
+                                    })}
+                                </View>
+                            ))}
+                            <View style={{ height: 40 }} />
+                        </ScrollView>
+                    </View>
+                </View>
+            </Modal>
 
             <KeyboardAvoidingView
                 style={styles.flex}
@@ -241,30 +413,20 @@ const styles = StyleSheet.create({
         paddingHorizontal: 8,
         paddingVertical: 12,
         borderBottomWidth: 1,
-        gap: 12,
+    },
+    headerLeft: {
+        flex: 1,
+        alignItems: 'flex-start',
+    },
+    headerCenter: {
+        flex: 2,
+        alignItems: 'center',
+    },
+    headerRight: {
+        flex: 1,
+        alignItems: 'flex-end',
     },
     backButton: {
-        padding: 8,
-    },
-    headerInfo: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
-    },
-    headerAvatar: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-    },
-    headerName: {
-        fontSize: 18,
-    },
-    headerActions: {
-        flexDirection: 'row',
-        gap: 8,
-    },
-    headerButton: {
         padding: 8,
     },
     feedbackButton: {
@@ -277,15 +439,90 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: '600',
     },
-    creatorInfo: {
-        paddingHorizontal: 16,
-        paddingVertical: 12,
+    styleSelector: {
+        flexDirection: 'row',
         alignItems: 'center',
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        borderRadius: 20,
+        gap: 6,
+        marginHorizontal: 8,
+    },
+    styleSelectorText: {
+        fontSize: 13,
+        fontWeight: '600',
+        maxWidth: 150,
+    },
+    characterBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        gap: 12,
+        borderBottomWidth: 1,
+    },
+    headerAvatar: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+    },
+    headerName: {
+        fontSize: 16,
     },
     creatorText: {
         fontSize: 13,
         opacity: 0.7,
     },
+    // Modal Styles
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'flex-end',
+    },
+    modalContent: {
+        height: '70%',
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        overflow: 'hidden',
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: 20,
+        borderBottomWidth: 1,
+    },
+    modalScroll: {
+        padding: 20,
+    },
+    modalCategory: {
+        marginBottom: 24,
+    },
+    modalCategoryTitle: {
+        fontSize: 14,
+        marginBottom: 12,
+        opacity: 0.7,
+        textTransform: 'uppercase',
+    },
+    modalOption: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 16,
+        borderRadius: 12,
+        marginBottom: 10,
+        borderWidth: 1,
+        gap: 12,
+    },
+    modalOptionName: {
+        fontSize: 16,
+        fontWeight: '600',
+        marginBottom: 4,
+    },
+    modalOptionDesc: {
+        fontSize: 13,
+        lineHeight: 18,
+    },
+    // Message Styles
     messagesList: {
         padding: 16,
         gap: 16,
@@ -326,6 +563,7 @@ const styles = StyleSheet.create({
         lineHeight: 20,
         color: '#fff',
     },
+    // Input Styles
     inputContainer: {
         flexDirection: 'row',
         alignItems: 'flex-end',

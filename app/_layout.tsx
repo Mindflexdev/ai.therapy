@@ -3,14 +3,16 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Animated } from 'react-native';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { ThemedText } from '@/components/themed-text';
 import { supabase } from '@/lib/supabase';
+import { LoadingDots } from '@/components/loading-dots';
 import { useRouter, useSegments } from 'expo-router';
 import { Session } from '@supabase/supabase-js';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -23,58 +25,54 @@ export default function RootLayout() {
   const [isReady, setIsReady] = useState(false);
 
   const [session, setSession] = useState<Session | null>(null);
+  const [showLoading, setShowLoading] = useState(true); // Start with loading
   const router = useRouter();
   const segments = useSegments();
 
+  // Check initial session and listen for auth changes
   useEffect(() => {
-    // Check initial session
+    // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Initial session:', session ? 'Logged in' : 'Not logged in');
       setSession(session);
-      if (!session) {
-        // If not signed in, hide splash and redirect to sign-in immediately
-        SplashScreen.hideAsync();
-        setIsReady(true);
-      } else {
-        // If signed in, run the preparation (loading screen)
-        prepare();
-      }
+      setShowLoading(false);
+      SplashScreen.hideAsync();
+      setIsReady(true);
     });
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log('Auth state changed:', _event, session ? 'Logged in' : 'Not logged in');
       setSession(session);
-      if (event === 'SIGNED_OUT') {
-        router.replace('/sign-in');
-      } else if (event === 'SIGNED_IN') {
-        router.replace('/(tabs)');
-      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  async function prepare() {
-    try {
-      // Simulate loading time
-      await new Promise(resolve => setTimeout(resolve, 2000));
-    } catch (e) {
-      console.warn(e);
-    } finally {
-      setIsReady(true);
-      await SplashScreen.hideAsync();
-    }
-  }
-
+  // Navigate based on auth state
   useEffect(() => {
-    if (isReady && !session) {
+    if (!isReady) return;
+
+    const inAuthGroup = segments[0] === 'sign-in';
+    console.log('Navigation check:', { session: !!session, inAuthGroup, segments });
+
+    if (session && inAuthGroup) {
+      // User is signed in but on sign-in page -> redirect to app
+      console.log('Redirecting to app (user is signed in)');
+      router.replace('/(tabs)');
+    } else if (!session && !inAuthGroup) {
+      // User is not signed in but trying to access app -> redirect to sign-in
+      console.log('Redirecting to sign-in (user not signed in)');
       router.replace('/sign-in');
     }
-  }, [isReady, session]);
+  }, [session, segments, isReady]);
 
-  if (!isReady) {
+  // Show loading screen after sign-in
+  if (showLoading) {
     return (
       <View style={styles.loadingContainer}>
         <ThemedText style={styles.loadingText}>therapy.ai</ThemedText>
+        <LoadingDots />
       </View>
     );
   }
@@ -109,6 +107,13 @@ export default function RootLayout() {
             animation: 'slide_from_right'
           }}
         />
+        <Stack.Screen
+          name="subscribe"
+          options={{
+            headerShown: false,
+            animation: 'slide_from_bottom'
+          }}
+        />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>
@@ -118,13 +123,13 @@ export default function RootLayout() {
 const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#F5F7FA',
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#fff',
+    color: '#2D3436',
   },
 });

@@ -16,7 +16,7 @@ const TRACKING_DATA = [
         id: '1',
         title: 'Emotional States',
         subtitle: 'Mood & Energy',
-        icon: '🧩',
+        icon: '≡ƒº⌐',
         value: 78,
         status: 'OPTIMAL',
         trend: '+12%',
@@ -26,7 +26,7 @@ const TRACKING_DATA = [
         id: '2',
         title: 'Life Areas',
         subtitle: 'Focus Distribution',
-        icon: '🎯',
+        icon: '≡ƒÄ»',
         value: 65,
         status: 'BALANCED',
         trend: '+5%',
@@ -36,7 +36,7 @@ const TRACKING_DATA = [
         id: '3',
         title: 'Psychological Patterns',
         subtitle: 'Thought Quality',
-        icon: '🧠',
+        icon: '≡ƒºá',
         value: 82,
         status: 'IMPROVING',
         trend: '+18%',
@@ -46,7 +46,7 @@ const TRACKING_DATA = [
         id: '4',
         title: 'Goals & Values',
         subtitle: 'Alignment',
-        icon: '⛅',
+        icon: 'Γ¢à',
         value: 71,
         status: 'GROWING',
         trend: '+8%',
@@ -56,7 +56,7 @@ const TRACKING_DATA = [
         id: '5',
         title: 'Actions & Skills',
         subtitle: 'Real Behavior',
-        icon: '💪',
+        icon: '≡ƒÆ¬',
         value: 88,
         status: 'STRONG',
         trend: '+22%',
@@ -66,7 +66,7 @@ const TRACKING_DATA = [
         id: '6',
         title: 'Resilience',
         subtitle: 'Recovery Speed',
-        icon: '🔄',
+        icon: '≡ƒöä',
         value: 75,
         status: 'STABLE',
         trend: '+15%',
@@ -76,7 +76,7 @@ const TRACKING_DATA = [
         id: '7',
         title: 'Psychological Flexibility',
         subtitle: 'ACT Core',
-        icon: '🌿',
+        icon: '≡ƒî┐',
         value: 80,
         status: 'EXCELLENT',
         trend: '+10%',
@@ -86,7 +86,7 @@ const TRACKING_DATA = [
         id: '8',
         title: 'Alliance & Connection',
         subtitle: 'Therapeutic Bond',
-        icon: '🤝',
+        icon: '≡ƒñ¥',
         value: 92,
         status: 'OUTSTANDING',
         trend: '+6%',
@@ -225,7 +225,7 @@ export default function ProfileScreen() {
                             style={styles.insightGradient}
                         />
                         <ThemedText type="defaultSemiBold" style={styles.insightTitle}>
-                            ✨ This Week's Insight
+                            Γ£¿ This Week's Insight
                         </ThemedText>
                         <ThemedText style={styles.insightText}>
                             "You're recovering from stress 50% faster than 3 weeks ago. Your emotional resilience is growing steadily."

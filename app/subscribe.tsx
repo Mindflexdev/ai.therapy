@@ -79,16 +79,16 @@ export default function SubscribeScreen() {
                     colors={['transparent', '#000']}
                     style={styles.heroGradient}
                 />
-
-                {/* Header Buttons */}
-                <SafeAreaView style={styles.header} edges={['top']}>
-                    <TouchableOpacity
-                        style={styles.closeButton}
-                        onPress={() => router.back()}>
-                        <IconSymbol name="xmark" size={20} color="#fff" />
-                    </TouchableOpacity>
-                </SafeAreaView>
             </View>
+
+            {/* Back Button Overlay - Moved to root for better z-index */}
+            <SafeAreaView style={styles.backButtonContainer} edges={['top']}>
+                <TouchableOpacity
+                    style={styles.backButton}
+                    onPress={() => router.back()}>
+                    <IconSymbol name="chevron.left" size={32} color="#fff" />
+                </TouchableOpacity>
+            </SafeAreaView>
 
             <View style={styles.contentContainer}>
                 <ScrollView
@@ -185,25 +185,25 @@ const styles = StyleSheet.create({
         right: 0,
         height: 200, // Taller gradient
     },
-    header: {
+    backButtonContainer: {
         position: 'absolute',
         top: 0,
         left: 0,
         right: 0,
         flexDirection: 'row',
-        justifyContent: 'flex-start', // Align left
+        justifyContent: 'flex-start',
         alignItems: 'center',
         paddingHorizontal: 16,
-        zIndex: 10,
+        zIndex: 100, // Increased zIndex
+        elevation: 5, // For Android
     },
-    closeButton: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: 'rgba(0,0,0,0.3)', // More transparent
+    backButton: {
+        width: 40,
+        height: 40,
         justifyContent: 'center',
         alignItems: 'center',
         marginTop: 8,
+        marginLeft: -8, // Adjust alignment to match other screens if needed
     },
     contentContainer: {
         flex: 1,

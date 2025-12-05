@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Image } from 'expo-image';
 import {
     StyleSheet,
@@ -18,88 +18,11 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { saveCharacter, UserCharacter } from '@/constants/storage';
+import { generateCharacterImage } from '@/lib/webhooks';
 
 type Step = 'name' | 'characteristics' | 'therapyStyle' | 'image' | 'greeting' | 'visibility' | 'review';
 
-const THERAPY_CATEGORIES = [
-    {
-        category: 'Cognitive & Behavioral',
-        styles: [
-            {
-                name: 'Cognitive Behavioral Therapy (CBT)',
-                description: 'Focus on changing negative thought patterns and behaviors. Best for anxiety, depression, and practical problem-solving.'
-            },
-            {
-                name: 'Acceptance and Commitment Therapy (ACT)',
-                description: 'Learn to accept difficult emotions while taking action toward your values. Great for psychological flexibility.'
-            },
-            {
-                name: 'Dialectical Behavior Therapy (DBT)',
-                description: 'Build skills for emotional regulation, distress tolerance, and relationships. Especially helpful for intense emotions.'
-            },
-            {
-                name: 'Mindfulness-Based Cognitive Therapy (MBCT)',
-                description: 'Combines mindfulness with CBT to prevent relapse and increase present-moment awareness.'
-            },
-        ]
-    },
-    {
-        category: 'Depth & Insight',
-        styles: [
-            {
-                name: 'Psychodynamic Therapy',
-                description: 'Explore unconscious patterns and past experiences. Understand how your history shapes your present.'
-            },
-            {
-                name: 'Psychoanalysis',
-                description: 'Deep exploration of unconscious mind, dreams, and early relationships. Long-term, intensive work.'
-            },
-            {
-                name: 'Schema Therapy',
-                description: 'Identify and change deeply rooted life patterns formed in childhood. Integrative and transformative.'
-            },
-        ]
-    },
-    {
-        category: 'Humanistic & Experiential',
-        styles: [
-            {
-                name: 'Humanistic Therapy',
-                description: 'Focus on personal growth, self-actualization, and inherent human potential. Client-centered approach.'
-            },
-            {
-                name: 'Gestalt Therapy',
-                description: 'Increase awareness of present experience and personal responsibility. "Here and now" focus.'
-            },
-            {
-                name: 'Emotion-Focused Therapy (EFT)',
-                description: 'Transform emotional experiences and build emotional intelligence. Great for relationship issues.'
-            },
-        ]
-    },
-    {
-        category: 'Relational & Systemic',
-        styles: [
-            {
-                name: 'Systemic / Family Therapy',
-                description: 'Understand relationships and family dynamics. See problems in context of larger systems.'
-            },
-        ]
-    },
-    {
-        category: 'Body & Trauma',
-        styles: [
-            {
-                name: 'Somatic Therapy',
-                description: 'Work with body sensations and physical experience. Heal trauma stored in the body.'
-            },
-            {
-                name: 'Image Rehearsal Therapy (IRT)',
-                description: 'A cognitive-behavioral treatment for reducing the frequency and intensity of nightmares.'
-            },
-        ]
-    },
-];
+import { ALL_THERAPY_OPTIONS } from '@/constants/therapy';
 
 
 export default function CreateCharacterScreen() {
@@ -111,12 +34,14 @@ export default function CreateCharacterScreen() {
     const [characterData, setCharacterData] = useState({
         name: '',
         characteristics: '',
-        therapyStyles: [] as string[],
+        therapyStyles: ['Integrative Therapy (AI decides)'] as string[], // Preselect Integrative
         imageDescription: '',
         greeting: '',
         isPublic: true,
     });
     const [isCreating, setIsCreating] = useState(false);
+    const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+    const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
 
     const handleNext = () => {
         const steps: Step[] = ['name', 'characteristics', 'therapyStyle', 'image', 'greeting', 'visibility', 'review'];
@@ -136,6 +61,33 @@ export default function CreateCharacterScreen() {
         }
     };
 
+    const handleGenerateImage = async () => {
+        if (!characterData.imageDescription.trim()) {
+            Alert.alert('Missing Description', 'Please describe how your character looks first.');
+            return;
+        }
+
+        setIsGeneratingImage(true);
+        try {
+            const result = await generateCharacterImage({
+                description: characterData.imageDescription,
+                characterName: characterData.name,
+            });
+
+            if (result.success && result.imageUrl) {
+                setGeneratedImageUrl(result.imageUrl);
+                Alert.alert('Success!', 'Your character image has been generated!');
+            } else {
+                Alert.alert('Generation Failed', result.error || 'Could not generate image. Please try again.');
+            }
+        } catch (error) {
+            console.error('Error generating image:', error);
+            Alert.alert('Error', 'Failed to generate image. Please check your connection and try again.');
+        } finally {
+            setIsGeneratingImage(false);
+        }
+    };
+
     const handleCreate = async () => {
         if (isCreating) return;
 
@@ -148,7 +100,7 @@ export default function CreateCharacterScreen() {
             const newCharacter: UserCharacter = {
                 id: characterId,
                 name: characterData.name,
-                image: '/characters/athena.jpg', // Placeholder until AI generates image
+                image: generatedImageUrl || '/characters/athena.jpg', // Placeholder until AI generates image
                 imageDescription: characterData.imageDescription,
                 description: characterData.characteristics,
                 therapyStyles: characterData.therapyStyles,
@@ -247,7 +199,7 @@ export default function CreateCharacterScreen() {
                         </ThemedText>
 
                         <ScrollView style={styles.therapyStylesContainer} showsVerticalScrollIndicator={false}>
-                            {THERAPY_CATEGORIES.map((category) => (
+                            {ALL_THERAPY_OPTIONS.map((category) => (
                                 <View key={category.category} style={styles.categorySection}>
                                     <ThemedText type="defaultSemiBold" style={styles.categoryTitle}>
                                         {category.category}
@@ -289,35 +241,7 @@ export default function CreateCharacterScreen() {
                                 </View>
                             ))}
 
-                            <TouchableOpacity
-                                style={[
-                                    styles.therapyStyleButton,
-                                    styles.automaticButton,
-                                    {
-                                        backgroundColor: isAutomatic ? theme.primary : theme.card,
-                                        borderColor: isAutomatic ? theme.primary : theme.icon
-                                    }
-                                ]}
-                                onPress={() => setCharacterData({ ...characterData, therapyStyles: [] })}
-                            >
-                                <View style={styles.therapyStyleContent}>
-                                    <ThemedText style={[
-                                        styles.therapyStyleName,
-                                        { color: isAutomatic ? '#fff' : theme.text, fontWeight: 'bold' }
-                                    ]}>
-                                        Integrative Therapy (AI decides)
-                                    </ThemedText>
-                                    <ThemedText style={[
-                                        styles.therapyStyleDescription,
-                                        { color: isAutomatic ? 'rgba(255,255,255,0.9)' : theme.icon }
-                                    ]}>
-                                        Combines multiple approaches tailored to your unique needs. Flexible and personalized.
-                                    </ThemedText>
-                                </View>
-                                {isAutomatic && (
-                                    <IconSymbol name="checkmark.circle.fill" size={24} color="#fff" />
-                                )}
-                            </TouchableOpacity>
+
                         </ScrollView>
                     </View>
                 );
@@ -328,7 +252,13 @@ export default function CreateCharacterScreen() {
                         {/* Image Preview */}
                         <View style={styles.imagePreviewSection}>
                             <View style={[styles.imagePreviewContainer, { backgroundColor: theme.card, borderColor: theme.icon }]}>
-                                {characterData.imageDescription ? (
+                                {generatedImageUrl ? (
+                                    <Image
+                                        source={{ uri: generatedImageUrl }}
+                                        style={styles.imagePreview}
+                                        contentFit="cover"
+                                    />
+                                ) : characterData.imageDescription ? (
                                     <Image
                                         source={{ uri: '/characters/athena.jpg' }}
                                         style={styles.imagePreview}
@@ -361,6 +291,19 @@ export default function CreateCharacterScreen() {
                             multiline
                             numberOfLines={4}
                         />
+                        {/* Generate Image Button */}
+                        <TouchableOpacity
+                            style={[styles.generateButton, { backgroundColor: theme.primary }]}
+                            onPress={handleGenerateImage}
+                            disabled={isGeneratingImage || !characterData.imageDescription.trim()}
+                        >
+                            {isGeneratingImage ? (
+                                <ThemedText style={styles.generateButtonText}>Generating...</ThemedText>
+                            ) : (
+                                <ThemedText style={styles.generateButtonText}>✨ Generate Image</ThemedText>
+                            )}
+                        </TouchableOpacity>
+
                         <ThemedText style={styles.helperText}>
                             💡 The more detailed your description, the better the AI-generated image will be!
                         </ThemedText>
@@ -451,13 +394,13 @@ export default function CreateCharacterScreen() {
 
                         <View style={styles.reviewImageContainer}>
                             <Image
-                                source={{ uri: '/characters/athena.jpg' }}
+                                source={{ uri: generatedImageUrl || '/characters/athena.jpg' }}
                                 style={[styles.reviewImage, { borderColor: theme.card }]}
                                 contentFit="cover"
                             />
                             {characterData.imageDescription && (
                                 <ThemedText style={styles.imageDescriptionText}>
-                                    📝 {characterData.imageDescription}
+                                    ≡ƒô¥ {characterData.imageDescription}
                                 </ThemedText>
                             )}
                         </View>
@@ -747,6 +690,19 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         borderWidth: 3,
         borderColor: '#000',
+    },
+    generateButton: {
+        marginTop: 16,
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    generateButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '600',
     },
     imagePreviewHint: {
         fontSize: 13,
