@@ -17,11 +17,11 @@ export interface TherapyDetail {
 export const THERAPY_DETAILS: Record<string, TherapyDetail> = {
     'Integrative Therapy (AI decides)': {
         name: 'Integrative Therapy',
-        emoji: '🧩',
-        tagline: 'The best of all worlds, adapted just for you.',
+        emoji: '✨',
+        tagline: 'The best of all worlds, tailored to you.',
         history: {
-            inventor: 'Modern Psychotherapy Evolution',
-            year: '1980s-Present',
+            inventor: 'Norcross & Goldfried',
+            year: '1980s',
             context: 'Realizing that no single approach works for everyone, therapists began combining the most effective elements from different schools of thought.',
         },
         corePhilosophy: 'Flexibility is key. Instead of forcing you into one box, Integrative Therapy draws from CBT, psychodynamic, humanistic, and other approaches to tailor treatment to your specific personality and needs.',
@@ -210,5 +210,45 @@ export const THERAPY_DETAILS: Record<string, TherapyDetail> = {
         whatItHelps: ['Chronic Nightmares', 'PTSD Sleep disturbances'],
         techniques: ['Rescripting dreams', 'Visualization', 'Relaxation training', 'Daily rehearsal'],
         interestingFact: 'It is the only therapy specifically recommended by the American Academy of Sleep Medicine for nightmares.',
+    },
+    'Sexual Therapy': {
+        name: 'Sexual Therapy',
+        emoji: '❤️‍🔥',
+        tagline: 'Rediscover intimacy and confidence.',
+        history: {
+            inventor: 'Masters & Johnson',
+            year: '1960s',
+            context: 'Pioneered the scientific study of human sexuality and developed specific behavioral treatments for sexual dysfunction.',
+        },
+        corePhilosophy: 'Sexual health is a vital part of overall well-being. It addresses both physical and psychological factors in a safe, judgment-free space to improve intimacy.',
+        whatItHelps: ['Intimacy issues', 'Low libido', 'Performance anxiety', 'Communication'],
+        techniques: ['Sensate focus', 'Psychoeducation', 'Communication skills', 'Cognitive restructuring'],
+        interestingFact: 'Contrary to myths, it is strictly talk therapy—no sexual acts occur in the therapist\'s office.',
+    },
+    'Child and Adolescent Therapy': {
+        name: 'Child and Adolescent Therapy',
+        emoji: '🪁',
+        tagline: 'Growing through understanding.',
+        corePhilosophy: 'Young minds are not just small adult minds; they require specialized approaches that respect developmental stages. This therapy uses play, art, and talk to help young people process emotions, build resilience, and navigate the complex journey of growing up.',
+        history: {
+            inventor: 'Anna Freud / Melanie Klein',
+            year: '1920s',
+            context: 'Pioneered the use of play as a way to access the unconscious and emotional worlds of children, distinct from adult analysis.'
+        },
+        whatItHelps: [
+            'Developmental Challenges',
+            'School Anxiety',
+            'Family Changes',
+            'Behavioral Issues',
+            'Identity Formation'
+        ],
+        techniques: [
+            'Play Therapy',
+            'Art & Creative Expression',
+            'Family System Involvement',
+            'Skill Building (Coping)',
+            'Narrative Storytelling'
+        ],
+        interestingFact: 'In Play Therapy, toys are viewed as the child\'s words and play as their language, allowing them to express what they cannot say verbally.'
     },
 };

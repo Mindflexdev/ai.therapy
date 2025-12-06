@@ -1,34 +1,51 @@
 import { ThemedText } from '@/components/themed-text';
 import { TherapyStyleOption } from '@/components/therapy-style-option';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { ALL_THERAPY_OPTIONS } from '@/constants/therapy';
+import { ALL_THERAPY_OPTIONS, STYLE_ABBREVIATIONS } from '@/constants/therapy';
 import React, { memo, useCallback } from 'react';
 import { Modal, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 interface TherapyStyleModalProps {
     visible: boolean;
-    activeStyle: string;
+    activeStyles: string[];
     onClose: () => void;
-    onSelectStyle: (styleName: string) => void;
+    onSelectStyles: (styles: string[]) => void;
+    onLearnMore: (styleName: string) => void;
     theme: any;
 }
 
 export const TherapyStyleModal = memo(({
     visible,
-    activeStyle,
+    activeStyles,
     onClose,
-    onSelectStyle,
+    onSelectStyles,
+    onLearnMore,
     theme,
 }: TherapyStyleModalProps) => {
+
+    // Logic EXACTLY matching create-character.tsx
     const handleStylePress = useCallback((styleName: string) => {
-        // Toggle selection: if same style, revert to default
-        if (activeStyle === styleName) {
-            onSelectStyle('Integrative Therapy (AI decides)');
+        const integrativeName = 'Integrative Therapy (AI decides)';
+
+        if (activeStyles.includes(styleName)) {
+            // Deselecting a style
+            const newStyles = activeStyles.filter(s => s !== styleName);
+            // If no styles left, revert to Integrative
+            onSelectStyles(newStyles.length === 0 ? [integrativeName] : newStyles);
         } else {
-            onSelectStyle(styleName);
+            // Selecting a new style
+            if (styleName === integrativeName) {
+                // If selecting Integrative, clear all others
+                onSelectStyles([integrativeName]);
+            } else {
+                // If selecting any other style, remove Integrative and add the new one
+                const newStyles = activeStyles
+                    .filter(s => s !== integrativeName)
+                    .concat(styleName);
+                onSelectStyles(newStyles);
+            }
         }
-        onClose();
-    }, [activeStyle, onSelectStyle, onClose]);
+    }, [activeStyles, onSelectStyles]);
 
     return (
         <Modal
@@ -40,46 +57,63 @@ export const TherapyStyleModal = memo(({
             <View style={styles.overlay}>
                 <View style={[styles.content, { backgroundColor: theme.background }]}>
                     <View style={[styles.header, { borderBottomColor: theme.icon }]}>
-                        <ThemedText type="title" style={styles.title}>
+                        <TouchableOpacity onPress={onClose} style={styles.backButton}>
+                            <IconSymbol name="chevron.down" size={24} color={theme.text} />
+                        </TouchableOpacity>
+                        <ThemedText type="defaultSemiBold" style={styles.headerTitle}>
                             Select Therapy Style
                         </ThemedText>
-                        <TouchableOpacity onPress={onClose}>
-                            <IconSymbol name="xmark.circle.fill" size={24} color={theme.icon} />
-                        </TouchableOpacity>
+                        <View style={{ width: 40 }} />
                     </View>
 
                     <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
-                        {ALL_THERAPY_OPTIONS.map((category) => (
-                            <View key={category.category} style={styles.category}>
-                                <ThemedText type="defaultSemiBold" style={styles.categoryTitle}>
-                                    {category.category}
-                                </ThemedText>
-                                {category.styles.map((style) => (
-                                    <TherapyStyleOption
-                                        key={style.name}
-                                        style={style}
-                                        isSelected={activeStyle === style.name}
-                                        onPress={() => handleStylePress(style.name)}
-                                        theme={theme}
-                                    />
+                        <View style={styles.stepContainer}>
+                            <ThemedText type="title" style={styles.stepTitle}>
+                                Conversation inspired by...
+                            </ThemedText>
+                            <ThemedText style={styles.stepDescription}>
+                                Select one or multiple therapy styles for this session
+                            </ThemedText>
+
+                            <View style={styles.therapyStylesContainer}>
+                                {ALL_THERAPY_OPTIONS.map((category) => (
+                                    <View key={category.category} style={styles.categorySection}>
+                                        <ThemedText type="defaultSemiBold" style={styles.categoryTitle}>
+                                            {category.category}
+                                        </ThemedText>
+                                        {category.styles.map((style) => (
+                                            <TherapyStyleOption
+                                                key={style.name}
+                                                style={style}
+                                                isSelected={activeStyles.includes(style.name)}
+                                                onPress={() => handleStylePress(style.name)}
+                                                theme={theme}
+                                                onLearnMore={onLearnMore}
+                                            />
+                                        ))}
+                                    </View>
                                 ))}
                             </View>
-                        ))}
+                        </View>
                         <View style={styles.spacer} />
                     </ScrollView>
 
-                    {/* Selected style preview */}
-                    <View style={[styles.preview, { backgroundColor: theme.primary }]}>
-                        <ThemedText style={styles.previewText}>{activeStyle}</ThemedText>
-                    </View>
+                    {/* Footer with Preview and Continue */}
+                    <View style={[styles.footer, { backgroundColor: theme.background, borderTopColor: theme.icon }]}>
+                        {/* Fixed selected styles preview above Continue button */}
+                        <View style={styles.selectedStylesPreviewSimple}>
+                            <ThemedText style={[styles.selectedStylesPreviewTextSimple, { color: theme.text }]}>
+                                Selected: <ThemedText type="defaultSemiBold">{activeStyles.map(s => STYLE_ABBREVIATIONS[s] || s).join(', ')}</ThemedText>
+                            </ThemedText>
+                        </View>
 
-                    {/* Continue button */}
-                    <TouchableOpacity
-                        style={[styles.continueButton, { backgroundColor: theme.primary }]}
-                        onPress={onClose}
-                    >
-                        <ThemedText style={styles.continueText}>Continue</ThemedText>
-                    </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.continueButton, { backgroundColor: theme.primary }]}
+                            onPress={onClose}
+                        >
+                            <ThemedText style={styles.continueText}>Continue</ThemedText>
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </View>
         </Modal>
@@ -95,49 +129,74 @@ const styles = StyleSheet.create({
         justifyContent: 'flex-end',
     },
     content: {
-        height: '90%',
+        height: '92%', // Matches the tall modal feel
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
         overflow: 'hidden',
     },
     header: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
-        padding: 20,
+        justifyContent: 'space-between',
+        paddingHorizontal: 8,
+        paddingVertical: 12,
         borderBottomWidth: 1,
     },
-    title: {
+    backButton: {
+        padding: 8,
+    },
+    headerTitle: {
         fontSize: 18,
     },
     scroll: {
-        padding: 20,
+        padding: 24,
     },
-    category: {
+    stepContainer: {
+        gap: 16,
+    },
+    stepTitle: {
+        fontSize: 28,
+        marginBottom: 8,
+    },
+    stepDescription: {
+        fontSize: 16,
+        opacity: 0.7,
+        marginBottom: 8,
+    },
+    therapyStylesContainer: {
+        marginTop: 16,
+    },
+    categorySection: {
         marginBottom: 24,
     },
     categoryTitle: {
-        fontSize: 14,
+        fontSize: 16,
         marginBottom: 12,
-        opacity: 0.7,
-        textTransform: 'uppercase',
+        opacity: 0.8,
     },
     spacer: {
-        height: 40,
+        height: 100, // Extra space for footer
     },
-    preview: {
-        paddingVertical: 12,
+    footer: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        padding: 16,
+        borderTopWidth: 1,
+        paddingBottom: 34, // Safe area padding
+    },
+    selectedStylesPreviewSimple: {
+        paddingVertical: 8,
         paddingHorizontal: 16,
         alignItems: 'center',
+        marginBottom: 4,
     },
-    previewText: {
-        color: '#fff',
-        fontWeight: '600',
-        fontSize: 16,
+    selectedStylesPreviewTextSimple: {
+        fontSize: 14,
+        textAlign: 'center',
     },
     continueButton: {
-        marginHorizontal: 16,
-        marginVertical: 12,
         borderRadius: 12,
         paddingVertical: 14,
         alignItems: 'center',

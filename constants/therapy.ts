@@ -86,6 +86,19 @@ export const THERAPY_CATEGORIES = [
             },
         ]
     },
+    {
+        category: 'Specialized & Age-Specific',
+        styles: [
+            {
+                name: 'Sexual Therapy',
+                description: 'Address sexual concerns, intimacy issues, and sexual health in a safe, non-judgmental space.'
+            },
+            {
+                name: 'Child and Adolescent Therapy',
+                description: 'Support for young people traversing developmental stages, behavioral challenges, and identity formation.'
+            },
+        ]
+    },
 ];
 
 export const ALL_THERAPY_OPTIONS = [INTEGRATIVE_OPTION, ...THERAPY_CATEGORIES];
@@ -105,4 +118,6 @@ export const STYLE_ABBREVIATIONS: Record<string, string> = {
     'Systemic / Family Therapy': 'Systemic',
     'Somatic Therapy': 'Somatic',
     'Image Rehearsal Therapy (IRT)': 'IRT',
+    'Sexual Therapy': 'Sexual Therapy',
+    'Child and Adolescent Therapy': 'Child & Adolescent',
 };

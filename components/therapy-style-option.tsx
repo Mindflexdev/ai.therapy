@@ -1,6 +1,5 @@
 import { ThemedText } from '@/components/themed-text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { STYLE_ABBREVIATIONS } from '@/constants/therapy';
 import { useRouter } from 'expo-router';
 import React, { memo } from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
@@ -13,14 +12,19 @@ interface TherapyStyleOptionProps {
     isSelected: boolean;
     onPress: () => void;
     theme: any;
+    onLearnMore?: (styleName: string) => void;
 }
 
-export const TherapyStyleOption = memo(({ style, isSelected, onPress, theme }: TherapyStyleOptionProps) => {
+export const TherapyStyleOption = memo(({ style, isSelected, onPress, theme, onLearnMore }: TherapyStyleOptionProps) => {
     const router = useRouter();
 
     const handleLearnMore = (e: any) => {
         e.stopPropagation();
-        router.push({ pathname: '/therapy-detail-modal', params: { name: style.name } });
+        if (onLearnMore) {
+            onLearnMore(style.name);
+        } else {
+            router.push({ pathname: '/therapy-detail-modal', params: { name: style.name } });
+        }
     };
 
     return (
@@ -42,16 +46,36 @@ export const TherapyStyleOption = memo(({ style, isSelected, onPress, theme }: T
                             { color: isSelected ? '#fff' : theme.text },
                         ]}
                     >
-                        {STYLE_ABBREVIATIONS[style.name] || style.name}
+                        {style.name}
                     </ThemedText>
-                    <TouchableOpacity onPress={handleLearnMore}>
-                        <IconSymbol
-                            name="info.circle"
-                            size={18}
-                            color={isSelected ? '#fff' : theme.primary}
-                        />
-                    </TouchableOpacity>
                 </View>
+
+                {/* Learn More Button */}
+                <TouchableOpacity
+                    style={[
+                        styles.learnMoreButton,
+                        {
+                            backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : (theme.tint ? theme.tint + '15' : '#ccc'),
+                            marginBottom: 8
+                        }
+                    ]}
+                    onPress={handleLearnMore}
+                >
+                    <IconSymbol
+                        name="info.circle"
+                        size={14}
+                        color={isSelected ? '#fff' : theme.tint}
+                    />
+                    <ThemedText
+                        style={[
+                            styles.learnMoreText,
+                            { color: isSelected ? '#fff' : theme.tint }
+                        ]}
+                    >
+                        Learn more
+                    </ThemedText>
+                </TouchableOpacity>
+
                 <ThemedText
                     style={[
                         styles.description,
@@ -86,15 +110,29 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 8,
-        marginBottom: 4,
+        justifyContent: 'space-between',
+        marginBottom: 8,
     },
     name: {
         fontSize: 16,
         fontWeight: '600',
+        flex: 1,
+    },
+    learnMoreButton: {
+        alignSelf: 'flex-start',
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 4,
+        paddingHorizontal: 8,
+        borderRadius: 12,
+        gap: 6,
+    },
+    learnMoreText: {
+        fontSize: 12,
+        fontWeight: '500',
     },
     description: {
-        fontSize: 13,
-        lineHeight: 18,
+        fontSize: 14,
+        lineHeight: 20,
     },
 });

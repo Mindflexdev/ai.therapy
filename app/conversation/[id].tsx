@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { MessageBubble } from '@/components/message-bubble';
 import { ThemedText } from '@/components/themed-text';
+import { TherapyDetailPopup } from '@/components/therapy-detail-popup';
 import { TherapyStyleModal } from '@/components/therapy-style-modal';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { TOPICS } from '@/constants/data';
@@ -52,18 +53,22 @@ export default function ConversationScreen() {
 
     const [character, setCharacter] = useState<Character | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [activeTherapyStyle, setActiveTherapyStyle] = useState('Integrative Therapy (AI decides)');
+    const [activeTherapyStyles, setActiveTherapyStyles] = useState<string[]>(['Integrative Therapy (AI decides)']);
     const [isStyleModalVisible, setIsStyleModalVisible] = useState(false);
+
+    // State for the Detail Popup (Learn More)
+    const [detailStyleName, setDetailStyleName] = useState<string | null>(null);
+
     const [inputText, setInputText] = useState('');
     const [messages, setMessages] = useState<Message[]>([]);
     const [isTyping, setIsTyping] = useState(false);
 
     // Ensure a therapy style is always selected
     useEffect(() => {
-        if (!activeTherapyStyle) {
-            setActiveTherapyStyle('Integrative Therapy (AI decides)');
+        if (activeTherapyStyles.length === 0) {
+            setActiveTherapyStyles(['Integrative Therapy (AI decides)']);
         }
-    }, [activeTherapyStyle]);
+    }, [activeTherapyStyles]);
 
     // Fetch character with caching
     useEffect(() => {
@@ -101,7 +106,7 @@ export default function ConversationScreen() {
     useEffect(() => {
         if (character && messages.length === 0) {
             if (character.therapyStyles && character.therapyStyles.length > 0) {
-                setActiveTherapyStyle(character.therapyStyles[0]);
+                setActiveTherapyStyles(character.therapyStyles);
             }
 
             const greeting = character.greeting ||
@@ -153,11 +158,17 @@ export default function ConversationScreen() {
                 body: JSON.stringify({
                     message: userMsgText,
                     characterName: character?.name,
-                    characterDescription: `${character?.description}\n\n[IMPORTANT: Conduct this session using ${activeTherapyStyle} style.]`,
-                    therapyStyle: activeTherapyStyle,
-                    ...(activeTherapyStyle === 'Integrative Therapy (AI decides)'
-                        ? { therapyStyles: ALL_THERAPY_OPTIONS.flatMap(c => c.styles.map(s => s.name)).join(', ') }
-                        : {}),
+                    characterDescription: activeTherapyStyles.includes('Integrative Therapy (AI decides)')
+                        ? `${character?.description}\n\n[IMPORTANT: Conduct this session using an integrative approach. You have access to all therapy styles and should adapt your approach based on the user's needs and the conversation context.]`
+                        : `${character?.description}\n\n[IMPORTANT: Conduct this session using ${activeTherapyStyles.join(', ')} style(s).]`,
+                    therapyStyle: activeTherapyStyles.join(', '),
+                    ...(activeTherapyStyles.includes('Integrative Therapy (AI decides)')
+                        ? {
+                            therapyStyles: ALL_THERAPY_OPTIONS
+                                .flatMap(c => c.styles.map(s => s.name))
+                                .join(', ')
+                        }
+                        : { therapyStyles: activeTherapyStyles.join(', ') }),
                     sessionId: 'user-session-1',
                     timestamp: new Date().toISOString(),
                 }),
@@ -193,7 +204,7 @@ export default function ConversationScreen() {
             setIsTyping(false);
             scrollToBottom();
         }
-    }, [inputText, isTyping, character, activeTherapyStyle, scrollToBottom]);
+    }, [inputText, isTyping, character, activeTherapyStyles, scrollToBottom]);
 
     // Memoized render function
     const renderMessage = useCallback(({ item }: { item: Message }) => (
@@ -213,6 +224,15 @@ export default function ConversationScreen() {
     const handleStyleModalOpen = useCallback(() => setIsStyleModalVisible(true), []);
     const handleBack = useCallback(() => router.back(), [router]);
     const handleFeedback = useCallback(() => router.push('/feedback'), [router]);
+
+    // Open the detail popup (this will show on top of style modal if both are open)
+    const handleLearnMore = useCallback((styleName: string) => {
+        setDetailStyleName(styleName);
+    }, []);
+
+    const handleDetailPopupClose = useCallback(() => {
+        setDetailStyleName(null);
+    }, []);
 
     // Memoized key press handler
     const handleKeyPress = useCallback((e: any) => {
@@ -291,7 +311,7 @@ export default function ConversationScreen() {
                     >
                         <IconSymbol name="sparkles" size={14} color={theme.primary} />
                         <ThemedText style={styles.styleSelectorText} numberOfLines={1}>
-                            {STYLE_ABBREVIATIONS[activeTherapyStyle] || activeTherapyStyle}
+                            {activeTherapyStyles.map(s => STYLE_ABBREVIATIONS[s] || s).join(', ')}
                         </ThemedText>
                         <IconSymbol name="chevron.down" size={12} color={theme.icon} />
                     </TouchableOpacity>
@@ -307,11 +327,21 @@ export default function ConversationScreen() {
                 </View>
             </View>
 
+            {/* Therapy Style Modal (Main Selection) */}
             <TherapyStyleModal
                 visible={isStyleModalVisible}
-                activeStyle={activeTherapyStyle}
+                activeStyles={activeTherapyStyles}
                 onClose={handleStyleModalClose}
-                onSelectStyle={setActiveTherapyStyle}
+                onSelectStyles={setActiveTherapyStyles}
+                onLearnMore={handleLearnMore}
+                theme={theme}
+            />
+
+            {/* Therapy Detail Popup (Learn More) - Renders on top */}
+            <TherapyDetailPopup
+                visible={!!detailStyleName}
+                therapyName={detailStyleName}
+                onClose={handleDetailPopupClose}
                 theme={theme}
             />
 

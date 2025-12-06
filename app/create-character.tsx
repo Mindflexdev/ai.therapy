@@ -230,10 +230,29 @@ export default function CreateCharacterScreen() {
 
             case 'therapyStyle':
                 const toggleTherapyStyle = (styleName: string) => {
-                    const styles = characterData.therapyStyles.includes(styleName)
-                        ? characterData.therapyStyles.filter(s => s !== styleName)
-                        : [...characterData.therapyStyles, styleName];
-                    setCharacterData({ ...characterData, therapyStyles: styles });
+                    const integrativeName = 'Integrative Therapy (AI decides)';
+
+                    if (characterData.therapyStyles.includes(styleName)) {
+                        // Deselecting a style
+                        const newStyles = characterData.therapyStyles.filter(s => s !== styleName);
+                        // If no styles left, revert to Integrative
+                        setCharacterData({
+                            ...characterData,
+                            therapyStyles: newStyles.length === 0 ? [integrativeName] : newStyles
+                        });
+                    } else {
+                        // Selecting a new style
+                        if (styleName === integrativeName) {
+                            // If selecting Integrative, clear all others
+                            setCharacterData({ ...characterData, therapyStyles: [integrativeName] });
+                        } else {
+                            // If selecting any other style, remove Integrative and add the new one
+                            const newStyles = characterData.therapyStyles
+                                .filter(s => s !== integrativeName)
+                                .concat(styleName);
+                            setCharacterData({ ...characterData, therapyStyles: newStyles });
+                        }
+                    }
                 };
 
                 const isAutomatic = characterData.therapyStyles.length === 0;
@@ -247,14 +266,6 @@ export default function CreateCharacterScreen() {
                             Select one or multiple therapy styles for {characterData.name}
                         </ThemedText>
 
-                        {/* Selected Styles Summary */}
-                        {characterData.therapyStyles.length > 0 && (
-                            <View style={[styles.selectedStylesContainer, { backgroundColor: theme.tint + '20', borderColor: theme.tint }]}>
-                                <ThemedText style={[styles.selectedStylesText, { color: theme.tint }]}>
-                                    Selected: {characterData.therapyStyles.map(s => STYLE_ABBREVIATIONS[s] || s).join(', ')}
-                                </ThemedText>
-                            </View>
-                        )}
 
                         <View style={styles.therapyStylesContainer}>
                             {ALL_THERAPY_OPTIONS.map((category) => (
@@ -533,6 +544,15 @@ export default function CreateCharacterScreen() {
                 </ScrollView>
 
                 <View style={[styles.footer, { backgroundColor: theme.background, borderTopColor: theme.icon }]}>
+                    {/* Show selected therapy styles when on therapy style step */}
+                    {currentStep === 'therapyStyle' && characterData.therapyStyles.length > 0 && (
+                        <View style={styles.selectedStylesPreviewSimple}>
+                            <ThemedText style={[styles.selectedStylesPreviewTextSimple, { color: theme.text }]}>
+                                Selected: <ThemedText type="defaultSemiBold">{characterData.therapyStyles.map(s => STYLE_ABBREVIATIONS[s] || s).join(', ')}</ThemedText>
+                            </ThemedText>
+                        </View>
+                    )}
+
                     {currentStep === 'review' ? (
                         <TouchableOpacity
                             style={[styles.button, { backgroundColor: theme.primary }]}
@@ -801,5 +821,16 @@ const styles = StyleSheet.create({
     selectedStylesText: {
         fontSize: 14,
         fontWeight: '600',
+    },
+    // Fixed selected styles preview above Continue button
+    selectedStylesPreviewSimple: {
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        alignItems: 'center',
+        marginBottom: 4,
+    },
+    selectedStylesPreviewTextSimple: {
+        fontSize: 14,
+        textAlign: 'center',
     },
 });
