@@ -1,6 +1,6 @@
+import { supabase } from '@/lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Character } from './data';
-import { supabase } from '@/lib/supabase';
 
 const STORAGE_KEYS = {
     USER_CHARACTERS: '@therapy_ai_user_characters',
@@ -8,6 +8,7 @@ const STORAGE_KEYS = {
 };
 
 export interface UserCharacter extends Character {
+    goal?: string;
     createdAt: string;
     isPublic: boolean;
     greeting: string;

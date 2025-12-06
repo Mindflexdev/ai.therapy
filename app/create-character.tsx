@@ -20,7 +20,7 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { generateCharacterImage } from '@/lib/webhooks';
 
-type Step = 'name' | 'characteristics' | 'therapyStyle' | 'image' | 'greeting' | 'visibility' | 'review';
+type Step = 'goal' | 'name' | 'characteristics' | 'therapyStyle' | 'image' | 'greeting' | 'visibility' | 'review';
 
 import { ALL_THERAPY_OPTIONS, STYLE_ABBREVIATIONS } from '@/constants/therapy';
 
@@ -30,8 +30,9 @@ export default function CreateCharacterScreen() {
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme ?? 'light'];
 
-    const [currentStep, setCurrentStep] = useState<Step>('name');
+    const [currentStep, setCurrentStep] = useState<Step>('goal');
     const [characterData, setCharacterData] = useState({
+        goal: '',
         name: '',
         characteristics: '',
         therapyStyles: ['Integrative Therapy (AI decides)'] as string[], // Preselect Integrative
@@ -52,6 +53,7 @@ export default function CreateCharacterScreen() {
             try {
                 const charData = JSON.parse(params.characterData as string) as UserCharacter;
                 setCharacterData({
+                    goal: charData.goal || '',
                     name: charData.name,
                     characteristics: charData.description,
                     therapyStyles: charData.therapyStyles || [],
@@ -68,7 +70,7 @@ export default function CreateCharacterScreen() {
     }, [params]);
 
     const handleNext = () => {
-        const steps: Step[] = ['name', 'characteristics', 'therapyStyle', 'image', 'greeting', 'visibility', 'review'];
+        const steps: Step[] = ['goal', 'name', 'characteristics', 'therapyStyle', 'image', 'greeting', 'visibility', 'review'];
         const currentIndex = steps.indexOf(currentStep);
         if (currentIndex < steps.length - 1) {
             setCurrentStep(steps[currentIndex + 1]);
@@ -76,12 +78,13 @@ export default function CreateCharacterScreen() {
     };
 
     const handleBack = () => {
-        const steps: Step[] = ['name', 'characteristics', 'therapyStyle', 'image', 'greeting', 'visibility', 'review'];
+        const steps: Step[] = ['goal', 'name', 'characteristics', 'therapyStyle', 'image', 'greeting', 'visibility', 'review'];
         const currentIndex = steps.indexOf(currentStep);
         if (currentIndex > 0) {
             setCurrentStep(steps[currentIndex - 1]);
         } else {
-            router.back();
+            // When backing out from the first step, go to home tab
+            router.replace('/(tabs)');
         }
     };
 
@@ -127,6 +130,7 @@ export default function CreateCharacterScreen() {
                 image: generatedImageUrl || '/characters/athena.jpg', // Placeholder until AI generates image
                 imageDescription: characterData.imageDescription,
                 description: characterData.characteristics,
+                goal: characterData.goal,
                 therapyStyles: characterData.therapyStyles,
                 type: 'human', // Default type
                 createdAt: editingId ? (JSON.parse(params.characterData as string).createdAt) : new Date().toISOString(),
@@ -163,6 +167,27 @@ export default function CreateCharacterScreen() {
 
     const renderStepContent = () => {
         switch (currentStep) {
+            case 'goal':
+                return (
+                    <View style={styles.stepContainer}>
+                        <ThemedText type="title" style={styles.stepTitle}>
+                            What's your goal?
+                        </ThemedText>
+                        <ThemedText style={styles.stepDescription}>
+                            Tell us what you'd like to work on or achieve with your AI therapist
+                        </ThemedText>
+                        <TextInput
+                            style={[styles.textArea, { backgroundColor: theme.card, color: theme.text }]}
+                            placeholder="e.g., I want to manage my anxiety better, improve my relationships, build confidence..."
+                            placeholderTextColor={theme.icon}
+                            value={characterData.goal}
+                            onChangeText={(text) => setCharacterData({ ...characterData, goal: text })}
+                            multiline
+                            numberOfLines={4}
+                        />
+                    </View>
+                );
+
             case 'name':
                 return (
                     <View style={styles.stepContainer}>
