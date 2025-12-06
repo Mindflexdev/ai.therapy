@@ -89,3 +89,20 @@ export const THERAPY_CATEGORIES = [
 ];
 
 export const ALL_THERAPY_OPTIONS = [INTEGRATIVE_OPTION, ...THERAPY_CATEGORIES];
+
+export const STYLE_ABBREVIATIONS: Record<string, string> = {
+    'Integrative Therapy (AI decides)': 'Integrative',
+    'Cognitive Behavioral Therapy (CBT)': 'CBT',
+    'Acceptance and Commitment Therapy (ACT)': 'ACT',
+    'Dialectical Behavior Therapy (DBT)': 'DBT',
+    'Mindfulness-Based Cognitive Therapy (MBCT)': 'MBCT',
+    'Psychodynamic Therapy': 'Psychodynamic',
+    'Psychoanalysis': 'Psychoanalysis',
+    'Schema Therapy': 'Schema',
+    'Humanistic Therapy': 'Humanistic',
+    'Gestalt Therapy': 'Gestalt',
+    'Emotion-Focused Therapy (EFT)': 'EFT',
+    'Systemic / Family Therapy': 'Systemic',
+    'Somatic Therapy': 'Somatic',
+    'Image Rehearsal Therapy (IRT)': 'IRT',
+};

@@ -8,7 +8,7 @@ import { StyleSheet, View } from 'react-native';
 import 'react-native-reanimated';
 
 import { LoadingDots } from '@/components/loading-dots';
-import { ThemedText } from '@/components/themed-text';
+import { LogoWithDots } from '@/components/logo-with-dots';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { supabase } from '@/lib/supabase';
 import { Session } from '@supabase/supabase-js';
@@ -94,7 +94,7 @@ export default function RootLayout() {
   if (showLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ThemedText style={styles.loadingText}>ai.therapy</ThemedText>
+        <LogoWithDots fontSize={32} color="#2D3436" />
         <LoadingDots />
       </View>
     );
@@ -134,6 +134,14 @@ export default function RootLayout() {
           name="subscribe"
           options={{
             headerShown: false,
+            animation: 'slide_from_bottom'
+          }}
+        />
+        <Stack.Screen
+          name="therapy-detail-modal"
+          options={{
+            headerShown: false,
+            presentation: 'modal',
             animation: 'slide_from_bottom'
           }}
         />

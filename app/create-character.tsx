@@ -1,28 +1,28 @@
-﻿import React, { useState } from 'react';
-import { Image } from 'expo-image';
+﻿import { Image } from 'expo-image';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useState } from 'react';
 import {
-    StyleSheet,
-    View,
-    TouchableOpacity,
-    TextInput,
-    ScrollView,
+    Alert,
     KeyboardAvoidingView,
     Platform,
-    Alert,
+    ScrollView,
+    StyleSheet,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
 
 import { ThemedText } from '@/components/themed-text';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { saveCharacter, UserCharacter } from '@/constants/storage';
+import { Colors } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { generateCharacterImage } from '@/lib/webhooks';
 
 type Step = 'name' | 'characteristics' | 'therapyStyle' | 'image' | 'greeting' | 'visibility' | 'review';
 
-import { ALL_THERAPY_OPTIONS } from '@/constants/therapy';
+import { ALL_THERAPY_OPTIONS, STYLE_ABBREVIATIONS } from '@/constants/therapy';
 
 
 export default function CreateCharacterScreen() {
@@ -42,6 +42,30 @@ export default function CreateCharacterScreen() {
     const [isCreating, setIsCreating] = useState(false);
     const [isGeneratingImage, setIsGeneratingImage] = useState(false);
     const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
+
+    const params = useLocalSearchParams();
+    const [editingId, setEditingId] = useState<string | null>(null);
+
+    // Initial load for edit mode
+    React.useEffect(() => {
+        if (params.editMode === 'true' && params.characterData) {
+            try {
+                const charData = JSON.parse(params.characterData as string) as UserCharacter;
+                setCharacterData({
+                    name: charData.name,
+                    characteristics: charData.description,
+                    therapyStyles: charData.therapyStyles || [],
+                    imageDescription: charData.imageDescription || '',
+                    greeting: charData.greeting || '',
+                    isPublic: charData.isPublic || false,
+                });
+                setGeneratedImageUrl(charData.image);
+                setEditingId(charData.id);
+            } catch (e) {
+                console.error("Failed to parse character data for editing", e);
+            }
+        }
+    }, [params]);
 
     const handleNext = () => {
         const steps: Step[] = ['name', 'characteristics', 'therapyStyle', 'image', 'greeting', 'visibility', 'review'];
@@ -93,8 +117,8 @@ export default function CreateCharacterScreen() {
 
         setIsCreating(true);
         try {
-            // Generate unique ID
-            const characterId = `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+            // Generate unique ID or use existing
+            const characterId = editingId || `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
             // Create character object
             const newCharacter: UserCharacter = {
@@ -105,7 +129,7 @@ export default function CreateCharacterScreen() {
                 description: characterData.characteristics,
                 therapyStyles: characterData.therapyStyles,
                 type: 'human', // Default type
-                createdAt: new Date().toISOString(),
+                createdAt: editingId ? (JSON.parse(params.characterData as string).createdAt) : new Date().toISOString(),
                 isPublic: characterData.isPublic,
                 greeting: characterData.greeting,
             };
@@ -115,12 +139,12 @@ export default function CreateCharacterScreen() {
 
             // Show success message
             if (Platform.OS === 'web') {
-                window.alert(`${characterData.name} has been created${characterData.isPublic ? ' and is now public' : ''}!`);
+                window.alert(`${characterData.name} has been ${editingId ? 'updated' : 'created'}${characterData.isPublic ? ' and is now public' : ''}!`);
                 router.back();
             } else {
                 Alert.alert(
                     'Success!',
-                    `${characterData.name} has been created${characterData.isPublic ? ' and is now public' : ''}!`,
+                    `${characterData.name} has been ${editingId ? 'updated' : 'created'}${characterData.isPublic ? ' and is now public' : ''}!`,
                     [
                         {
                             text: 'OK',
@@ -198,7 +222,16 @@ export default function CreateCharacterScreen() {
                             Select one or multiple therapy styles for {characterData.name}
                         </ThemedText>
 
-                        <ScrollView style={styles.therapyStylesContainer} showsVerticalScrollIndicator={false}>
+                        {/* Selected Styles Summary */}
+                        {characterData.therapyStyles.length > 0 && (
+                            <View style={[styles.selectedStylesContainer, { backgroundColor: theme.tint + '20', borderColor: theme.tint }]}>
+                                <ThemedText style={[styles.selectedStylesText, { color: theme.tint }]}>
+                                    Selected: {characterData.therapyStyles.map(s => STYLE_ABBREVIATIONS[s] || s).join(', ')}
+                                </ThemedText>
+                            </View>
+                        )}
+
+                        <View style={styles.therapyStylesContainer}>
                             {ALL_THERAPY_OPTIONS.map((category) => (
                                 <View key={category.category} style={styles.categorySection}>
                                     <ThemedText type="defaultSemiBold" style={styles.categoryTitle}>
@@ -219,12 +252,26 @@ export default function CreateCharacterScreen() {
                                                 onPress={() => toggleTherapyStyle(style.name)}
                                             >
                                                 <View style={styles.therapyStyleContent}>
-                                                    <ThemedText style={[
-                                                        styles.therapyStyleName,
-                                                        { color: isSelected ? '#fff' : theme.text }
-                                                    ]}>
-                                                        {style.name}
-                                                    </ThemedText>
+                                                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                                                        <ThemedText style={[
+                                                            styles.therapyStyleName,
+                                                            { color: isSelected ? '#fff' : theme.text, flex: 1, marginRight: 8 }
+                                                        ]}>
+                                                            {style.name}
+                                                        </ThemedText>
+                                                    </View>
+
+                                                    <TouchableOpacity
+                                                        style={[styles.learnMoreButton, { backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : theme.tint + '15', marginBottom: 6 }]}
+                                                        onPress={(e) => {
+                                                            e.stopPropagation();
+                                                            router.push({ pathname: '/therapy-detail-modal', params: { name: style.name } });
+                                                        }}
+                                                    >
+                                                        <IconSymbol name="info.circle" size={14} color={isSelected ? '#fff' : theme.tint} />
+                                                        <ThemedText style={[styles.learnMoreText, { color: isSelected ? '#fff' : theme.tint }]}>Learn more</ThemedText>
+                                                    </TouchableOpacity>
+
                                                     <ThemedText style={[
                                                         styles.therapyStyleDescription,
                                                         { color: isSelected ? 'rgba(255,255,255,0.9)' : theme.icon }
@@ -240,9 +287,7 @@ export default function CreateCharacterScreen() {
                                     })}
                                 </View>
                             ))}
-
-
-                        </ScrollView>
+                        </View>
                     </View>
                 );
 
@@ -422,8 +467,8 @@ export default function CreateCharacterScreen() {
                                 <ThemedText style={styles.reviewLabel}>Therapy Styles:</ThemedText>
                                 <ThemedText style={styles.reviewValue}>
                                     {characterData.therapyStyles.length > 0
-                                        ? characterData.therapyStyles.join(', ')
-                                        : 'Integrative Therapy (AI decides)'}
+                                        ? characterData.therapyStyles.map(s => STYLE_ABBREVIATIONS[s] || s).join(', ')
+                                        : 'Integrative'}
                                 </ThemedText>
                             </View>
                             <View style={styles.reviewRow}>
@@ -448,7 +493,7 @@ export default function CreateCharacterScreen() {
                     <IconSymbol name="chevron.right" size={24} color={theme.text} style={{ transform: [{ rotate: '180deg' }] }} />
                 </TouchableOpacity>
                 <ThemedText type="defaultSemiBold" style={styles.headerTitle}>
-                    Create Character
+                    {editingId ? 'Edit Character' : 'Create Character'}
                 </ThemedText>
                 <View style={{ width: 40 }} />
             </View>
@@ -467,7 +512,7 @@ export default function CreateCharacterScreen() {
                         <TouchableOpacity
                             style={[styles.button, { backgroundColor: theme.primary }]}
                             onPress={handleCreate}>
-                            <ThemedText style={styles.buttonText}>Create Character!</ThemedText>
+                            <ThemedText style={styles.buttonText}>{editingId ? 'Save Changes' : 'Create Character!'}</ThemedText>
                         </TouchableOpacity>
                     ) : (
                         <TouchableOpacity
@@ -619,7 +664,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
     },
     therapyStylesContainer: {
-        maxHeight: 400,
         marginTop: 16,
     },
     therapyStyleButton: {
@@ -660,6 +704,19 @@ const styles = StyleSheet.create({
     therapyStyleDescription: {
         fontSize: 13,
         lineHeight: 18,
+    },
+    learnMoreButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 8,
+        alignSelf: 'flex-start',
+    },
+    learnMoreText: {
+        fontSize: 12,
+        fontWeight: '600',
     },
     imagePreviewSection: {
         alignItems: 'center',
@@ -709,5 +766,15 @@ const styles = StyleSheet.create({
         opacity: 0.7,
         marginTop: 12,
         textAlign: 'center',
+    },
+    selectedStylesContainer: {
+        padding: 12,
+        borderRadius: 8,
+        borderWidth: 1,
+        marginBottom: 12,
+    },
+    selectedStylesText: {
+        fontSize: 14,
+        fontWeight: '600',
     },
 });

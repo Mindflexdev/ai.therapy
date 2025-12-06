@@ -1,9 +1,10 @@
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import { Dimensions, FlatList, StyleSheet, TouchableOpacity, View, ViewToken } from 'react-native';
+import { Dimensions, FlatList, Platform, Pressable, StyleSheet, TextInput, TouchableOpacity, View, ViewToken } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { LogoWithDots } from '@/components/logo-with-dots';
 import { ThemedText } from '@/components/themed-text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Character, Topic, TOPICS } from '@/constants/data';
@@ -35,6 +36,14 @@ export default function HomeScreen() {
   const [sections, setSections] = useState<TopicSection[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasCreatedCharacters, setHasCreatedCharacters] = useState(false);
+  const [isSearchMode, setIsSearchMode] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredSections, setFilteredSections] = useState<TopicSection[]>([]);
+
+  // Menu & Modal States
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  const [shareCharacter, setShareCharacter] = useState<Character | null>(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<Character | null>(null);
 
   const mainListRef = useRef<FlatList>(null);
   const headerListRef = useRef<FlatList>(null);
@@ -84,6 +93,22 @@ export default function HomeScreen() {
 
     loadData();
   }, []);
+
+  // Filter sections based on search query
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      setFilteredSections(sections);
+    } else {
+      const query = searchQuery.toLowerCase();
+      const filtered = sections.map(section => ({
+        ...section,
+        characters: section.characters.filter(char =>
+          char.name.toLowerCase().includes(query)
+        )
+      })).filter(section => section.characters.length > 0);
+      setFilteredSections(filtered);
+    }
+  }, [searchQuery, sections]);
 
   // Handle scroll spy
   const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
@@ -138,12 +163,96 @@ export default function HomeScreen() {
     );
   };
 
-  const renderCharacterCard = (item: Character) => (
+  const handleShare = (char: Character) => {
+    setActiveMenuId(null);
+    setShareCharacter(char);
+  };
+
+  const handleEdit = (char: Character) => {
+    setActiveMenuId(null);
+    router.push({
+      pathname: '/create-character',
+      params: { editMode: 'true', characterData: JSON.stringify(char) }
+    } as any);
+  };
+
+  const handleDeleteRequest = (char: Character) => {
+    setActiveMenuId(null);
+    setDeleteConfirmation(char);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfirmation) return;
+
+    try {
+      const { deleteCharacter } = await import('@/constants/storage');
+      await deleteCharacter(deleteConfirmation.id);
+
+      // Reload data logic (duplicated for now, could be refactored)
+      setIsLoading(true);
+      const groupedData = await getAllCharactersGroupedByTopic();
+      const { getUserCharacters } = await import('@/constants/storage');
+      const userChars = await getUserCharacters();
+      const publicUserChars = userChars.filter(c => c.isPublic);
+
+      const allSections: TopicSection[] = [];
+      if (publicUserChars.length > 0) {
+        setHasCreatedCharacters(true);
+        allSections.push({ id: 'created', title: 'Created', characters: publicUserChars });
+      } else {
+        setHasCreatedCharacters(false);
+      }
+
+      const mappedSections = TOPICS.map(topic => {
+        const foundGroup = groupedData.find(g => g.topicId === topic.id);
+        return { id: topic.id, title: topic.title, characters: foundGroup ? foundGroup.characters : [] };
+      }).filter(s => s.characters.length > 0);
+
+      setSections([...allSections, ...mappedSections]);
+    } catch (error) {
+      console.error('Delete failed', error);
+    } finally {
+      setIsLoading(false);
+      setDeleteConfirmation(null);
+    }
+  };
+
+  const renderCharacterCard = (item: Character, sectionId?: string) => (
     <TouchableOpacity
       key={item.id}
       style={[styles.characterCard, { backgroundColor: theme.card }]}
       onPress={() => router.push(`/conversation/${item.id}` as any)}>
       <Image source={{ uri: item.image }} style={styles.characterImage} contentFit="cover" />
+      {sectionId === 'created' && (
+        <View style={{ position: 'absolute', top: 8, right: 8, zIndex: 10 }}>
+          <TouchableOpacity
+            style={styles.menuButton}
+            onPress={(e) => {
+              e.stopPropagation();
+              setActiveMenuId(activeMenuId === item.id ? null : item.id);
+            }}
+          >
+            <IconSymbol name="ellipsis.vertical" size={20} color="#fff" />
+          </TouchableOpacity>
+
+          {activeMenuId === item.id && (
+            <View style={[styles.menuDropdown, { backgroundColor: theme.card }]}>
+              <TouchableOpacity style={styles.menuItem} onPress={(e) => { e.stopPropagation(); handleShare(item); }}>
+                <IconSymbol name="square.and.arrow.up" size={16} color={theme.text} />
+                <ThemedText style={styles.menuText}>Share</ThemedText>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.menuItem} onPress={(e) => { e.stopPropagation(); handleEdit(item); }}>
+                <IconSymbol name="pencil" size={16} color={theme.text} />
+                <ThemedText style={styles.menuText}>Edit</ThemedText>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.menuItem, { borderBottomWidth: 0 }]} onPress={(e) => { e.stopPropagation(); handleDeleteRequest(item); }}>
+                <IconSymbol name="trash" size={16} color="#FF3B30" />
+                <ThemedText style={[styles.menuText, { color: '#FF3B30' }]}>Delete</ThemedText>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+      )}
       <View style={styles.characterInfo}>
         <ThemedText type="defaultSemiBold" style={styles.characterName}>
           {item.name}
@@ -160,7 +269,7 @@ export default function HomeScreen() {
       <View style={styles.sectionContainer}>
         <ThemedText type="subtitle" style={styles.sectionTitle}>{item.title}</ThemedText>
         <View style={styles.gridContainer}>
-          {item.characters.map(char => renderCharacterCard(char))}
+          {item.characters.map(char => renderCharacterCard(char, item.id))}
         </View>
       </View>
     );
@@ -169,57 +278,91 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <ThemedText type="title" style={styles.logoText}>
-            ai.therapy
-          </ThemedText>
-          <TouchableOpacity
-            style={styles.premiumButton}
-            onPress={() => router.push('/subscribe' as any)}>
-            <ThemedText style={styles.premiumButtonText}>Get ai.therapy +</ThemedText>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.headerRight}>
-          <TouchableOpacity style={styles.searchButton}>
-            <IconSymbol name="magnifyingglass" size={24} color={theme.text} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.feedbackButton, { backgroundColor: theme.primary }]}
-            onPress={() => router.push('/feedback')}
-          >
-            <ThemedText style={styles.feedbackButtonText}>Feedback?</ThemedText>
-          </TouchableOpacity>
-        </View>
+        {!isSearchMode ? (
+          <>
+            <View style={styles.headerLeft}>
+              <LogoWithDots fontSize={24} />
+              <TouchableOpacity
+                style={styles.premiumButton}
+                onPress={() => router.push('/subscribe' as any)}>
+                <ThemedText style={styles.premiumButtonText}>Get ai.therapy +</ThemedText>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.headerRight}>
+              <TouchableOpacity
+                style={styles.searchButton}
+                onPress={() => setIsSearchMode(true)}>
+                <IconSymbol name="magnifyingglass" size={24} color={theme.text} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.feedbackButton, { backgroundColor: theme.primary }]}
+                onPress={() => router.push('/feedback')}
+              >
+                <ThemedText style={styles.feedbackButtonText}>Feedback?</ThemedText>
+              </TouchableOpacity>
+            </View>
+          </>
+        ) : (
+          <View style={styles.searchContainer}>
+            <IconSymbol name="magnifyingglass" size={20} color={theme.icon} style={styles.searchIcon} />
+            <TextInput
+              style={[styles.searchInput, { color: theme.text }]}
+              placeholder="Search characters..."
+              placeholderTextColor={theme.icon}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              autoFocus
+              returnKeyType="search"
+            />
+            <TouchableOpacity
+              onPress={() => {
+                setIsSearchMode(false);
+                setSearchQuery('');
+              }}
+              style={styles.searchCloseButton}
+            >
+              <ThemedText style={{ color: theme.primary, fontWeight: '600' }}>Cancel</ThemedText>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
       <View style={styles.topicsRow}>
-        {/* Create Button or Created Chip */}
-        <TouchableOpacity
-          onPress={() => hasCreatedCharacters ? handleTopicPress('created') : router.push('/(tabs)/create')}
-          style={[
-            styles.createChip,
-            {
-              backgroundColor: (hasCreatedCharacters && selectedTopicId === 'created') ? theme.tint : theme.card,
-              borderColor: (hasCreatedCharacters && selectedTopicId === 'created') ? theme.tint : theme.icon,
-            },
-          ]}>
-          {hasCreatedCharacters ? (
-            <ThemedText
-              style={[
-                styles.topicText,
-                { color: selectedTopicId === 'created' ? '#fff' : theme.text, fontWeight: selectedTopicId === 'created' ? '600' : '400' },
-              ]}>
-              Created
-            </ThemedText>
-          ) : (
-            <IconSymbol name="plus" size={20} color={theme.tint} />
-          )}
-        </TouchableOpacity>
-
         <FlatList
           ref={headerListRef}
-          data={TOPICS}
-          renderItem={renderTopicChip}
+          data={[
+            { id: 'create-or-created', title: hasCreatedCharacters ? 'Created' : '+', isSpecial: true },
+            ...TOPICS
+          ]}
+          renderItem={({ item }) => {
+            if ((item as any).isSpecial) {
+              const isSelected = hasCreatedCharacters && selectedTopicId === 'created';
+              return (
+                <TouchableOpacity
+                  onPress={() => hasCreatedCharacters ? handleTopicPress('created') : router.push('/(tabs)/create')}
+                  style={[
+                    styles.createChip,
+                    {
+                      backgroundColor: isSelected ? theme.tint : theme.card,
+                      borderColor: isSelected ? theme.tint : theme.icon,
+                    },
+                  ]}>
+                  {hasCreatedCharacters ? (
+                    <ThemedText
+                      style={[
+                        styles.topicText,
+                        { color: isSelected ? '#fff' : theme.text, fontWeight: isSelected ? '600' : '400' },
+                      ]}>
+                      Created
+                    </ThemedText>
+                  ) : (
+                    <IconSymbol name="plus" size={20} color={theme.tint} />
+                  )}
+                </TouchableOpacity>
+              );
+            }
+            return renderTopicChip({ item: item as Topic });
+          }}
           keyExtractor={(item) => item.id}
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -230,7 +373,7 @@ export default function HomeScreen() {
 
       <FlatList
         ref={mainListRef}
-        data={sections}
+        data={filteredSections}
         renderItem={renderSection}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
@@ -249,6 +392,65 @@ export default function HomeScreen() {
         }
         contentContainerStyle={{ paddingBottom: 100 }}
       />
+
+      {/* Share Modal */}
+      {shareCharacter && (
+        <Pressable style={styles.modalOverlay} onPress={() => setShareCharacter(null)}>
+          <Pressable style={[styles.modalContent, { backgroundColor: theme.card }]} onPress={(e) => e.stopPropagation()}>
+            <View style={styles.modalHeader}>
+              <ThemedText type="subtitle">Share Character</ThemedText>
+              <TouchableOpacity onPress={() => setShareCharacter(null)}>
+                <IconSymbol name="xmark.circle.fill" size={24} color={theme.icon} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.shareProfile}>
+              <Image source={{ uri: shareCharacter.image }} style={styles.shareImage} />
+              <ThemedText type="defaultSemiBold" style={{ marginTop: 12 }}>{shareCharacter.name}</ThemedText>
+              <ThemedText style={styles.shareDesc}>{shareCharacter.description}</ThemedText>
+            </View>
+
+            <View style={{ flexDirection: 'row', gap: 12, width: '100%', alignItems: 'center' }}>
+              <View style={[styles.linkContainer, { backgroundColor: theme.background, flex: 1 }]}>
+                <ThemedText style={styles.linkText} numberOfLines={1}>
+                  https://ai.therapy/c/{shareCharacter.id}
+                </ThemedText>
+              </View>
+              <TouchableOpacity style={styles.copyButton}>
+                <IconSymbol name="doc.on.doc" size={16} color="#fff" />
+                <ThemedText style={styles.copyButtonText}>Copy</ThemedText>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      )}
+
+      {/* Delete Modal */}
+      {deleteConfirmation && (
+        <Pressable style={styles.modalOverlay} onPress={() => setDeleteConfirmation(null)}>
+          <Pressable style={[styles.modalContent, { backgroundColor: theme.card }]} onPress={(e) => e.stopPropagation()}>
+            <ThemedText type="subtitle" style={{ marginBottom: 12 }}>Delete Character?</ThemedText>
+            <ThemedText style={{ marginBottom: 24, textAlign: 'center', opacity: 0.8 }}>
+              Are you sure you want to delete "{deleteConfirmation.name}"? This action cannot be undone.
+            </ThemedText>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: theme.background }]}
+                onPress={() => setDeleteConfirmation(null)}
+              >
+                <ThemedText>Cancel</ThemedText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: '#FF3B30' }]}
+                onPress={confirmDelete}
+              >
+                <ThemedText style={{ color: '#fff', fontWeight: '600' }}>Delete</ThemedText>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      )}
     </SafeAreaView>
   );
 }
@@ -302,6 +504,32 @@ const styles = StyleSheet.create({
   searchButton: {
     padding: 8,
   },
+  searchContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0F0F0',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 44,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    height: 44,
+    ...Platform.select({
+      web: {
+        outlineStyle: 'none' as any,
+      }
+    })
+  },
+  searchCloseButton: {
+    padding: 4,
+    marginLeft: 8,
+  },
   topicsList: {
     maxHeight: 60,
   },
@@ -318,7 +546,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 8,
   },
   topicsContainer: {
     paddingHorizontal: 0,
@@ -359,11 +586,123 @@ const styles = StyleSheet.create({
     width: '100%',
     height: CARD_WIDTH * 1.2, // Portrait aspect ratio
   },
+  menuButton: {
+    padding: 8,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 20,
+  },
+  menuDropdown: {
+    position: 'absolute',
+    top: 36,
+    right: 0,
+    width: 150,
+    borderRadius: 12,
+    padding: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
+  },
+  menuText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 100,
+  },
+  modalContent: {
+    width: '85%',
+    borderRadius: 20,
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  modalHeader: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  shareProfile: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  shareImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+  },
+  shareDesc: {
+    textAlign: 'center',
+    fontSize: 13,
+    opacity: 0.7,
+    marginTop: 4,
+  },
+  linkContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.05)',
+  },
+  linkText: {
+    flex: 1,
+    paddingHorizontal: 4,
+    fontSize: 13,
+    opacity: 0.6,
+  },
+  copyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: '#5B8FD8',
+    borderRadius: 8,
+  },
+  copyButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
   characterInfo: {
     padding: 12,
   },
   characterName: {
-    fontSize: 16,
     marginBottom: 4,
   },
   characterDesc: {

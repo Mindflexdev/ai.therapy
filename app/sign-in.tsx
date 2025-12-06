@@ -1,4 +1,5 @@
 import { LoadingDots } from '@/components/loading-dots';
+import { LogoWithDots } from '@/components/logo-with-dots';
 import { ThemedText } from '@/components/themed-text';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -71,7 +72,7 @@ export default function SignInScreen() {
     if (loading) {
         return (
             <View style={styles.loadingContainer}>
-                <ThemedText style={styles.loadingText}>ai.therapy</ThemedText>
+                <LogoWithDots fontSize={32} color="#2D3436" />
                 <LoadingDots />
             </View>
         );
@@ -82,7 +83,7 @@ export default function SignInScreen() {
             <View style={styles.content}>
                 {/* Logo Section */}
                 <View style={styles.logoContainer}>
-                    <ThemedText style={styles.logoText}>ai.therapy</ThemedText>
+                    <LogoWithDots fontSize={24} color="#1a1a1a" />
                 </View>
 
                 {/* Hero Image - Centered */}
