@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -82,26 +82,44 @@ export default function ProfileScreen() {
             if (!analyzing) {
                 setAnalyzing(true); // Show analyzing UI
 
-                // POST to n8n
-                const response = await fetch(N8N_WEBHOOK_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId: session.user.id }) // n8n fetches history
-                });
+                let response;
+                let error;
 
-                if (response.ok) {
+                // Retry loop (3 attempts)
+                for (let i = 0; i < 3; i++) {
+                    try {
+                        console.log(`[Profile] Calling n8n Webhook (Attempt ${i + 1})...`);
+                        response = await fetch(N8N_WEBHOOK_URL, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${session.access_token}`
+                            },
+                            body: JSON.stringify({ userId: session.user.id })
+                        });
+
+                        if (response.ok) break; // Success!
+                        console.warn(`[Profile] n8n Attempt ${i + 1} failed: Status ${response.status}`);
+                    } catch (e) {
+                        console.warn(`[Profile] n8n Attempt ${i + 1} error:`, e);
+                        error = e;
+                    }
+                    // Wait 1s before retry, unless it's the last attempt
+                    if (i < 2) await new Promise(r => setTimeout(r, 1000));
+                }
+
+                if (response && response.ok) {
                     const result = await response.json();
+                    console.log("[Profile] n8n Analysis Success:", Object.keys(result));
 
                     if (result && result.tracking_data) {
                         setAnalyticsData(result.tracking_data);
                         setDailyInsight(result.daily_insight || "Here is your daily analysis.");
                         setLastUpdated(new Date());
-
-                        // (Optional) The n8n workflow should save to Supabase, 
-                        // but we can also update state immediately here.
                     }
                 } else {
-                    console.warn("n8n Analysis failed:", response.status);
+                    console.error("[Profile] All n8n analytics attempts failed.", error || response?.status);
+                    Alert.alert("Analysis Failed", "Could not connect to the AI analyst. Please try again later.");
                 }
                 setAnalyzing(false);
             }
@@ -114,6 +132,7 @@ export default function ProfileScreen() {
 
     useFocusEffect(
         useCallback(() => {
+            console.log("Profile Screen Focused - Fetching Data");
             fetchAnalytics();
         }, [])
     );
