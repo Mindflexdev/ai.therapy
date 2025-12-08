@@ -63,6 +63,32 @@ export default function ConversationScreen() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [isTyping, setIsTyping] = useState(false);
 
+    const [userData, setUserData] = useState<any>(null);
+    const [session, setSession] = useState<any>(null);
+
+    // Fetch user data and session
+    useEffect(() => {
+        const fetchUserAndSession = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            setSession(session);
+
+            if (session?.user) {
+                const { data, error } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('id', session.user.id)
+                    .single();
+
+                if (data) {
+                    setUserData(data);
+                } else if (error) {
+                    console.log('Error fetching user data:', error);
+                }
+            }
+        };
+        fetchUserAndSession();
+    }, []);
+
     // Ensure a therapy style is always selected
     useEffect(() => {
         if (activeTherapyStyles.length === 0) {
@@ -144,8 +170,10 @@ export default function ConversationScreen() {
         scrollToBottom();
 
         try {
+            const currentUserId = session?.user?.id || 'anonymous';
+
             const token = await createJWT({
-                userId: 'user-session-1',
+                userId: currentUserId,
                 action: 'chat_message',
             });
 
@@ -169,7 +197,8 @@ export default function ConversationScreen() {
                                 .join(', ')
                         }
                         : { therapyStyles: activeTherapyStyles.join(', ') }),
-                    sessionId: 'user-session-1',
+                    sessionId: currentUserId,
+                    user: userData || { id: currentUserId }, // Include user data from Supabase
                     timestamp: new Date().toISOString(),
                 }),
             });
