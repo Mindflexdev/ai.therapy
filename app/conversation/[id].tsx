@@ -1,6 +1,5 @@
-import { Audio } from 'expo-av';
-import * as FileSystem from 'expo-file-system';
-import { Image } from 'expo-image';
+// import * as FileSystem from 'expo-file-system'; // REMOVED
+import { uploadAudioFile } from '@/lib/audio-upload'; // Added
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -16,6 +15,34 @@ import {
     View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+// ... inside component ...
+
+const uploadAudio = async (uri: string) => {
+    setIsTranscribing(true);
+    try {
+        const currentUserId = session?.user?.id || 'anonymous';
+        const token = await createJWT({
+            userId: currentUserId,
+            action: 'audio_transcription',
+        });
+
+        // Use the platform-agnostic helper
+        const responseData = await uploadAudioFile(uri, token, AUDIO_WEBHOOK_URL);
+
+        const transcription = responseData.text || responseData.transcription || responseData.output;
+
+        if (transcription) {
+            sendMessage(transcription);
+        }
+
+    } catch (error) {
+        console.error("Transcription error:", error);
+        alert("Could not transcribe audio.");
+    } finally {
+        setIsTranscribing(false);
+    }
+};
 
 import { MessageBubble } from '@/components/message-bubble';
 import { ThemedText } from '@/components/themed-text';
