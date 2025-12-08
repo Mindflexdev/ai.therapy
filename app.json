@@ -38,6 +38,12 @@
             "backgroundColor": "#000000"
           }
         }
+      ],
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Allow ai.therapy to access your microphone to record voice messages for therapy sessions."
+        }
       ]
     ],
     "experiments": {

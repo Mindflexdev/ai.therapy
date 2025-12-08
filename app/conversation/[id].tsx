@@ -1,8 +1,12 @@
+import { Audio } from 'expo-av';
+import * as FileSystem from 'expo-file-system';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     ActivityIndicator,
+    Animated,
+    Easing,
     FlatList,
     KeyboardAvoidingView,
     Platform,
@@ -24,6 +28,7 @@ import { ALL_THERAPY_OPTIONS, STYLE_ABBREVIATIONS } from '@/constants/therapy';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { createJWT } from '@/lib/jwt';
 import { createCacheKey, queryCache } from '@/lib/query-cache';
+import { generateSessionId } from '@/lib/session';
 import { supabase } from '@/lib/supabase';
 
 interface Message {
@@ -43,6 +48,7 @@ interface Character {
 }
 
 const WEBHOOK_URL = 'https://mindflex.app.n8n.cloud/webhook/b4d0ede8-b771-4c33-aceb-83dcb44b0bf5';
+const AUDIO_WEBHOOK_URL = 'https://mindflex.app.n8n.cloud/webhook/63d418a6-cafe-43e7-b1c6-84405a761a32';
 
 export default function ConversationScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -65,6 +71,46 @@ export default function ConversationScreen() {
 
     const [userData, setUserData] = useState<any>(null);
     const [session, setSession] = useState<any>(null);
+
+    // Audio State
+    const [recording, setRecording] = useState<Audio.Recording | null>(null);
+    const [isRecording, setIsRecording] = useState(false);
+    const [isTranscribing, setIsTranscribing] = useState(false);
+    const [soundLevel, setSoundLevel] = useState(0);
+    const pulseAnim = useRef(new Animated.Value(1)).current;
+
+    // Cleanup recording on unmount
+    useEffect(() => {
+        return () => {
+            if (recording) {
+                stopRecording();
+            }
+        };
+    }, []);
+
+    // Animation Loop
+    useEffect(() => {
+        if (isRecording) {
+            Animated.loop(
+                Animated.sequence([
+                    Animated.timing(pulseAnim, {
+                        toValue: 1.2 + (soundLevel * 0.1), // minimal pulse + sound level
+                        duration: 500,
+                        easing: Easing.inOut(Easing.ease),
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(pulseAnim, {
+                        toValue: 1,
+                        duration: 500,
+                        easing: Easing.inOut(Easing.ease),
+                        useNativeDriver: true,
+                    }),
+                ])
+            ).start();
+        } else {
+            pulseAnim.setValue(1);
+        }
+    }, [isRecording, soundLevel]);
 
     // Fetch user data and session
     useEffect(() => {
@@ -128,35 +174,222 @@ export default function ConversationScreen() {
         fetchCharacter();
     }, [id]);
 
-    // Set initial greeting and therapy style
+    // Load messages from "memory" table on mount (Session Persistence)
     useEffect(() => {
-        if (character && messages.length === 0) {
-            if (character.therapyStyles && character.therapyStyles.length > 0) {
+        const loadHistory = async () => {
+            if (!session?.user?.id || !character) return;
+
+            setIsLoading(true);
+            const sessionId = generateSessionId(session.user.id, character.id); // Use Character ID for stability
+
+            // 1. Fetch Chat History from 'memory' (n8n writes here)
+            // n8n memory format: { session_id, message: "JSON_STRING" }
+            const { data: memoryData, error } = await supabase
+                .from('memory')
+                .select('*')
+                .eq('session_id', sessionId)
+                .order('created_at', { ascending: true });
+
+            if (memoryData && memoryData.length > 0) {
+                const parsedMessages: Message[] = memoryData.map((row: any) => {
+                    try {
+                        const msgContent = JSON.parse(row.message);
+                        // LangChain format: { type: 'human' | 'ai', content: 'text' }
+                        return {
+                            id: row.id.toString(),
+                            text: msgContent.content || '',
+                            isUser: msgContent.type === 'human',
+                            timestamp: new Date(row.created_at),
+                        };
+                    } catch (e) {
+                        return null;
+                    }
+                }).filter((msg: any) => msg !== null && msg.text); // Filter out bad parses
+
+                setMessages(parsedMessages);
+            } else {
+                // No history? Set initial greeting
+                const greeting = character.greeting ||
+                    `Hello! I'm ${character.name}. ${character.description} I'm here to support you on your journey. How are you feeling today?`;
+
+                setMessages([{
+                    id: '1',
+                    text: greeting,
+                    isUser: false,
+                    timestamp: new Date(),
+                }]);
+            }
+
+            // 2. Fetch Active Therapy Styles from 'chat_sessions'
+            const { data: sessionData } = await supabase
+                .from('chat_sessions')
+                .select('active_therapy_styles')
+                .eq('user_id', session.user.id)
+                .eq('character_id', character.id)
+                .single();
+
+            if (sessionData?.active_therapy_styles) {
+                setActiveTherapyStyles(sessionData.active_therapy_styles);
+            } else if (character.therapyStyles && character.therapyStyles.length > 0 && messages.length === 0) {
+                // Default handling only if new chat
                 setActiveTherapyStyles(character.therapyStyles);
             }
 
-            const greeting = character.greeting ||
-                `Hello! I'm ${character.name}. ${character.description} I'm here to support you on your journey. How are you feeling today?`;
+            setIsLoading(false);
+        };
 
-            setMessages([{
-                id: '1',
-                text: greeting,
-                isUser: false,
-                timestamp: new Date(),
-            }]);
-        }
-    }, [character]);
+        loadHistory();
+    }, [session, character]);
 
     // Memoized scroll function
     const scrollToBottom = useCallback(() => {
         setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
     }, []);
 
-    // Memoized send message function
-    const sendMessage = useCallback(async () => {
-        if (inputText.trim() === '' || isTyping) return;
+    // Audio Functions
+    const startRecording = async () => {
+        try {
+            console.log('Requesting permissions..');
+            const permission = await Audio.requestPermissionsAsync();
+            if (permission.status !== 'granted') {
+                alert('Permission to access microphone is required!');
+                return;
+            }
 
-        const userMsgText = inputText.trim();
+            await Audio.setAudioModeAsync({
+                allowsRecordingIOS: true,
+                playsInSilentModeIOS: true,
+            });
+
+            console.log('Starting recording..');
+            const { recording } = await Audio.Recording.createAsync(
+                Audio.RecordingOptionsPresets.HIGH_QUALITY
+            );
+
+            setRecording(recording);
+            setIsRecording(true);
+
+            // Metering updates
+            recording.setOnRecordingStatusUpdate((status) => {
+                if (status.metering) {
+                    // Normalize roughly -160dB to 0dB range to 0-1
+                    // Typical metering is -160 (silence) to 0 (loud)
+                    const level = Math.max(0, (status.metering + 160) / 160);
+                    setSoundLevel(level);
+                }
+            });
+
+        } catch (err) {
+            console.error('Failed to start recording', err);
+        }
+    };
+
+    const stopRecording = async () => {
+        if (!recording) return;
+
+        console.log('Stopping recording..');
+        setIsRecording(false);
+        try {
+            await recording.stopAndUnloadAsync();
+        } catch (error) {
+            // Ignore errors if already unloaded
+        }
+
+        const uri = recording.getURI();
+        setRecording(null);
+        console.log('Recording stopped and stored at', uri);
+
+        if (uri) {
+            uploadAudio(uri);
+        }
+    };
+
+    const cancelRecording = async () => {
+        if (!recording) return;
+        setIsRecording(false);
+        try {
+            await recording.stopAndUnloadAsync();
+        } catch (error) { }
+        setRecording(null);
+    };
+
+    const uploadAudio = async (uri: string) => {
+        setIsTranscribing(true);
+        try {
+            const currentUserId = session?.user?.id || 'anonymous';
+            const sessionId = generateSessionId(currentUserId, id); // Use character ID from route
+
+            const token = await createJWT({
+                userId: currentUserId,
+                action: 'audio_transcription',
+            });
+
+            // Handle Web vs Mobile
+            let responseData;
+
+            if (Platform.OS === 'web') {
+                // Web: Fetch blob -> FormData -> fetch()
+                const response = await fetch(uri);
+                const blob = await response.blob();
+
+                const formData = new FormData();
+                // @ts-ignore - 'file' is correct for React Native / Web FormData
+                formData.append('file', blob, 'recording.m4a');
+
+                const uploadRes = await fetch(AUDIO_WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        // Do NOT set Content-Type header manually for FormData, browser does it with boundary
+                    },
+                    body: formData,
+                });
+
+                if (!uploadRes.ok) throw new Error(`Upload failed: ${uploadRes.status}`);
+                responseData = await uploadRes.json();
+
+            } else {
+                // Mobile: Use FileSystem.uploadAsync
+                const fileInfo = await FileSystem.getInfoAsync(uri);
+                if (!fileInfo.exists) throw new Error("File does not exist");
+
+                const uploadResult = await FileSystem.uploadAsync(AUDIO_WEBHOOK_URL, uri, {
+                    httpMethod: 'POST',
+                    uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    },
+                    fieldName: 'file',
+                    mimeType: 'audio/m4a',
+                });
+
+                if (uploadResult.status !== 200) {
+                    throw new Error(`Upload failed: ${uploadResult.status}`);
+                }
+                responseData = JSON.parse(uploadResult.body);
+            }
+
+            const transcription = responseData.text || responseData.transcription || responseData.output;
+
+            if (transcription) {
+                // Auto-send the transcribed text
+                sendMessage(transcription);
+            }
+
+        } catch (error) {
+            console.error("Transcription error:", error);
+            alert("Could not transcribe audio.");
+        } finally {
+            setIsTranscribing(false);
+        }
+    };
+
+    // Memoized send message function
+    const sendMessage = useCallback(async (textOverride?: string) => {
+        const textToSend = typeof textOverride === 'string' ? textOverride : inputText;
+        if (textToSend.trim() === '' || isTyping) return;
+
+        const userMsgText = textToSend.trim();
         const newMessage: Message = {
             id: Date.now().toString(),
             text: userMsgText,
@@ -197,11 +430,26 @@ export default function ConversationScreen() {
                                 .join(', ')
                         }
                         : { therapyStyles: activeTherapyStyles.join(', ') }),
-                    sessionId: currentUserId,
-                    user: userData || { id: currentUserId }, // Include user data from Supabase
+                    sessionId: generateSessionId(currentUserId, character?.id || ''), // New Session Logic
+                    user: userData || { id: currentUserId },
                     timestamp: new Date().toISOString(),
                 }),
             });
+
+            // Sync with 'chat_sessions' table for the list view
+            if (session?.user) {
+                const { error: upsertError } = await supabase
+                    .from('chat_sessions')
+                    .upsert({
+                        user_id: session.user.id,
+                        character_id: character?.id,
+                        last_message: userMsgText,
+                        last_message_at: new Date().toISOString(),
+                        active_therapy_styles: activeTherapyStyles
+                    }, { onConflict: 'user_id, character_id' });
+
+                if (upsertError) console.error("Error updating chat list:", upsertError);
+            }
 
             if (!response.ok) {
                 const errorText = await response.text();
@@ -233,7 +481,7 @@ export default function ConversationScreen() {
             setIsTyping(false);
             scrollToBottom();
         }
-    }, [inputText, isTyping, character, activeTherapyStyles, scrollToBottom]);
+    }, [inputText, isTyping, character, activeTherapyStyles, scrollToBottom, session, userData]);
 
     // Memoized render function
     const renderMessage = useCallback(({ item }: { item: Message }) => (
@@ -395,28 +643,87 @@ export default function ConversationScreen() {
                 />
 
                 <View style={[styles.inputContainer, { backgroundColor: theme.background, borderTopColor: theme.icon }]}>
-                    <TouchableOpacity style={styles.inputButton}>
-                        <IconSymbol name="plus" size={24} color={theme.text} />
-                    </TouchableOpacity>
-                    <TextInput
-                        style={[
+                    {isRecording ? (
+                        <TouchableOpacity onPress={cancelRecording} style={styles.inputButton}>
+                            <IconSymbol name="xmark.circle.fill" size={24} color={Colors.light.icon} />
+                        </TouchableOpacity>
+                    ) : (
+                        <TouchableOpacity style={styles.inputButton}>
+                            <IconSymbol name="plus" size={24} color={theme.text} />
+                        </TouchableOpacity>
+                    )}
+
+                    {isRecording ? (
+                        <View style={[
                             styles.input,
                             {
                                 backgroundColor: theme.card,
-                                color: theme.text,
-                                paddingVertical: 10,
+                                height: 50,
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                overflow: 'hidden'
                             },
-                        ]}
-                        placeholder="Message..."
-                        placeholderTextColor={theme.icon}
-                        value={inputText}
-                        onChangeText={setInputText}
-                        multiline
-                        onKeyPress={handleKeyPress}
-                    />
-                    <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
-                        <IconSymbol name="paperplane.fill" size={24} color={theme.primary} />
-                    </TouchableOpacity>
+                        ]}>
+                            <ThemedText style={{ color: theme.primary, opacity: 0.8 }}>Recording...</ThemedText>
+                            {/* Pulse Animation Background */}
+                            <Animated.View
+                                style={{
+                                    position: 'absolute',
+                                    right: 20,
+                                    width: 10,
+                                    height: 10,
+                                    borderRadius: 5,
+                                    backgroundColor: theme.primary,
+                                    opacity: 0.5,
+                                    transform: [{ scale: pulseAnim }]
+                                }}
+                            />
+                        </View>
+                    ) : (
+                        <TextInput
+                            style={[
+                                styles.input,
+                                {
+                                    backgroundColor: theme.card,
+                                    color: theme.text,
+                                    paddingVertical: 10,
+                                },
+                            ]}
+                            placeholder={isTranscribing ? "Transcribing..." : "Message..."}
+                            placeholderTextColor={theme.icon}
+                            value={inputText}
+                            onChangeText={setInputText}
+                            multiline
+                            editable={!isTranscribing}
+                            onKeyPress={handleKeyPress}
+                        />
+                    )}
+
+                    {/* Right Button: Send or Mic */}
+                    {inputText.trim() !== '' ? (
+                        <TouchableOpacity onPress={sendMessage} style={styles.sendButton} disabled={isTranscribing}>
+                            {isTranscribing ? (
+                                <ActivityIndicator size="small" color={theme.primary} />
+                            ) : (
+                                <IconSymbol name="paperplane.fill" size={24} color={theme.primary} />
+                            )}
+                        </TouchableOpacity>
+                    ) : (
+                        <TouchableOpacity
+                            onPress={isRecording ? stopRecording : startRecording}
+                            style={styles.sendButton}
+                            disabled={isTranscribing}
+                        >
+                            {isTranscribing ? (
+                                <ActivityIndicator size="small" color={theme.primary} />
+                            ) : isRecording ? (
+                                // Up arrow icon or similar to indicate "Send Audio"
+                                <IconSymbol name="arrow.up.circle.fill" size={28} color={theme.primary} />
+                            ) : (
+                                <IconSymbol name="mic.fill" size={24} color={theme.text} />
+                            )}
+                        </TouchableOpacity>
+                    )}
                 </View>
             </KeyboardAvoidingView>
         </SafeAreaView>

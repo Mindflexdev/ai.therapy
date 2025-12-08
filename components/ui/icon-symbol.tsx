@@ -45,6 +45,9 @@ const MAPPING = {
   'camera.fill': 'camera-alt',
   'pencil': 'edit',
   'ellipsis.vertical': 'more-vert',
+  'mic.fill': 'mic',
+  'arrow.up.circle.fill': 'arrow-circle-up',
+  'xmark.circle.fill': 'cancel',
 } as IconMapping;
 
 /**

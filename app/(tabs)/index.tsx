@@ -221,7 +221,10 @@ export default function HomeScreen() {
     <TouchableOpacity
       key={item.id}
       style={[styles.characterCard, { backgroundColor: theme.card }]}
-      onPress={() => router.push(`/conversation/${item.id}` as any)}>
+      onPress={() => {
+        console.log('Opening conversation with:', item.id);
+        router.push(`/conversation/${item.id}` as any);
+      }}>
       <Image source={{ uri: item.image }} style={styles.characterImage} contentFit="cover" />
       {sectionId === 'created' && (
         <View style={{ position: 'absolute', top: 8, right: 8, zIndex: 10 }}>
