@@ -476,7 +476,7 @@ export default function ConversationScreen() {
 
                 const uploadResult = await FileSystem.uploadAsync(AUDIO_WEBHOOK_URL, uri, {
                     httpMethod: 'POST',
-                    uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+                    uploadType: 'multipart' as any, // Fix: Use string to avoid enum import error on Web
                     headers: {
                         'Authorization': `Bearer ${token}`,
                     },
@@ -1022,20 +1022,24 @@ const styles = StyleSheet.create({
     },
     imagePreviewContainer: {
         flexDirection: 'row',
-        padding: 8,
-        paddingBottom: 0,
+        padding: 12,
         marginBottom: 8,
+        backgroundColor: '#f5f5f5', // Slight grey background for the preview area like a card
+        borderRadius: 12,
+        alignSelf: 'flex-start', // Don't stretch full width if not needed
+        marginLeft: 8,
     },
     previewImage: {
-        width: 80,
-        height: 80,
+        width: 60,
+        height: 60,
         borderRadius: 8,
+        backgroundColor: '#e0e0e0',
     },
     removeImageButton: {
         position: 'absolute',
-        top: 4,
-        left: 80, // Offset by image width
-        backgroundColor: 'rgba(255,255,255,0.8)',
+        top: -6,
+        right: -6,
+        backgroundColor: '#fff',
         borderRadius: 12,
     },
 });

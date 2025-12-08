@@ -7,7 +7,6 @@ interface MessageBubbleProps {
     text: string;
     isUser: boolean;
     avatarUri?: string;
-    avatarUri?: string;
     imageUrl?: string;
     theme: any;
 }
@@ -20,7 +19,13 @@ export const MessageBubble = memo(({ text, isUser, avatarUri, imageUrl, theme }:
                     {imageUrl && (
                         <Image
                             source={{ uri: imageUrl }}
-                            style={{ width: 200, height: 200, borderRadius: 8, marginBottom: 8 }}
+                            style={{
+                                width: 240,
+                                height: 180, // 4:3 Aspect Ratio (240 * 0.75)
+                                borderRadius: 8,
+                                marginBottom: 8,
+                                backgroundColor: 'rgba(0,0,0,0.1)'
+                            }}
                             contentFit="cover"
                         />
                     )}
