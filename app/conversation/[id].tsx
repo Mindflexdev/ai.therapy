@@ -35,7 +35,10 @@ interface Message {
     id: string;
     text: string;
     isUser: boolean;
+    text: string;
+    isUser: boolean;
     timestamp: Date;
+    imageUrl?: string; // Add Image support
 }
 
 interface Character {
@@ -64,6 +67,7 @@ export default function ConversationScreen() {
 
     // State for the Detail Popup (Learn More)
     const [detailStyleName, setDetailStyleName] = useState<string | null>(null);
+    const [selectedImage, setSelectedImage] = useState<string | null>(null); // Image State
 
     const [inputText, setInputText] = useState('');
     const [messages, setMessages] = useState<Message[]>([]);
@@ -326,6 +330,10 @@ export default function ConversationScreen() {
         setIsRecording(false);
         try {
             await recording.stopAndUnloadAsync();
+            // Explicitly disable recording mode to stop browser indicator
+            await Audio.setAudioModeAsync({
+                allowsRecordingIOS: false,
+            });
         } catch (error) {
             // Ignore errors if already unloaded
         }
@@ -339,13 +347,91 @@ export default function ConversationScreen() {
         }
     };
 
-    const cancelRecording = async () => {
+    const stopRecording = async () => {
         if (!recording) return;
+
+        console.log('Stopping recording..');
         setIsRecording(false);
         try {
             await recording.stopAndUnloadAsync();
-        } catch (error) { }
+            // Explicitly disable recording mode to stop browser indicator
+            await Audio.setAudioModeAsync({
+                allowsRecordingIOS: false,
+            });
+        } catch (error) {
+            // Ignore errors if already unloaded
+        }
+
+        const uri = recording.getURI();
         setRecording(null);
+        console.log('Recording stopped and stored at', uri);
+
+        if (uri) {
+            uploadAudio(uri);
+        }
+    };
+
+    // Image Functions
+    const pickImage = async () => {
+        try {
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: false,
+                quality: 0.8,
+            });
+
+            if (!result.canceled) {
+                setSelectedImage(result.assets[0].uri);
+            }
+        } catch (error) {
+            console.error('Error picking image:', error);
+            alert('Could not pick image.');
+        }
+    };
+
+    const uploadImage = async (uri: string): Promise<string | null> => {
+        try {
+            const formData = new FormData();
+            const filename = `img_${Date.now()}.jpg`;
+
+            if (Platform.OS === 'web') {
+                const res = await fetch(uri);
+                const blob = await res.blob();
+                // @ts-ignore
+                formData.append('file', blob, filename);
+            } else {
+                formData.append('file', {
+                    uri: uri,
+                    name: filename,
+                    type: 'image/jpeg',
+                } as any);
+            }
+
+            const { data, error } = await supabase.storage
+                .from('chat-images')
+                .upload(`${session?.user?.id}/${filename}`, formData, {
+                    contentType: 'image/jpeg',
+                    upsert: false
+                });
+
+            if (error) {
+                console.error('Upload failed:', error);
+                if (error.message.includes('bucket')) {
+                    alert('Error: "chat-images" storage bucket missing in Supabase.');
+                }
+                throw error;
+            }
+
+            const { data: publicData } = supabase.storage
+                .from('chat-images')
+                .getPublicUrl(data.path);
+
+            return publicData.publicUrl;
+
+        } catch (error) {
+            console.error('Image upload error:', error);
+            return null;
+        }
     };
 
     const uploadAudio = async (uri: string) => {
@@ -422,23 +508,36 @@ export default function ConversationScreen() {
     // Memoized send message function
     const sendMessage = useCallback(async (textOverride?: string) => {
         const textToSend = typeof textOverride === 'string' ? textOverride : inputText;
-        if (textToSend.trim() === '' || isTyping) return;
+        if ((textToSend.trim() === '' && !selectedImage) || isTyping) return; // Allow empty text if image
 
         const userMsgText = textToSend.trim();
+
+        // Optimistic UI Update
         const newMessage: Message = {
             id: Date.now().toString(),
             text: userMsgText,
             isUser: true,
             timestamp: new Date(),
+            imageUrl: selectedImage || undefined // Local URI for immediate display
         };
 
-        setMessages((prev) => [...prev, newMessage]);
+        const currentImageUri = selectedImage; // Capture for upload
+        setSelectedImage(null); // Clear input state immediately
         setInputText('');
         setIsTyping(true);
+        setMessages((prev) => [...prev, newMessage]);
         scrollToBottom();
 
         try {
+            // Upload Image if present
+            let publicImageUrl = null;
+            if (currentImageUri) {
+                publicImageUrl = await uploadImage(currentImageUri);
+                // If upload fails, we proceed with text only but ideally should warn
+            }
+
             const currentUserId = session?.user?.id || 'anonymous';
+            const sessionId = generateSessionId(currentUserId, character?.id || '');
 
             const token = await createJWT({
                 userId: currentUserId,
@@ -453,6 +552,7 @@ export default function ConversationScreen() {
                 },
                 body: JSON.stringify({
                     message: userMsgText,
+                    imageUrl: publicImageUrl, // Send valid URL to n8n
                     characterName: character?.name,
                     characterDescription: activeTherapyStyles.includes('Integrative Therapy (AI decides)')
                         ? `${character?.description}\n\n[IMPORTANT: Conduct this session using an integrative approach. You have access to all therapy styles and should adapt your approach based on the user's needs and the conversation context.]`
@@ -680,88 +780,108 @@ export default function ConversationScreen() {
                     windowSize={10}
                 />
 
-                <View style={[styles.inputContainer, { backgroundColor: theme.background, borderTopColor: theme.icon }]}>
-                    {isRecording ? (
-                        <TouchableOpacity onPress={cancelRecording} style={styles.inputButton}>
-                            <IconSymbol name="xmark.circle.fill" size={24} color={Colors.light.icon} />
-                        </TouchableOpacity>
-                    ) : (
-                        <TouchableOpacity style={styles.inputButton}>
-                            <IconSymbol name="plus" size={24} color={theme.text} />
-                        </TouchableOpacity>
+                <View style={[styles.inputContainer, { backgroundColor: theme.background, borderTopColor: theme.icon, flexDirection: 'column', alignItems: 'stretch' }]}>
+
+                    {/* Image Preview Area */}
+                    {selectedImage && (
+                        <View style={styles.imagePreviewContainer}>
+                            <Image source={{ uri: selectedImage }} style={styles.previewImage} />
+                            <TouchableOpacity
+                                style={styles.removeImageButton}
+                                onPress={() => setSelectedImage(null)}
+                            >
+                                <IconSymbol name="xmark.circle.fill" size={24} color="#000" />
+                            </TouchableOpacity>
+                        </View>
                     )}
 
-                    {isRecording ? (
-                        <View style={[
-                            styles.input,
-                            {
-                                backgroundColor: theme.card,
-                                height: 50,
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                overflow: 'hidden'
-                            },
-                        ]}>
-                            <ThemedText style={{ color: theme.primary, opacity: 0.8 }}>Recording...</ThemedText>
-                            {/* Pulse Animation Background */}
-                            <Animated.View
-                                style={{
-                                    position: 'absolute',
-                                    right: 20,
-                                    width: 10,
-                                    height: 10,
-                                    borderRadius: 5,
-                                    backgroundColor: theme.primary,
-                                    opacity: 0.5,
-                                    transform: [{ scale: pulseAnim }]
-                                }}
-                            />
-                        </View>
-                    ) : (
-                        <TextInput
-                            style={[
+                    <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8 }}>
+                        {isRecording ? (
+                            <TouchableOpacity onPress={cancelRecording} style={styles.inputButton}>
+                                <IconSymbol name="xmark.circle.fill" size={24} color={Colors.light.icon} />
+                            </TouchableOpacity>
+                        ) : (
+                            <TouchableOpacity style={styles.inputButton} onPress={pickImage}>
+                                <IconSymbol name="plus" size={24} color={theme.text} />
+                            </TouchableOpacity>
+                        )}
+
+                        {isRecording ? (
+                            <View style={[
                                 styles.input,
                                 {
                                     backgroundColor: theme.card,
-                                    color: theme.text,
-                                    paddingVertical: 10,
+                                    height: 50,
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    overflow: 'hidden',
+                                    flex: 1,
                                 },
-                            ]}
-                            placeholder={isTranscribing ? "Transcribing..." : "Message..."}
-                            placeholderTextColor={theme.icon}
-                            value={inputText}
-                            onChangeText={setInputText}
-                            multiline
-                            editable={!isTranscribing}
-                            onKeyPress={handleKeyPress}
-                        />
-                    )}
+                            ]}>
+                                <ThemedText style={{ color: theme.primary, opacity: 0.8 }}>Recording...</ThemedText>
+                                {/* Pulse Animation Background */}
+                                <Animated.View
+                                    style={{
+                                        position: 'absolute',
+                                        right: 20,
+                                        width: 10,
+                                        height: 10,
+                                        borderRadius: 5,
+                                        backgroundColor: theme.primary,
+                                        opacity: 0.5,
+                                        transform: [{ scale: pulseAnim }]
+                                    }}
+                                />
+                            </View>
+                        ) : (
+                            <TextInput
+                                style={[
+                                    styles.input,
+                                    {
+                                        backgroundColor: theme.card,
+                                        color: theme.text,
+                                        paddingVertical: 10,
+                                        minHeight: 40,
+                                        maxHeight: 150, // Approx 9 rows
+                                    },
+                                ]}
+                                placeholder={isTranscribing ? "Transcribing..." : "Message..."}
+                                placeholderTextColor={theme.icon}
+                                value={inputText}
+                                onChangeText={setInputText}
+                                multiline
+                                textAlignVertical="center"
+                                editable={!isTranscribing}
+                                onKeyPress={handleKeyPress}
+                            />
+                        )}
 
-                    {/* Right Button: Send or Mic */}
-                    {inputText.trim() !== '' ? (
-                        <TouchableOpacity onPress={sendMessage} style={styles.sendButton} disabled={isTranscribing}>
-                            {isTranscribing ? (
-                                <ActivityIndicator size="small" color={theme.primary} />
-                            ) : (
-                                <IconSymbol name="paperplane.fill" size={24} color={theme.primary} />
-                            )}
-                        </TouchableOpacity>
-                    ) : (
-                        <TouchableOpacity
-                            onPress={isRecording ? stopRecording : startRecording}
-                            style={styles.sendButton}
-                            disabled={isTranscribing}
-                        >
-                            {isTranscribing ? (
-                                <ActivityIndicator size="small" color={theme.primary} />
-                            ) : isRecording ? (
-                                // Up arrow icon or similar to indicate "Send Audio"
-                                <IconSymbol name="arrow.up.circle.fill" size={28} color={theme.primary} />
-                            ) : (
-                                <IconSymbol name="mic.fill" size={24} color={theme.text} />
-                            )}
-                        </TouchableOpacity>
-                    )}
+                        {/* Right Button: Send or Mic */}
+                        {(inputText.trim() !== '' || selectedImage) ? (
+                            <TouchableOpacity onPress={() => sendMessage()} style={styles.sendButton} disabled={isTranscribing}>
+                                {isTranscribing ? (
+                                    <ActivityIndicator size="small" color={theme.primary} />
+                                ) : (
+                                    <IconSymbol name="arrow.up.circle.fill" size={32} color={isTyping ? theme.icon : theme.primary} />
+                                )}
+                            </TouchableOpacity>
+                        ) : (
+                            <TouchableOpacity
+                                onPress={isRecording ? stopRecording : startRecording}
+                                style={styles.sendButton}
+                                disabled={isTranscribing}
+                            >
+                                {isTranscribing ? (
+                                    <ActivityIndicator size="small" color={theme.primary} />
+                                ) : isRecording ? (
+                                    // Up arrow icon or similar to indicate "Send Audio"
+                                    <IconSymbol name="arrow.up.circle.fill" size={32} color={theme.primary} />
+                                ) : (
+                                    <IconSymbol name="mic.fill" size={24} color={theme.text} />
+                                )}
+                            </TouchableOpacity>
+                        )}
+                    </View>
                 </View>
             </KeyboardAvoidingView>
         </SafeAreaView>
@@ -886,13 +1006,36 @@ const styles = StyleSheet.create({
     },
     input: {
         flex: 1,
+        borderRadius: 20,
         paddingHorizontal: 16,
         paddingVertical: 10,
-        borderRadius: 20,
+        marginHorizontal: 8,
         fontSize: 16,
-        maxHeight: 100,
+        borderWidth: 1,
+        // Height handled inline for overrides
+    },
+    attachButton: {
+        padding: 4,
     },
     sendButton: {
+        padding: 4,
+    },
+    imagePreviewContainer: {
+        flexDirection: 'row',
         padding: 8,
+        paddingBottom: 0,
+        marginBottom: 8,
+    },
+    previewImage: {
+        width: 80,
+        height: 80,
+        borderRadius: 8,
+    },
+    removeImageButton: {
+        position: 'absolute',
+        top: 4,
+        left: 80, // Offset by image width
+        backgroundColor: 'rgba(255,255,255,0.8)',
+        borderRadius: 12,
     },
 });
