@@ -9,6 +9,8 @@ import { ThemedText } from '@/components/themed-text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { supabase } from '@/lib/supabase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Mock tracking data
 const TRACKING_DATA = [
@@ -101,6 +103,16 @@ export default function ProfileScreen() {
 
     const handleEmailPress = () => {
         Linking.openURL('mailto:hello@ai.therapy');
+    };
+
+    const handleSignOut = async () => {
+        try {
+            await supabase.auth.signOut();
+            await AsyncStorage.removeItem('skipLogin');
+            router.replace('/sign-in'); // Or '/' which redirects to sign-in
+        } catch (error) {
+            console.error('Error signing out:', error);
+        }
     };
 
     const renderTrackingCard = (item: typeof TRACKING_DATA[0]) => (
@@ -225,12 +237,20 @@ export default function ProfileScreen() {
                             style={styles.insightGradient}
                         />
                         <ThemedText type="defaultSemiBold" style={styles.insightTitle}>
-                            Γ£¿ This Week's Insight
+                            ✨ This Week's Insight
                         </ThemedText>
                         <ThemedText style={styles.insightText}>
                             "You're recovering from stress 50% faster than 3 weeks ago. Your emotional resilience is growing steadily."
                         </ThemedText>
                     </View>
+
+                    {/* Sign Out Button */}
+                    <TouchableOpacity
+                        style={styles.signOutButton}
+                        onPress={handleSignOut}
+                    >
+                        <ThemedText style={styles.signOutText}>Sign Out</ThemedText>
+                    </TouchableOpacity>
                 </View>
             </ScrollView>
         </SafeAreaView>
@@ -316,7 +336,7 @@ const styles = StyleSheet.create({
     },
     trackingSection: {
         paddingHorizontal: 24,
-        paddingBottom: 100,
+        paddingBottom: 40,
     },
     sectionHeader: {
         marginBottom: 24,
@@ -457,6 +477,21 @@ const styles = StyleSheet.create({
     premiumButtonText: {
         color: '#fff',
         fontSize: 13,
+        fontWeight: '600',
+    },
+    signOutButton: {
+        marginTop: 32,
+        marginBottom: 48,
+        marginHorizontal: 24,
+        paddingVertical: 16,
+        borderRadius: 12,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#FF6B6B',
+    },
+    signOutText: {
+        color: '#FF6B6B',
+        fontSize: 16,
         fontWeight: '600',
     },
 });
