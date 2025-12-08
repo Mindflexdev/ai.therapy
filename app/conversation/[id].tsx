@@ -182,6 +182,9 @@ export default function ConversationScreen() {
             setIsLoading(true);
             const sessionId = generateSessionId(session.user.id, character.id); // Use Character ID for stability
 
+            console.log(`[DEBUG] Loading History. User: ${session.user.id}, Char: ${character.id}`);
+            console.log(`[DEBUG] Generated SessionID: ${sessionId}`);
+
             // 1. Fetch Chat History from 'memory' (n8n writes here)
             // n8n memory format: { session_id, message: "JSON_STRING" }
             const { data: memoryData, error } = await supabase
@@ -190,10 +193,22 @@ export default function ConversationScreen() {
                 .eq('session_id', sessionId)
                 .order('created_at', { ascending: true });
 
+            if (error) {
+                console.error('[DEBUG] Memory fetch error:', error);
+            } else {
+                console.log(`[DEBUG] Memory fetch success. Row count: ${memoryData?.length || 0}`);
+            }
+
             if (memoryData && memoryData.length > 0) {
                 const parsedMessages: Message[] = memoryData.map((row: any) => {
                     try {
-                        const msgContent = JSON.parse(row.message);
+                        let msgContent;
+                        if (typeof row.message === 'string') {
+                            msgContent = JSON.parse(row.message);
+                        } else {
+                            msgContent = row.message; // Already an object (jsonb)
+                        }
+
                         // LangChain format: { type: 'human' | 'ai', content: 'text' }
                         return {
                             id: row.id.toString(),
@@ -202,6 +217,7 @@ export default function ConversationScreen() {
                             timestamp: new Date(row.created_at),
                         };
                     } catch (e) {
+                        console.error('[DEBUG] Parse error for row:', row.id, e);
                         return null;
                     }
                 }).filter((msg: any) => msg !== null && msg.text); // Filter out bad parses
