@@ -222,7 +222,26 @@ export default function ConversationScreen() {
                     }
                 }).filter((msg: any) => msg !== null && msg.text); // Filter out bad parses
 
-                setMessages(parsedMessages);
+                // Strip prefix from all messages
+                const cleanMessages = parsedMessages.map(msg => ({
+                    ...msg,
+                    text: msg.text.replace(/^\(Talking to .*?\) /, '').trim()
+                }));
+
+                // Prepare greeting (system message at start)
+                const greetingText = character.greeting ||
+                    `Hello! I'm ${character.name}. ${character.description} I'm here to support you on your journey. How are you feeling today?`;
+
+                const greetingMsg: Message = {
+                    id: '0', // Consistent ID for greeting
+                    text: greetingText,
+                    isUser: false,
+                    timestamp: new Date(0), // Oldest
+                };
+
+                // Combine: [Greeting, ...History]
+                // We map history to ensure no duplicates if n8n saved the greeting (unlikely)
+                setMessages([greetingMsg, ...cleanMessages]);
             } else {
                 // No history? Set initial greeting
                 const greeting = character.greeting ||
@@ -592,8 +611,11 @@ export default function ConversationScreen() {
         <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
             <View style={[styles.header, { borderBottomColor: theme.icon }]}>
                 <View style={styles.headerLeft}>
-                    <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+                    <TouchableOpacity onPress={handleBack} style={[styles.backButton, { flexDirection: 'row', alignItems: 'center', gap: 12 }]}>
                         <IconSymbol name="chevron.right" size={24} color={theme.text} style={{ transform: [{ rotate: '180deg' }] }} />
+                        {character && (
+                            <ThemedText type="defaultSemiBold" style={{ fontSize: 16 }}>{character.name}</ThemedText>
+                        )}
                     </TouchableOpacity>
                 </View>
 
