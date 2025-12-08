@@ -374,29 +374,7 @@ export default function ConversationScreen() {
         }
     };
 
-    const stopRecording = async () => {
-        if (!recording) return;
 
-        console.log('Stopping recording..');
-        setIsRecording(false);
-        try {
-            await recording.stopAndUnloadAsync();
-            // Explicitly disable recording mode to stop browser indicator
-            await Audio.setAudioModeAsync({
-                allowsRecordingIOS: false,
-            });
-        } catch (error) {
-            // Ignore errors if already unloaded
-        }
-
-        const uri = recording.getURI();
-        setRecording(null);
-        console.log('Recording stopped and stored at', uri);
-
-        if (uri) {
-            uploadAudio(uri);
-        }
-    };
 
     // Image Functions
     const pickImage = async () => {
