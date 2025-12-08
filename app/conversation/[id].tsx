@@ -1,5 +1,6 @@
-// import * as FileSystem from 'expo-file-system'; // REMOVED
-import { uploadAudioFile } from '@/lib/audio-upload'; // Added
+import { Audio } from 'expo-av';
+import * as FileSystem from 'expo-file-system';
+import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -15,34 +16,6 @@ import {
     View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-// ... inside component ...
-
-const uploadAudio = async (uri: string) => {
-    setIsTranscribing(true);
-    try {
-        const currentUserId = session?.user?.id || 'anonymous';
-        const token = await createJWT({
-            userId: currentUserId,
-            action: 'audio_transcription',
-        });
-
-        // Use the platform-agnostic helper
-        const responseData = await uploadAudioFile(uri, token, AUDIO_WEBHOOK_URL);
-
-        const transcription = responseData.text || responseData.transcription || responseData.output;
-
-        if (transcription) {
-            sendMessage(transcription);
-        }
-
-    } catch (error) {
-        console.error("Transcription error:", error);
-        alert("Could not transcribe audio.");
-    } finally {
-        setIsTranscribing(false);
-    }
-};
 
 import { MessageBubble } from '@/components/message-bubble';
 import { ThemedText } from '@/components/themed-text';
@@ -62,10 +35,7 @@ interface Message {
     id: string;
     text: string;
     isUser: boolean;
-    text: string;
-    isUser: boolean;
     timestamp: Date;
-    imageUrl?: string; // Add Image support
 }
 
 interface Character {
@@ -94,7 +64,6 @@ export default function ConversationScreen() {
 
     // State for the Detail Popup (Learn More)
     const [detailStyleName, setDetailStyleName] = useState<string | null>(null);
-    const [selectedImage, setSelectedImage] = useState<string | null>(null); // Image State
 
     const [inputText, setInputText] = useState('');
     const [messages, setMessages] = useState<Message[]>([]);
@@ -213,9 +182,6 @@ export default function ConversationScreen() {
             setIsLoading(true);
             const sessionId = generateSessionId(session.user.id, character.id); // Use Character ID for stability
 
-            console.log(`[DEBUG] Loading History. User: ${session.user.id}, Char: ${character.id}`);
-            console.log(`[DEBUG] Generated SessionID: ${sessionId}`);
-
             // 1. Fetch Chat History from 'memory' (n8n writes here)
             // n8n memory format: { session_id, message: "JSON_STRING" }
             const { data: memoryData, error } = await supabase
@@ -225,9 +191,7 @@ export default function ConversationScreen() {
                 .order('created_at', { ascending: true });
 
             if (error) {
-                console.error('[DEBUG] Memory fetch error:', error);
-            } else {
-                console.log(`[DEBUG] Memory fetch success. Row count: ${memoryData?.length || 0}`);
+                console.error('Error fetching memory:', error);
             }
 
             if (memoryData && memoryData.length > 0) {
@@ -248,7 +212,7 @@ export default function ConversationScreen() {
                             timestamp: new Date(row.created_at),
                         };
                     } catch (e) {
-                        console.error('[DEBUG] Parse error for row:', row.id, e);
+                        console.error('Parse error for row:', row.id, e);
                         return null;
                     }
                 }).filter((msg: any) => msg !== null && msg.text); // Filter out bad parses
@@ -357,10 +321,6 @@ export default function ConversationScreen() {
         setIsRecording(false);
         try {
             await recording.stopAndUnloadAsync();
-            // Explicitly disable recording mode to stop browser indicator
-            await Audio.setAudioModeAsync({
-                allowsRecordingIOS: false,
-            });
         } catch (error) {
             // Ignore errors if already unloaded
         }
@@ -374,69 +334,13 @@ export default function ConversationScreen() {
         }
     };
 
-
-
-    // Image Functions
-    const pickImage = async () => {
+    const cancelRecording = async () => {
+        if (!recording) return;
+        setIsRecording(false);
         try {
-            const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                allowsEditing: false,
-                quality: 0.8,
-            });
-
-            if (!result.canceled) {
-                setSelectedImage(result.assets[0].uri);
-            }
-        } catch (error) {
-            console.error('Error picking image:', error);
-            alert('Could not pick image.');
-        }
-    };
-
-    const uploadImage = async (uri: string): Promise<string | null> => {
-        try {
-            const formData = new FormData();
-            const filename = `img_${Date.now()}.jpg`;
-
-            if (Platform.OS === 'web') {
-                const res = await fetch(uri);
-                const blob = await res.blob();
-                // @ts-ignore
-                formData.append('file', blob, filename);
-            } else {
-                formData.append('file', {
-                    uri: uri,
-                    name: filename,
-                    type: 'image/jpeg',
-                } as any);
-            }
-
-            const { data, error } = await supabase.storage
-                .from('chat-images')
-                .upload(`${session?.user?.id}/${filename}`, formData, {
-                    contentType: 'image/jpeg',
-                    upsert: false
-                });
-
-            if (error) {
-                console.error('Upload failed:', error);
-                if (error.message.includes('bucket')) {
-                    alert('Error: "chat-images" storage bucket missing in Supabase.');
-                }
-                throw error;
-            }
-
-            const { data: publicData } = supabase.storage
-                .from('chat-images')
-                .getPublicUrl(data.path);
-
-            return publicData.publicUrl;
-
-        } catch (error) {
-            console.error('Image upload error:', error);
-            return null;
-        }
+            await recording.stopAndUnloadAsync();
+        } catch (error) { }
+        setRecording(null);
     };
 
     const uploadAudio = async (uri: string) => {
@@ -481,7 +385,7 @@ export default function ConversationScreen() {
 
                 const uploadResult = await FileSystem.uploadAsync(AUDIO_WEBHOOK_URL, uri, {
                     httpMethod: 'POST',
-                    uploadType: 'multipart' as any, // Fix: Use string to avoid enum import error on Web
+                    uploadType: FileSystem.FileSystemUploadType.MULTIPART,
                     headers: {
                         'Authorization': `Bearer ${token}`,
                     },
@@ -513,36 +417,23 @@ export default function ConversationScreen() {
     // Memoized send message function
     const sendMessage = useCallback(async (textOverride?: string) => {
         const textToSend = typeof textOverride === 'string' ? textOverride : inputText;
-        if ((textToSend.trim() === '' && !selectedImage) || isTyping) return; // Allow empty text if image
+        if (textToSend.trim() === '' || isTyping) return;
 
         const userMsgText = textToSend.trim();
-
-        // Optimistic UI Update
         const newMessage: Message = {
             id: Date.now().toString(),
             text: userMsgText,
             isUser: true,
             timestamp: new Date(),
-            imageUrl: selectedImage || undefined // Local URI for immediate display
         };
 
-        const currentImageUri = selectedImage; // Capture for upload
-        setSelectedImage(null); // Clear input state immediately
+        setMessages((prev) => [...prev, newMessage]);
         setInputText('');
         setIsTyping(true);
-        setMessages((prev) => [...prev, newMessage]);
         scrollToBottom();
 
         try {
-            // Upload Image if present
-            let publicImageUrl = null;
-            if (currentImageUri) {
-                publicImageUrl = await uploadImage(currentImageUri);
-                // If upload fails, we proceed with text only but ideally should warn
-            }
-
             const currentUserId = session?.user?.id || 'anonymous';
-            const sessionId = generateSessionId(currentUserId, character?.id || '');
 
             const token = await createJWT({
                 userId: currentUserId,
@@ -557,7 +448,6 @@ export default function ConversationScreen() {
                 },
                 body: JSON.stringify({
                     message: userMsgText,
-                    imageUrl: publicImageUrl, // Send valid URL to n8n
                     characterName: character?.name,
                     characterDescription: activeTherapyStyles.includes('Integrative Therapy (AI decides)')
                         ? `${character?.description}\n\n[IMPORTANT: Conduct this session using an integrative approach. You have access to all therapy styles and should adapt your approach based on the user's needs and the conversation context.]`
@@ -785,108 +675,88 @@ export default function ConversationScreen() {
                     windowSize={10}
                 />
 
-                <View style={[styles.inputContainer, { backgroundColor: theme.background, borderTopColor: theme.icon, flexDirection: 'column', alignItems: 'stretch' }]}>
-
-                    {/* Image Preview Area */}
-                    {selectedImage && (
-                        <View style={styles.imagePreviewContainer}>
-                            <Image source={{ uri: selectedImage }} style={styles.previewImage} />
-                            <TouchableOpacity
-                                style={styles.removeImageButton}
-                                onPress={() => setSelectedImage(null)}
-                            >
-                                <IconSymbol name="xmark.circle.fill" size={24} color="#000" />
-                            </TouchableOpacity>
-                        </View>
+                <View style={[styles.inputContainer, { backgroundColor: theme.background, borderTopColor: theme.icon }]}>
+                    {isRecording ? (
+                        <TouchableOpacity onPress={cancelRecording} style={styles.inputButton}>
+                            <IconSymbol name="xmark.circle.fill" size={24} color={Colors.light.icon} />
+                        </TouchableOpacity>
+                    ) : (
+                        <TouchableOpacity style={styles.inputButton}>
+                            <IconSymbol name="plus" size={24} color={theme.text} />
+                        </TouchableOpacity>
                     )}
 
-                    <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8 }}>
-                        {isRecording ? (
-                            <TouchableOpacity onPress={cancelRecording} style={styles.inputButton}>
-                                <IconSymbol name="xmark.circle.fill" size={24} color={Colors.light.icon} />
-                            </TouchableOpacity>
-                        ) : (
-                            <TouchableOpacity style={styles.inputButton} onPress={pickImage}>
-                                <IconSymbol name="plus" size={24} color={theme.text} />
-                            </TouchableOpacity>
-                        )}
-
-                        {isRecording ? (
-                            <View style={[
+                    {isRecording ? (
+                        <View style={[
+                            styles.input,
+                            {
+                                backgroundColor: theme.card,
+                                height: 50,
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                overflow: 'hidden'
+                            },
+                        ]}>
+                            <ThemedText style={{ color: theme.primary, opacity: 0.8 }}>Recording...</ThemedText>
+                            {/* Pulse Animation Background */}
+                            <Animated.View
+                                style={{
+                                    position: 'absolute',
+                                    right: 20,
+                                    width: 10,
+                                    height: 10,
+                                    borderRadius: 5,
+                                    backgroundColor: theme.primary,
+                                    opacity: 0.5,
+                                    transform: [{ scale: pulseAnim }]
+                                }}
+                            />
+                        </View>
+                    ) : (
+                        <TextInput
+                            style={[
                                 styles.input,
                                 {
                                     backgroundColor: theme.card,
-                                    height: 50,
-                                    justifyContent: 'center',
-                                    alignItems: 'center',
-                                    overflow: 'hidden',
-                                    flex: 1,
+                                    color: theme.text,
+                                    paddingVertical: 10,
                                 },
-                            ]}>
-                                <ThemedText style={{ color: theme.primary, opacity: 0.8 }}>Recording...</ThemedText>
-                                {/* Pulse Animation Background */}
-                                <Animated.View
-                                    style={{
-                                        position: 'absolute',
-                                        right: 20,
-                                        width: 10,
-                                        height: 10,
-                                        borderRadius: 5,
-                                        backgroundColor: theme.primary,
-                                        opacity: 0.5,
-                                        transform: [{ scale: pulseAnim }]
-                                    }}
-                                />
-                            </View>
-                        ) : (
-                            <TextInput
-                                style={[
-                                    styles.input,
-                                    {
-                                        backgroundColor: theme.card,
-                                        color: theme.text,
-                                        paddingVertical: 10,
-                                        minHeight: 40,
-                                        maxHeight: 150, // Approx 9 rows
-                                    },
-                                ]}
-                                placeholder={isTranscribing ? "Transcribing..." : "Message..."}
-                                placeholderTextColor={theme.icon}
-                                value={inputText}
-                                onChangeText={setInputText}
-                                multiline
-                                textAlignVertical="center"
-                                editable={!isTranscribing}
-                                onKeyPress={handleKeyPress}
-                            />
-                        )}
+                            ]}
+                            placeholder={isTranscribing ? "Transcribing..." : "Message..."}
+                            placeholderTextColor={theme.icon}
+                            value={inputText}
+                            onChangeText={setInputText}
+                            multiline
+                            editable={!isTranscribing}
+                            onKeyPress={handleKeyPress}
+                        />
+                    )}
 
-                        {/* Right Button: Send or Mic */}
-                        {(inputText.trim() !== '' || selectedImage) ? (
-                            <TouchableOpacity onPress={() => sendMessage()} style={styles.sendButton} disabled={isTranscribing}>
-                                {isTranscribing ? (
-                                    <ActivityIndicator size="small" color={theme.primary} />
-                                ) : (
-                                    <IconSymbol name="arrow.up.circle.fill" size={32} color={isTyping ? theme.icon : theme.primary} />
-                                )}
-                            </TouchableOpacity>
-                        ) : (
-                            <TouchableOpacity
-                                onPress={isRecording ? stopRecording : startRecording}
-                                style={styles.sendButton}
-                                disabled={isTranscribing}
-                            >
-                                {isTranscribing ? (
-                                    <ActivityIndicator size="small" color={theme.primary} />
-                                ) : isRecording ? (
-                                    // Up arrow icon or similar to indicate "Send Audio"
-                                    <IconSymbol name="arrow.up.circle.fill" size={32} color={theme.primary} />
-                                ) : (
-                                    <IconSymbol name="mic.fill" size={24} color={theme.text} />
-                                )}
-                            </TouchableOpacity>
-                        )}
-                    </View>
+                    {/* Right Button: Send or Mic */}
+                    {inputText.trim() !== '' ? (
+                        <TouchableOpacity onPress={sendMessage} style={styles.sendButton} disabled={isTranscribing}>
+                            {isTranscribing ? (
+                                <ActivityIndicator size="small" color={theme.primary} />
+                            ) : (
+                                <IconSymbol name="paperplane.fill" size={24} color={theme.primary} />
+                            )}
+                        </TouchableOpacity>
+                    ) : (
+                        <TouchableOpacity
+                            onPress={isRecording ? stopRecording : startRecording}
+                            style={styles.sendButton}
+                            disabled={isTranscribing}
+                        >
+                            {isTranscribing ? (
+                                <ActivityIndicator size="small" color={theme.primary} />
+                            ) : isRecording ? (
+                                // Up arrow icon or similar to indicate "Send Audio"
+                                <IconSymbol name="arrow.up.circle.fill" size={28} color={theme.primary} />
+                            ) : (
+                                <IconSymbol name="mic.fill" size={24} color={theme.text} />
+                            )}
+                        </TouchableOpacity>
+                    )}
                 </View>
             </KeyboardAvoidingView>
         </SafeAreaView>
@@ -1011,40 +881,13 @@ const styles = StyleSheet.create({
     },
     input: {
         flex: 1,
-        borderRadius: 20,
         paddingHorizontal: 16,
         paddingVertical: 10,
-        marginHorizontal: 8,
+        borderRadius: 20,
         fontSize: 16,
-        borderWidth: 1,
-        // Height handled inline for overrides
-    },
-    attachButton: {
-        padding: 4,
+        maxHeight: 100,
     },
     sendButton: {
-        padding: 4,
-    },
-    imagePreviewContainer: {
-        flexDirection: 'row',
-        padding: 12,
-        marginBottom: 8,
-        backgroundColor: '#f5f5f5', // Slight grey background for the preview area like a card
-        borderRadius: 12,
-        alignSelf: 'flex-start', // Don't stretch full width if not needed
-        marginLeft: 8,
-    },
-    previewImage: {
-        width: 60,
-        height: 60,
-        borderRadius: 8,
-        backgroundColor: '#e0e0e0',
-    },
-    removeImageButton: {
-        position: 'absolute',
-        top: -6,
-        right: -6,
-        backgroundColor: '#fff',
-        borderRadius: 12,
+        padding: 8,
     },
 });

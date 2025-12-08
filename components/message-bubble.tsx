@@ -7,28 +7,14 @@ interface MessageBubbleProps {
     text: string;
     isUser: boolean;
     avatarUri?: string;
-    imageUrl?: string;
     theme: any;
 }
 
-export const MessageBubble = memo(({ text, isUser, avatarUri, imageUrl, theme }: MessageBubbleProps) => {
+export const MessageBubble = memo(({ text, isUser, avatarUri, theme }: MessageBubbleProps) => {
     if (isUser) {
         return (
             <View style={styles.userContainer}>
                 <View style={[styles.userBubble, { backgroundColor: theme.primary }]}>
-                    {imageUrl && (
-                        <Image
-                            source={{ uri: imageUrl }}
-                            style={{
-                                width: 240,
-                                height: 180, // 4:3 Aspect Ratio (240 * 0.75)
-                                borderRadius: 8,
-                                marginBottom: 8,
-                                backgroundColor: 'rgba(0,0,0,0.1)'
-                            }}
-                            contentFit="cover"
-                        />
-                    )}
                     <ThemedText style={styles.userText}>{text}</ThemedText>
                 </View>
             </View>
