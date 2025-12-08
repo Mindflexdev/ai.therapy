@@ -1,8 +1,9 @@
+import { useFocusEffect } from '@react-navigation/native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import React from 'react';
-import { Linking, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -12,163 +13,186 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { supabase } from '@/lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Mock tracking data
-const TRACKING_DATA = [
-    {
-        id: '1',
-        title: 'Emotional States',
-        subtitle: 'Mood & Energy',
-        icon: '🎭',
-        value: 78,
-        status: 'OPTIMAL',
-        trend: '+12%',
-        color: '#4ECDC4',
-    },
-    {
-        id: '2',
-        title: 'Life Areas',
-        subtitle: 'Focus Distribution',
-        icon: '🎯',
-        value: 65,
-        status: 'BALANCED',
-        trend: '+5%',
-        color: '#95E1D3',
-    },
-    {
-        id: '3',
-        title: 'Psychological Patterns',
-        subtitle: 'Thought Quality',
-        icon: '🧠',
-        value: 82,
-        status: 'IMPROVING',
-        trend: '+18%',
-        color: '#F38181',
-    },
-    {
-        id: '4',
-        title: 'Goals & Values',
-        subtitle: 'Alignment',
-        icon: '⭐',
-        value: 71,
-        status: 'GROWING',
-        trend: '+8%',
-        color: '#AA96DA',
-    },
-    {
-        id: '5',
-        title: 'Actions & Skills',
-        subtitle: 'Real Behavior',
-        icon: '💪',
-        value: 88,
-        status: 'STRONG',
-        trend: '+22%',
-        color: '#FCBAD3',
-    },
-    {
-        id: '6',
-        title: 'Resilience',
-        subtitle: 'Recovery Speed',
-        icon: '🔋',
-        value: 75,
-        status: 'STABLE',
-        trend: '+15%',
-        color: '#FFFFD2',
-    },
-    {
-        id: '7',
-        title: 'Psychological Flexibility',
-        subtitle: 'ACT Core',
-        icon: '🌿',
-        value: 80,
-        status: 'EXCELLENT',
-        trend: '+10%',
-        color: '#A8D8EA',
-    },
-    {
-        id: '8',
-        title: 'Alliance & Connection',
-        subtitle: 'Therapeutic Bond',
-        icon: '🤝',
-        value: 92,
-        status: 'OUTSTANDING',
-        trend: '+6%',
-        color: '#FFCFDF',
-    },
-];
+const N8N_WEBHOOK_URL = 'https://mindflex.app.n8n.cloud/webhook/2b9dd8c6-5463-48b5-aa02-f8dad1aabdd4';
+
+// Static Metadata (Icons/Colors/Names) to ensure UI consistency
+const DIMENSION_METADATA: Record<string, any> = {
+    '1': { title: 'Emotional States', subtitle: 'Mood & Energy', icon: '🎭', color: '#4ECDC4' },
+    '2': { title: 'Life Areas', subtitle: 'Focus Distribution', icon: '🎯', color: '#95E1D3' },
+    '3': { title: 'Psychological Patterns', subtitle: 'Thought Quality', icon: '🧠', color: '#F38181' },
+    '4': { title: 'Goals & Values', subtitle: 'Alignment', icon: '⭐', color: '#AA96DA' },
+    '5': { title: 'Actions & Skills', subtitle: 'Real Behavior', icon: '💪', color: '#FCBAD3' },
+    '6': { title: 'Resilience', subtitle: 'Recovery Speed', icon: '🔋', color: '#FFFFD2' },
+    '7': { title: 'Psychological Flexibility', subtitle: 'ACT Core', icon: '🌿', color: '#A8D8EA' },
+    '8': { title: 'Alliance & Connection', subtitle: 'Therapeutic Bond', icon: '🤝', color: '#FFCFDF' },
+};
+
+interface AnalyticsData {
+    id: string;
+    value: number;
+    status: string;
+    trend: string;
+    key_insight?: string;
+    sub_dimensions?: any[]; // For detail view
+}
 
 export default function ProfileScreen() {
     const router = useRouter();
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme ?? 'light'];
 
-    const handleEmailPress = () => {
-        Linking.openURL('mailto:hello@ai.therapy');
+    const [loading, setLoading] = useState(false);
+    const [analyzing, setAnalyzing] = useState(false);
+    const [analyticsData, setAnalyticsData] = useState<AnalyticsData[]>([]);
+    const [dailyInsight, setDailyInsight] = useState<string>("Analyzing your latest conversations...");
+    const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+
+    // Fetch Analytics Logic
+    const fetchAnalytics = async (forceRefresh = false) => {
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return;
+
+            // 1. Check local Supabase cache first
+            const { data: existingData, error } = await supabase
+                .from('user_analytics')
+                .select('*')
+                .eq('user_id', session.user.id)
+                .single();
+
+            if (existingData) {
+                const updatedAt = new Date(existingData.last_updated_at);
+                const now = new Date();
+                const hoursDiff = (now.getTime() - updatedAt.getTime()) / (1000 * 60 * 60);
+
+                // Use cached data if it exists
+                if (existingData.current_scores) {
+                    setAnalyticsData(existingData.current_scores);
+                    setDailyInsight(existingData.current_insight || "Welcome back!");
+                    setLastUpdated(updatedAt);
+                }
+
+                // If cache is fresh (< 24h) and we are not forcing, STOP here.
+                if (hoursDiff < 24 && !forceRefresh && existingData.current_scores) {
+                    return;
+                }
+            }
+
+            // 2. If stale or missing, call n8n
+            if (!analyzing) {
+                setAnalyzing(true); // Show analyzing UI
+
+                // POST to n8n
+                const response = await fetch(N8N_WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: session.user.id }) // n8n fetches history
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+
+                    if (result && result.tracking_data) {
+                        setAnalyticsData(result.tracking_data);
+                        setDailyInsight(result.daily_insight || "Here is your daily analysis.");
+                        setLastUpdated(new Date());
+
+                        // (Optional) The n8n workflow should save to Supabase, 
+                        // but we can also update state immediately here.
+                    }
+                } else {
+                    console.warn("n8n Analysis failed:", response.status);
+                }
+                setAnalyzing(false);
+            }
+
+        } catch (e) {
+            console.error("Error loading profile:", e);
+            setAnalyzing(false);
+        }
     };
+
+    useFocusEffect(
+        useCallback(() => {
+            fetchAnalytics();
+        }, [])
+    );
 
     const handleSignOut = async () => {
         try {
             await supabase.auth.signOut();
             await AsyncStorage.removeItem('skipLogin');
-            router.replace('/sign-in'); // Or '/' which redirects to sign-in
+            router.replace('/sign-in');
         } catch (error) {
             console.error('Error signing out:', error);
         }
     };
 
-    const renderTrackingCard = (item: typeof TRACKING_DATA[0]) => (
-        <TouchableOpacity
-            key={item.id}
-            style={[styles.trackingCard, { backgroundColor: theme.card }]}
-            onPress={() => router.push({
-                pathname: '/tracking-detail',
-                params: {
-                    id: item.id,
-                    title: item.title,
-                    subtitle: item.subtitle,
-                    icon: item.icon,
-                    color: item.color
-                }
-            })}
-        >
-            <View style={styles.cardHeader}>
-                <View style={styles.cardTitleRow}>
-                    <ThemedText style={styles.cardIcon}>{item.icon}</ThemedText>
-                    <View style={styles.cardTitleContainer}>
-                        <ThemedText type="defaultSemiBold" style={styles.cardTitle}>
-                            {item.title}
+    const renderTrackingCard = (item: AnalyticsData) => {
+        const meta = DIMENSION_METADATA[item.id] || DIMENSION_METADATA['1'];
+
+        return (
+            <TouchableOpacity
+                key={item.id}
+                style={[styles.trackingCard, { backgroundColor: theme.card }]}
+                onPress={() => {
+                    // Pass the FULL complex object (including sub_dimensions) to the detail screen
+                    router.push({
+                        pathname: '/tracking-detail',
+                        params: {
+                            id: item.id,
+                            title: meta.title, // Use Metadata title
+                            subtitle: meta.subtitle,
+                            icon: meta.icon,
+                            color: meta.color,
+                            // Pass dynamic data
+                            insight: item.key_insight,
+                            status: item.status,
+                            value: item.value.toString(),
+                            sub_dimensions: JSON.stringify(item.sub_dimensions || [])
+                        }
+                    });
+                }}
+            >
+                <View style={styles.cardHeader}>
+                    <View style={styles.cardTitleRow}>
+                        <ThemedText style={styles.cardIcon}>{meta.icon}</ThemedText>
+                        <View style={styles.cardTitleContainer}>
+                            <ThemedText type="defaultSemiBold" style={styles.cardTitle}>
+                                {meta.title}
+                            </ThemedText>
+                            <ThemedText style={styles.cardSubtitle}>{meta.subtitle}</ThemedText>
+                        </View>
+                    </View>
+                    <View style={[styles.trendBadge, { backgroundColor: `${meta.color}20` }]}>
+                        <ThemedText style={[styles.trendText, { color: meta.color }]}>
+                            {item.trend || '+0%'}
                         </ThemedText>
-                        <ThemedText style={styles.cardSubtitle}>{item.subtitle}</ThemedText>
                     </View>
                 </View>
-                <View style={[styles.trendBadge, { backgroundColor: `${item.color}20` }]}>
-                    <ThemedText style={[styles.trendText, { color: item.color }]}>
-                        {item.trend}
-                    </ThemedText>
-                </View>
-            </View>
 
-            <View style={styles.progressSection}>
-                <View style={styles.progressBar}>
-                    <LinearGradient
-                        colors={[item.color, `${item.color}80`]}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                        style={[styles.progressFill, { width: `${item.value}%` }]}
-                    />
+                <View style={styles.progressSection}>
+                    <View style={styles.progressBar}>
+                        <LinearGradient
+                            colors={[meta.color, `${meta.color}80`]}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            style={[styles.progressFill, { width: `${item.value}%` }]}
+                        />
+                    </View>
+                    <View style={styles.valueRow}>
+                        <ThemedText type="defaultSemiBold" style={styles.valueText}>
+                            {item.value}
+                        </ThemedText>
+                        <ThemedText style={styles.statusText}>{item.status}</ThemedText>
+                    </View>
                 </View>
-                <View style={styles.valueRow}>
-                    <ThemedText type="defaultSemiBold" style={styles.valueText}>
-                        {item.value}
-                    </ThemedText>
-                    <ThemedText style={styles.statusText}>{item.status}</ThemedText>
-                </View>
-            </View>
-        </TouchableOpacity>
-    );
+            </TouchableOpacity>
+        );
+    };
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
-            {/* Feedback Button */}
             <View style={styles.feedbackButtonContainer}>
                 <TouchableOpacity
                     style={[styles.feedbackButton, { backgroundColor: theme.primary }]}
@@ -183,7 +207,7 @@ export default function ProfileScreen() {
                 <View style={styles.profileHeader}>
                     <View style={styles.profileImageContainer}>
                         <Image
-                            source={{ uri: '/characters/Dr. Morpheus.jpg' }}
+                            source={{ uri: '/characters/Dr. Morpheus.jpg' }} // Placeholder
                             style={styles.profileImage}
                             contentFit="cover"
                         />
@@ -221,30 +245,42 @@ export default function ProfileScreen() {
                         <ThemedText type="subtitle" style={styles.sectionTitle}>
                             Your Psychological Journey
                         </ThemedText>
-                        <ThemedText style={styles.sectionSubtitle}>
-                            AI-powered insights from your conversations
-                        </ThemedText>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <ThemedText style={styles.sectionSubtitle}>
+                                {analyzing
+                                    ? "Analyzing your latest conversations..."
+                                    : lastUpdated
+                                        ? `Last updated: ${lastUpdated.toLocaleDateString()} ${lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                                        : "AI-powered insights"}
+                            </ThemedText>
+                            {analyzing && <ActivityIndicator size="small" color={theme.primary} />}
+                        </View>
                     </View>
 
-                    <View style={styles.trackingGrid}>
-                        {TRACKING_DATA.map(renderTrackingCard)}
-                    </View>
+                    {analyticsData.length === 0 && !analyzing ? (
+                        <View style={{ padding: 20, alignItems: 'center' }}>
+                            <ThemedText style={{ opacity: 0.5 }}>No data yet. Start chatting!</ThemedText>
+                        </View>
+                    ) : (
+                        <View style={styles.trackingGrid}>
+                            {analyticsData.map(renderTrackingCard)}
+                        </View>
+                    )}
 
-                    {/* Insight Summary */}
+                    {/* Daily Insight */}
                     <View style={[styles.insightCard, { backgroundColor: theme.card }]}>
                         <LinearGradient
                             colors={[`${theme.primary}20`, 'transparent']}
                             style={styles.insightGradient}
                         />
                         <ThemedText type="defaultSemiBold" style={styles.insightTitle}>
-                            ✨ This Week's Insight
+                            ✨ Daily Insight
                         </ThemedText>
                         <ThemedText style={styles.insightText}>
-                            "You're recovering from stress 50% faster than 3 weeks ago. Your emotional resilience is growing steadily."
+                            "{dailyInsight}"
                         </ThemedText>
                     </View>
 
-                    {/* Sign Out Button */}
                     <TouchableOpacity
                         style={styles.signOutButton}
                         onPress={handleSignOut}
@@ -258,240 +294,47 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    profileHeader: {
-        alignItems: 'center',
-        paddingVertical: 32,
-        paddingHorizontal: 24,
-    },
-    profileImageContainer: {
-        width: 100,
-        height: 100,
-        borderRadius: 50,
-        overflow: 'hidden',
-        marginBottom: 16,
-        position: 'relative',
-    },
-    profileImage: {
-        width: '100%',
-        height: '100%',
-    },
-    cameraButton: {
-        position: 'absolute',
-        bottom: -8,
-        right: -8,
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 3,
-        borderColor: '#000',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.3,
-        shadowRadius: 4,
-        elevation: 5,
-    },
-    name: {
-        fontSize: 24,
-        marginBottom: 24,
-    },
-    messagesCard: {
-        paddingVertical: 16,
-        paddingHorizontal: 24,
-        borderRadius: 16,
-        alignItems: 'center',
-        marginBottom: 32,
-        width: '100%',
-    },
-    messagesLabel: {
-        fontSize: 14,
-        opacity: 0.7,
-        marginBottom: 8,
-    },
-    messagesCount: {
-        fontSize: 32,
-        fontWeight: 'bold',
-    },
-    contactSection: {
-        alignItems: 'center',
-        gap: 8,
-    },
-    contactLabel: {
-        fontSize: 14,
-        fontWeight: '600',
-        opacity: 0.7,
-    },
-    contactEmail: {
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    contactSubtext: {
-        fontSize: 13,
-        opacity: 0.6,
-        textAlign: 'center',
-    },
-    trackingSection: {
-        paddingHorizontal: 24,
-        paddingBottom: 40,
-    },
-    sectionHeader: {
-        marginBottom: 24,
-    },
-    sectionTitle: {
-        fontSize: 22,
-        marginBottom: 8,
-    },
-    sectionSubtitle: {
-        fontSize: 14,
-        opacity: 0.6,
-    },
-    trackingGrid: {
-        gap: 16,
-    },
-    trackingCard: {
-        padding: 20,
-        borderRadius: 16,
-        gap: 16,
-    },
-    cardHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-    },
-    cardTitleRow: {
-        flexDirection: 'row',
-        gap: 12,
-        flex: 1,
-    },
-    cardIcon: {
-        fontSize: 28,
-    },
-    cardTitleContainer: {
-        flex: 1,
-        gap: 4,
-    },
-    cardTitle: {
-        fontSize: 16,
-    },
-    cardSubtitle: {
-        fontSize: 13,
-        opacity: 0.6,
-    },
-    trendBadge: {
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 12,
-    },
-    trendText: {
-        fontSize: 13,
-        fontWeight: '600',
-    },
-    progressSection: {
-        gap: 12,
-    },
-    progressBar: {
-        height: 8,
-        backgroundColor: 'rgba(255,255,255,0.1)',
-        borderRadius: 4,
-        overflow: 'hidden',
-    },
-    progressFill: {
-        height: '100%',
-        borderRadius: 4,
-    },
-    valueRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    valueText: {
-        fontSize: 24,
-    },
-    statusText: {
-        fontSize: 12,
-        opacity: 0.6,
-        fontWeight: '600',
-        letterSpacing: 0.5,
-    },
-    insightCard: {
-        marginTop: 24,
-        padding: 24,
-        borderRadius: 16,
-        overflow: 'hidden',
-    },
-    insightGradient: {
-        ...StyleSheet.absoluteFillObject,
-    },
-    insightTitle: {
-        fontSize: 18,
-        marginBottom: 12,
-    },
-    insightText: {
-        fontSize: 15,
-        lineHeight: 22,
-        opacity: 0.8,
-    },
-    feedbackButtonContainer: {
-        position: 'absolute',
-        top: 10,
-        right: 16,
-        zIndex: 10,
-    },
-    feedbackButton: {
-        paddingVertical: 8,
-        paddingHorizontal: 16,
-        borderRadius: 20,
-    },
-    feedbackButtonText: {
-        color: '#fff',
-        fontSize: 14,
-        fontWeight: '600',
-    },
-    nameRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-        marginBottom: 24,
-    },
-    editNameButton: {
-        padding: 4,
-    },
-    messagesRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        width: '100%',
-    },
-    premiumButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-        paddingVertical: 10,
-        paddingHorizontal: 16,
-        borderRadius: 20,
-    },
-    premiumButtonText: {
-        color: '#fff',
-        fontSize: 13,
-        fontWeight: '600',
-    },
-    signOutButton: {
-        marginTop: 32,
-        marginBottom: 48,
-        marginHorizontal: 24,
-        paddingVertical: 16,
-        borderRadius: 12,
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: '#FF6B6B',
-    },
-    signOutText: {
-        color: '#FF6B6B',
-        fontSize: 16,
-        fontWeight: '600',
-    },
+    container: { flex: 1 },
+    profileHeader: { alignItems: 'center', paddingVertical: 32, paddingHorizontal: 24 },
+    profileImageContainer: { width: 100, height: 100, borderRadius: 50, overflow: 'hidden', marginBottom: 16, position: 'relative' },
+    profileImage: { width: '100%', height: '100%' },
+    cameraButton: { position: 'absolute', bottom: -8, right: -8, width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center', borderWidth: 3, borderColor: '#000', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 5 },
+    name: { fontSize: 24, marginBottom: 24 },
+    messagesCard: { paddingVertical: 16, paddingHorizontal: 24, borderRadius: 16, alignItems: 'center', marginBottom: 32, width: '100%' },
+    messagesLabel: { fontSize: 14, opacity: 0.7, marginBottom: 8 },
+    messagesCount: { fontSize: 32, fontWeight: 'bold' },
+    trackingSection: { paddingHorizontal: 24, paddingBottom: 40 },
+    sectionHeader: { marginBottom: 24 },
+    sectionTitle: { fontSize: 22, marginBottom: 8 },
+    sectionSubtitle: { fontSize: 14, opacity: 0.6 },
+    trackingGrid: { gap: 16 },
+    trackingCard: { padding: 20, borderRadius: 16, gap: 16 },
+    cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+    cardTitleRow: { flexDirection: 'row', gap: 12, flex: 1 },
+    cardIcon: { fontSize: 28 },
+    cardTitleContainer: { flex: 1, gap: 4 },
+    cardTitle: { fontSize: 16 },
+    cardSubtitle: { fontSize: 13, opacity: 0.6 },
+    trendBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 },
+    trendText: { fontSize: 13, fontWeight: '600' },
+    progressSection: { gap: 12 },
+    progressBar: { height: 8, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 4, overflow: 'hidden' },
+    progressFill: { height: '100%', borderRadius: 4 },
+    valueRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    valueText: { fontSize: 24 },
+    statusText: { fontSize: 12, opacity: 0.6, fontWeight: '600', letterSpacing: 0.5 },
+    insightCard: { marginTop: 24, padding: 24, borderRadius: 16, overflow: 'hidden' },
+    insightGradient: { ...StyleSheet.absoluteFillObject },
+    insightTitle: { fontSize: 18, marginBottom: 12 },
+    insightText: { fontSize: 15, lineHeight: 22, opacity: 0.8 },
+    feedbackButtonContainer: { position: 'absolute', top: 10, right: 16, zIndex: 10 },
+    feedbackButton: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20 },
+    feedbackButtonText: { color: '#fff', fontSize: 14, fontWeight: '600' },
+    nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 24 },
+    editNameButton: { padding: 4 },
+    messagesRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%' },
+    premiumButton: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 10, paddingHorizontal: 16, borderRadius: 20 },
+    premiumButtonText: { color: '#fff', fontSize: 13, fontWeight: '600' },
+    signOutButton: { marginTop: 32, marginBottom: 48, marginHorizontal: 24, paddingVertical: 16, borderRadius: 12, alignItems: 'center', borderWidth: 1, borderColor: '#FF6B6B' },
+    signOutText: { color: '#FF6B6B', fontSize: 16, fontWeight: '600' },
 });
