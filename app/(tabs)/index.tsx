@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Dimensions, FlatList, Platform, Pressable, StyleSheet, TextInput, TouchableOpacity, View, ViewToken } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -140,7 +140,7 @@ export default function HomeScreen() {
     }, 500);
   };
 
-  const renderTopicChip = ({ item }: { item: Topic }) => {
+  const renderTopicChip = useCallback(({ item }: { item: Topic }) => {
     const isSelected = item.id === selectedTopicId;
     return (
       <TouchableOpacity
@@ -161,7 +161,7 @@ export default function HomeScreen() {
         </ThemedText>
       </TouchableOpacity>
     );
-  };
+  }, [selectedTopicId, theme, handleTopicPress]);
 
   const handleShare = (char: Character) => {
     setActiveMenuId(null);
@@ -217,7 +217,7 @@ export default function HomeScreen() {
     }
   };
 
-  const renderCharacterCard = (item: Character, sectionId?: string) => (
+  const renderCharacterCard = useCallback((item: Character, sectionId?: string) => (
     <TouchableOpacity
       key={item.id}
       style={[styles.characterCard, { backgroundColor: theme.card }]}
@@ -265,9 +265,9 @@ export default function HomeScreen() {
         </ThemedText>
       </View>
     </TouchableOpacity>
-  );
+  ), [theme, router, activeMenuId]);
 
-  const renderSection = ({ item }: { item: TopicSection }) => {
+  const renderSection = useCallback(({ item }: { item: TopicSection }) => {
     return (
       <View style={styles.sectionContainer}>
         <ThemedText type="subtitle" style={styles.sectionTitle}>{item.title}</ThemedText>
@@ -276,7 +276,7 @@ export default function HomeScreen() {
         </View>
       </View>
     );
-  };
+  }, [renderCharacterCard]);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
