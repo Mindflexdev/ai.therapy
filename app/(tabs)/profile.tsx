@@ -362,8 +362,20 @@ export default function ProfileScreen() {
                             }}
                         />
                     ) : analyticsData.length === 0 ? (
-                        <View style={{ padding: 20, alignItems: 'center' }}>
-                            <ThemedText style={{ opacity: 0.5 }}>No data yet. Start chatting!</ThemedText>
+                        <View style={{ padding: 40, alignItems: 'center' }}>
+                            <ThemedText style={{ fontSize: 16, marginBottom: 8, textAlign: 'center' }}>
+                                Get AI-powered insights
+                            </ThemedText>
+                            <ThemedText style={{ opacity: 0.6, marginBottom: 24, textAlign: 'center' }}>
+                                Analyze your conversations across 8 psychological dimensions
+                            </ThemedText>
+                            <TouchableOpacity
+                                style={[styles.analyzeButton, { backgroundColor: theme.primary }]}
+                                onPress={() => fetchAnalytics(true)}
+                            >
+                                <IconSymbol name="sparkles" size={20} color="#fff" />
+                                <ThemedText style={styles.analyzeButtonText}>Analyze my chats</ThemedText>
+                            </TouchableOpacity>
                         </View>
                     ) : (
                         <View style={styles.trackingGrid}>
@@ -384,6 +396,17 @@ export default function ProfileScreen() {
                             "{dailyInsight}"
                         </ThemedText>
                     </View>
+
+                    {/* Reanalyze Button - Only show if data exists */}
+                    {analyticsData.length > 0 && (
+                        <TouchableOpacity
+                            style={[styles.analyzeButton, { backgroundColor: theme.primary, marginHorizontal: 24, marginTop: 24 }]}
+                            onPress={() => fetchAnalytics(true)}
+                        >
+                            <IconSymbol name="arrow.clockwise" size={20} color="#fff" />
+                            <ThemedText style={styles.analyzeButtonText}>Reanalyze most current chats</ThemedText>
+                        </TouchableOpacity>
+                    )}
 
                     <TouchableOpacity
                         style={styles.signOutButton}
@@ -441,4 +464,6 @@ const styles = StyleSheet.create({
     premiumButtonText: { color: '#fff', fontSize: 13, fontWeight: '600' },
     signOutButton: { marginTop: 32, marginBottom: 48, marginHorizontal: 24, paddingVertical: 16, borderRadius: 12, alignItems: 'center', borderWidth: 1, borderColor: '#FF6B6B' },
     signOutText: { color: '#FF6B6B', fontSize: 16, fontWeight: '600' },
+    analyzeButton: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 14, paddingHorizontal: 24, borderRadius: 12 },
+    analyzeButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
 });
