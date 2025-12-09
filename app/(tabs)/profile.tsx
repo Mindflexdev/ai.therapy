@@ -2,8 +2,8 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Animated, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -27,6 +27,15 @@ const DIMENSION_METADATA: Record<string, any> = {
     '8': { title: 'Alliance & Connection', subtitle: 'Therapeutic Bond', icon: '🤝', color: '#FFCFDF' },
 };
 
+const ANALYSIS_MESSAGES = [
+    "Analyzing your conversations...",
+    "Detecting emotional patterns...",
+    "Calculating psychological trends...",
+    "Measuring resilience factors...",
+    "Evaluating therapeutic progress...",
+    "Processing behavioral insights...",
+];
+
 interface AnalyticsData {
     id: string;
     value: number;
@@ -46,6 +55,12 @@ export default function ProfileScreen() {
     const [analyticsData, setAnalyticsData] = useState<AnalyticsData[]>([]);
     const [dailyInsight, setDailyInsight] = useState<string>("Analyzing your latest conversations...");
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+
+    // Countdown animation state
+    const [countdown, setCountdown] = useState(60);
+    const [analysisMessage, setAnalysisMessage] = useState(ANALYSIS_MESSAGES[0]);
+    const progressAnim = useRef(new Animated.Value(0)).current;
+    const countdownInterval = useRef<NodeJS.Timeout | null>(null);
 
     // Fetch Analytics Logic
     const fetchAnalytics = async (forceRefresh = false) => {
@@ -69,6 +84,7 @@ export default function ProfileScreen() {
                 // n8n saves data as: { output: { tracking_data: [...], daily_insight: "..." } }
                 let trackingData = null;
                 let insight = "Welcome back!";
+                let previousData = null;
 
                 if (existingData.output) {
                     // Handle n8n's nested structure
@@ -80,8 +96,40 @@ export default function ProfileScreen() {
                     insight = existingData.current_insight || "Welcome back!";
                 }
 
+                // Get previous data for trend calculation
+                if (existingData.previous_output?.tracking_data) {
+                    previousData = existingData.previous_output.tracking_data;
+                }
+
                 if (trackingData) {
-                    setAnalyticsData(trackingData);
+                    // Calculate trends if previous data exists
+                    const dataWithTrends = trackingData.map((current: any) => {
+                        if (!previousData) {
+                            // No previous data, remove trend
+                            const { trend, ...rest } = current;
+                            return rest;
+                        }
+
+                        // Find matching previous dimension
+                        const previous = previousData.find((p: any) => p.id === current.id);
+                        if (!previous) {
+                            const { trend, ...rest } = current;
+                            return rest;
+                        }
+
+                        // Calculate percentage change
+                        const change = current.value - previous.value;
+                        const percentChange = previous.value !== 0
+                            ? Math.round((change / previous.value) * 100)
+                            : 0;
+
+                        return {
+                            ...current,
+                            trend: percentChange > 0 ? `+${percentChange}%` : percentChange < 0 ? `${percentChange}%` : '0%'
+                        };
+                    });
+
+                    setAnalyticsData(dataWithTrends);
                     setDailyInsight(insight);
                     setLastUpdated(updatedAt);
                 }
@@ -228,15 +276,6 @@ export default function ProfileScreen() {
         <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
             <View style={styles.feedbackButtonContainer}>
                 <TouchableOpacity
-                    style={[styles.feedbackButton, { backgroundColor: '#FF6B6B', marginBottom: 8 }]}
-                    onPress={() => {
-                        console.log("Force refresh triggered");
-                        fetchAnalytics(true);
-                    }}
-                >
-                    <ThemedText style={styles.feedbackButtonText}>🔄 Refresh</ThemedText>
-                </TouchableOpacity>
-                <TouchableOpacity
                     style={[styles.feedbackButton, { backgroundColor: theme.primary }]}
                     onPress={() => router.push('/feedback')}
                 >
@@ -292,20 +331,20 @@ export default function ProfileScreen() {
                                 {analyzing
                                     ? "Analyzing your latest conversations..."
                                     : lastUpdated
-                                        ? `Last updated: ${lastUpdated.toLocaleDateString()} ${lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-                                        : "AI-powered insights"}
-                            </ThemedText>
-                            {analyzing && <ActivityIndicator size="small" color={theme.primary} />}
-                        </View>
-                    </View>
+                                        ? (() => {
+                                            const now = new Date();
+                                            const hoursSince = Math.floor((now.getTime() - lastUpdated.getTime()) / (1000 * 60 * 60));
+                                            const hoursUntilNext = Math.max(0, 24 - hoursSince);
 
-                    {analyticsData.length === 0 && !analyzing ? (
-                        <View style={{ padding: 20, alignItems: 'center' }}>
-                            <ThemedText style={{ opacity: 0.5 }}>No data yet. Start chatting!</ThemedText>
-                        </View>
-                    ) : (
-                        <View style={styles.trackingGrid}>
-                            {analyticsData.map(renderTrackingCard)}
+                                            if (hoursSince < 1) {
+                                                return "Updated just now • Refreshes daily";
+                                            } else if (hoursSince < 24) {
+                                                return `Updated ${hoursSince}h ago • Next update in ${hoursUntilNext}h`;
+                                            } else {
+                                                return "Updating soon...";
+                                            }
+                                        })()
+                                        : "AI-powered insights • Updates daily"}
                         </View>
                     )}
 
