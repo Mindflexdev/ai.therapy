@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Animated, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Alert, Animated, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -345,6 +345,19 @@ export default function ProfileScreen() {
                                             }
                                         })()
                                         : "AI-powered insights • Updates daily"}
+                            </ThemedText>
+                        </View>
+                    </View>
+
+                    {analyzing ? (
+                        <AnalysisLoading theme={theme} onComplete={() => setAnalyzing(false)} />
+                    ) : analyticsData.length === 0 ? (
+                        <View style={{ padding: 20, alignItems: 'center' }}>
+                            <ThemedText style={{ opacity: 0.5 }}>No data yet. Start chatting!</ThemedText>
+                        </View>
+                    ) : (
+                        <View style={styles.trackingGrid}>
+                            {analyticsData.map(renderTrackingCard)}
                         </View>
                     )}
 
