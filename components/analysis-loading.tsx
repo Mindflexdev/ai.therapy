@@ -1,10 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
-import Svg, { Circle } from 'react-native-svg';
 
 import { ThemedText } from './themed-text';
-
-const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 const MESSAGES = [
     "Analyzing your psychological profile",
@@ -22,10 +19,6 @@ export function AnalysisLoading({ theme, onComplete }: AnalysisLoadingProps) {
     const [messageIndex, setMessageIndex] = useState(0);
     const progressAnim = useRef(new Animated.Value(0)).current;
     const messageOpacity = useRef(new Animated.Value(1)).current;
-
-    const radius = 80;
-    const strokeWidth = 8;
-    const circumference = 2 * Math.PI * radius;
 
     useEffect(() => {
         // Countdown timer
@@ -63,7 +56,7 @@ export function AnalysisLoading({ theme, onComplete }: AnalysisLoadingProps) {
         Animated.timing(progressAnim, {
             toValue: 1,
             duration: 60000, // 60 seconds
-            useNativeDriver: true,
+            useNativeDriver: false,
         }).start();
 
         return () => {
@@ -72,40 +65,32 @@ export function AnalysisLoading({ theme, onComplete }: AnalysisLoadingProps) {
         };
     }, []);
 
-    // Calculate stroke dash offset for circular progress
-    const strokeDashoffset = progressAnim.interpolate({
+    // Calculate progress percentage
+    const progressPercentage = progressAnim.interpolate({
         inputRange: [0, 1],
-        outputRange: [0, circumference],
+        outputRange: [0, 100],
     });
 
     return (
         <View style={styles.container}>
             <View style={styles.circleContainer}>
-                <Svg width={radius * 2 + strokeWidth} height={radius * 2 + strokeWidth}>
-                    {/* Background circle */}
-                    <Circle
-                        cx={radius + strokeWidth / 2}
-                        cy={radius + strokeWidth / 2}
-                        r={radius}
-                        stroke={theme.card}
-                        strokeWidth={strokeWidth}
-                        fill="none"
+                {/* Simple circular progress using border */}
+                <View style={[styles.circle, { borderColor: theme.card }]}>
+                    <Animated.View
+                        style={[
+                            styles.progressCircle,
+                            {
+                                borderColor: theme.primary,
+                                transform: [{
+                                    rotate: progressPercentage.interpolate({
+                                        inputRange: [0, 100],
+                                        outputRange: ['0deg', '360deg']
+                                    })
+                                }]
+                            }
+                        ]}
                     />
-                    {/* Animated progress circle */}
-                    <AnimatedCircle
-                        cx={radius + strokeWidth / 2}
-                        cy={radius + strokeWidth / 2}
-                        r={radius}
-                        stroke={theme.primary}
-                        strokeWidth={strokeWidth}
-                        fill="none"
-                        strokeDasharray={circumference}
-                        strokeDashoffset={strokeDashoffset}
-                        strokeLinecap="round"
-                        rotation="-90"
-                        origin={`${radius + strokeWidth / 2}, ${radius + strokeWidth / 2}`}
-                    />
-                </Svg>
+                </View>
 
                 {/* Countdown number in center */}
                 <View style={styles.countdownContainer}>
@@ -139,6 +124,24 @@ const styles = StyleSheet.create({
         position: 'relative',
         justifyContent: 'center',
         alignItems: 'center',
+        width: 180,
+        height: 180,
+    },
+    circle: {
+        width: 180,
+        height: 180,
+        borderRadius: 90,
+        borderWidth: 8,
+        position: 'absolute',
+    },
+    progressCircle: {
+        width: 180,
+        height: 180,
+        borderRadius: 90,
+        borderWidth: 8,
+        borderRightColor: 'transparent',
+        borderBottomColor: 'transparent',
+        position: 'absolute',
     },
     countdownContainer: {
         position: 'absolute',
