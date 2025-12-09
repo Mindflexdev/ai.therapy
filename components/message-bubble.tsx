@@ -11,11 +11,15 @@ interface MessageBubbleProps {
 }
 
 export const MessageBubble = memo(({ text, isUser, avatarUri, theme }: MessageBubbleProps) => {
+    // Clean any metadata prefix from messages
+    // Format: =(Talking to X | Style: Y) message
+    const cleanText = text.replace(/^=?\(Talking to [^)]+\)\s*/, '').trim();
+
     if (isUser) {
         return (
             <View style={styles.userContainer}>
                 <View style={[styles.userBubble, { backgroundColor: theme.primary }]}>
-                    <ThemedText style={styles.userText}>{text}</ThemedText>
+                    <ThemedText style={styles.userText}>{cleanText}</ThemedText>
                 </View>
             </View>
         );
@@ -27,7 +31,7 @@ export const MessageBubble = memo(({ text, isUser, avatarUri, theme }: MessageBu
                 <Image source={{ uri: avatarUri }} style={styles.avatar} contentFit="cover" />
             )}
             <View style={[styles.aiBubble, { backgroundColor: theme.card }]}>
-                <ThemedText style={styles.aiText}>{text}</ThemedText>
+                <ThemedText style={styles.aiText}>{cleanText}</ThemedText>
             </View>
         </View>
     );

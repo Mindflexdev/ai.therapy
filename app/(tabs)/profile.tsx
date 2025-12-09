@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useRef, useState } from 'react';
-import { Alert, Animated, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Animated, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AnalysisLoading } from '@/components/analysis-loading';
@@ -53,6 +53,7 @@ export default function ProfileScreen() {
 
     const [loading, setLoading] = useState(false);
     const [analyzing, setAnalyzing] = useState(false);
+    const [analysisError, setAnalysisError] = useState<string | null>(null);
     const [analyticsData, setAnalyticsData] = useState<AnalyticsData[]>([]);
     const [dailyInsight, setDailyInsight] = useState<string>("Analyzing your latest conversations...");
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -182,7 +183,8 @@ export default function ProfileScreen() {
                     }
                 } else {
                     console.error("[Profile] All n8n analytics attempts failed.", error || response?.status);
-                    Alert.alert("Analysis Failed", "Could not connect to the AI analyst. Please try again later.");
+                    const errorCode = `ERR_${Date.now()}_${response?.status || 'NETWORK'}`;
+                    setAnalysisError(errorCode);
                 }
                 setAnalyzing(false);
             }
@@ -351,7 +353,14 @@ export default function ProfileScreen() {
                     </View>
 
                     {analyzing ? (
-                        <AnalysisLoading theme={theme} onComplete={() => setAnalyzing(false)} />
+                        <AnalysisLoading
+                            theme={theme}
+                            errorCode={analysisError}
+                            onComplete={() => {
+                                setAnalyzing(false);
+                                setAnalysisError(null);
+                            }}
+                        />
                     ) : analyticsData.length === 0 ? (
                         <View style={{ padding: 20, alignItems: 'center' }}>
                             <ThemedText style={{ opacity: 0.5 }}>No data yet. Start chatting!</ThemedText>

@@ -11,6 +11,7 @@ const MESSAGES = [
 
 interface AnalysisLoadingProps {
     theme: any;
+    errorCode?: string | null;
     onComplete?: () => void;
 }
 
