@@ -65,15 +65,29 @@ export default function ProfileScreen() {
                 const now = new Date();
                 const hoursDiff = (now.getTime() - updatedAt.getTime()) / (1000 * 60 * 60);
 
-                // Use cached data if it exists
-                if (existingData.current_scores) {
-                    setAnalyticsData(existingData.current_scores);
-                    setDailyInsight(existingData.current_insight || "Welcome back!");
+                // Parse the raw n8n output structure
+                // n8n saves data as: { output: { tracking_data: [...], daily_insight: "..." } }
+                let trackingData = null;
+                let insight = "Welcome back!";
+
+                if (existingData.output) {
+                    // Handle n8n's nested structure
+                    trackingData = existingData.output.tracking_data;
+                    insight = existingData.output.daily_insight || "Welcome back!";
+                } else if (existingData.current_scores) {
+                    // Fallback: Handle old structure if it exists
+                    trackingData = existingData.current_scores;
+                    insight = existingData.current_insight || "Welcome back!";
+                }
+
+                if (trackingData) {
+                    setAnalyticsData(trackingData);
+                    setDailyInsight(insight);
                     setLastUpdated(updatedAt);
                 }
 
                 // If cache is fresh (< 24h) and we are not forcing, STOP here.
-                if (hoursDiff < 24 && !forceRefresh && existingData.current_scores) {
+                if (hoursDiff < 24 && !forceRefresh && trackingData) {
                     return;
                 }
             }
@@ -213,6 +227,15 @@ export default function ProfileScreen() {
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
             <View style={styles.feedbackButtonContainer}>
+                <TouchableOpacity
+                    style={[styles.feedbackButton, { backgroundColor: '#FF6B6B', marginBottom: 8 }]}
+                    onPress={() => {
+                        console.log("Force refresh triggered");
+                        fetchAnalytics(true);
+                    }}
+                >
+                    <ThemedText style={styles.feedbackButtonText}>🔄 Refresh</ThemedText>
+                </TouchableOpacity>
                 <TouchableOpacity
                     style={[styles.feedbackButton, { backgroundColor: theme.primary }]}
                     onPress={() => router.push('/feedback')}

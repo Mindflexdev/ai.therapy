@@ -26,7 +26,6 @@ import { TOPICS } from '@/constants/data';
 import { Colors } from '@/constants/theme';
 import { ALL_THERAPY_OPTIONS, STYLE_ABBREVIATIONS } from '@/constants/therapy';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { createJWT } from '@/lib/jwt';
 import { createCacheKey, queryCache } from '@/lib/query-cache';
 import { generateSessionId } from '@/lib/session';
 import { supabase } from '@/lib/supabase';
@@ -349,11 +348,6 @@ export default function ConversationScreen() {
             const currentUserId = session?.user?.id || 'anonymous';
             const sessionId = generateSessionId(currentUserId, id); // Use character ID from route
 
-            const token = await createJWT({
-                userId: currentUserId,
-                action: 'audio_transcription',
-            });
-
             // Handle Web vs Mobile
             let responseData;
 
@@ -369,7 +363,7 @@ export default function ConversationScreen() {
                 const uploadRes = await fetch(AUDIO_WEBHOOK_URL, {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${token}`,
+                        'Authorization': `Bearer ${session?.access_token}`,
                         // Do NOT set Content-Type header manually for FormData, browser does it with boundary
                     },
                     body: formData,
@@ -387,7 +381,7 @@ export default function ConversationScreen() {
                     httpMethod: 'POST',
                     uploadType: FileSystem.FileSystemUploadType.MULTIPART,
                     headers: {
-                        'Authorization': `Bearer ${token}`,
+                        'Authorization': `Bearer ${session?.access_token}`,
                     },
                     fieldName: 'file',
                     mimeType: 'audio/m4a',
@@ -435,16 +429,11 @@ export default function ConversationScreen() {
         try {
             const currentUserId = session?.user?.id || 'anonymous';
 
-            const token = await createJWT({
-                userId: currentUserId,
-                action: 'chat_message',
-            });
-
             const response = await fetch(WEBHOOK_URL, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
+                    'Authorization': `Bearer ${session?.access_token}`,
                 },
                 body: JSON.stringify({
                     message: userMsgText,
