@@ -6,6 +6,7 @@ import React, { useCallback, useRef, useState } from 'react';
 import { Alert, Animated, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AnalysisLoading } from '@/components/analysis-loading';
 import { ThemedText } from '@/components/themed-text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
