@@ -12,8 +12,10 @@ import {
     Platform,
     StyleSheet,
     TextInput,
+    TextInputContentSizeChangeEventData,
     TouchableOpacity,
     View,
+    NativeSyntheticEvent,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -48,6 +50,9 @@ interface Character {
 
 const WEBHOOK_URL = 'https://mindflex.app.n8n.cloud/webhook/b4d0ede8-b771-4c33-aceb-83dcb44b0bf5';
 const AUDIO_WEBHOOK_URL = 'https://mindflex.app.n8n.cloud/webhook/63d418a6-cafe-43e7-b1c6-84405a761a32';
+const MAX_VISIBLE_LINES = 9;
+const INPUT_LINE_HEIGHT = 20;
+const INPUT_VERTICAL_PADDING = 8;
 
 export default function ConversationScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -77,6 +82,10 @@ export default function ConversationScreen() {
     const [isTranscribing, setIsTranscribing] = useState(false);
     const [soundLevel, setSoundLevel] = useState(0);
     const pulseAnim = useRef(new Animated.Value(1)).current;
+    const minInputHeight = INPUT_LINE_HEIGHT + INPUT_VERTICAL_PADDING * 2;
+    const maxInputHeight = INPUT_LINE_HEIGHT * MAX_VISIBLE_LINES + INPUT_VERTICAL_PADDING * 2;
+    const [inputHeight, setInputHeight] = useState(minInputHeight);
+    const [isInputScrollEnabled, setIsInputScrollEnabled] = useState(false);
 
     // Cleanup recording on unmount
     useEffect(() => {
@@ -110,6 +119,23 @@ export default function ConversationScreen() {
             pulseAnim.setValue(1);
         }
     }, [isRecording, soundLevel]);
+
+    useEffect(() => {
+        if (inputText === '') {
+            setInputHeight(minInputHeight);
+            setIsInputScrollEnabled(false);
+        }
+    }, [inputText, minInputHeight]);
+
+    const handleInputSizeChange = useCallback(
+        (event: NativeSyntheticEvent<TextInputContentSizeChangeEventData>) => {
+            const contentHeight = event.nativeEvent.contentSize.height;
+            const clampedHeight = Math.min(contentHeight, maxInputHeight);
+            setInputHeight(Math.max(minInputHeight, clampedHeight));
+            setIsInputScrollEnabled(contentHeight > maxInputHeight);
+        },
+        [maxInputHeight, minInputHeight]
+    );
 
     // Fetch user data and session
     useEffect(() => {
@@ -709,7 +735,9 @@ export default function ConversationScreen() {
                                 {
                                     backgroundColor: theme.card,
                                     color: theme.text,
-                                    paddingVertical: 10,
+                                    paddingVertical: INPUT_VERTICAL_PADDING,
+                                    height: inputHeight,
+                                    lineHeight: INPUT_LINE_HEIGHT,
                                 },
                             ]}
                             placeholder={isTranscribing ? "Transcribing..." : "Message..."}
@@ -719,6 +747,8 @@ export default function ConversationScreen() {
                             multiline
                             editable={!isTranscribing}
                             onKeyPress={handleKeyPress}
+                            onContentSizeChange={handleInputSizeChange}
+                            scrollEnabled={isInputScrollEnabled}
                         />
                     )}
 
@@ -862,7 +892,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'flex-end',
         paddingHorizontal: 12,
-        paddingVertical: 8,
+        paddingVertical: 6,
         gap: 8,
         borderTopWidth: 1,
     },
@@ -872,10 +902,8 @@ const styles = StyleSheet.create({
     input: {
         flex: 1,
         paddingHorizontal: 16,
-        paddingVertical: 10,
         borderRadius: 20,
         fontSize: 16,
-        maxHeight: 100,
     },
     sendButton: {
         padding: 8,
