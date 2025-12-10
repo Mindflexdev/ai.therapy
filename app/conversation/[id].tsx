@@ -776,6 +776,13 @@ export default function ConversationScreen() {
                         </TouchableOpacity>
                     )}
                 </View>
+
+                {/* Persistent Mini Disclaimer */}
+                <View style={styles.miniDisclaimerContainer}>
+                    <ThemedText style={styles.miniDisclaimerText}>
+                        ai.therapy is not a therapeutic service.
+                    </ThemedText>
+                </View>
             </KeyboardAvoidingView>
         </SafeAreaView>
     );
@@ -925,5 +932,19 @@ const styles = StyleSheet.create({
         fontSize: 11,
         lineHeight: 16,
         color: '#666',
+        textAlign: 'center',
+    },
+    miniDisclaimerContainer: {
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        backgroundColor: '#f9f9f9',
+        borderTopWidth: 1,
+        borderTopColor: '#e0e0e0',
+        alignItems: 'center',
+    },
+    miniDisclaimerText: {
+        fontSize: 9,
+        color: '#999',
+        textAlign: 'center',
     },
 });
