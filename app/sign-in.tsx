@@ -106,6 +106,12 @@ export default function SignInScreen() {
 
                 {/* Auth Buttons */}
                 <View style={styles.authContainer}>
+                    {/* Start Here Label with Arrow */}
+                    <View style={styles.startHereContainer}>
+                        <ThemedText style={styles.startHereText}>Start here</ThemedText>
+                        <ThemedText style={styles.startHereArrow}>↓</ThemedText>
+                    </View>
+
                     <TouchableOpacity
                         style={styles.authButton}
                         onPress={() => handleSignIn('google')}
@@ -118,10 +124,10 @@ export default function SignInScreen() {
                     {/* Waitlist Section */}
                     <View style={styles.waitlistSection}>
                         <ThemedText style={styles.announcementText}>
-                            Soon coming to iOS and Android
+                            Soon available on iOS and Android.
                         </ThemedText>
                         <ThemedText style={styles.waitlistPrompt}>
-                            Want to get notified? Join Waitlist here
+                            Join the waitlist to stay in the loop.
                         </ThemedText>
 
                         {!emailSubmitted ? (
@@ -150,7 +156,7 @@ export default function SignInScreen() {
                                     <FontAwesome name="check" size={20} color="#4CAF50" />
                                 </View>
                                 <ThemedText style={styles.successText}>
-                                    We send you the first mail - bestätige jetzt to be notified!
+                                    Make sure to confirm the email we send you!
                                 </ThemedText>
                             </View>
                         )}
@@ -267,6 +273,21 @@ const styles = StyleSheet.create({
         width: '100%',
         maxWidth: 400,
         alignSelf: 'center',
+    },
+    startHereContainer: {
+        alignItems: 'center',
+        marginBottom: 8,
+    },
+    startHereText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#5B8FD8',
+        marginBottom: 4,
+    },
+    startHereArrow: {
+        fontSize: 24,
+        color: '#5B8FD8',
+        transform: [{ rotate: '5deg' }],
     },
     authButton: {
         flexDirection: 'row',
