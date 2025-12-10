@@ -668,6 +668,16 @@ export default function ConversationScreen() {
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 keyboardVerticalOffset={100}
             >
+                {/* Disclaimer Banner */}
+                <View style={styles.disclaimerBanner}>
+                    <IconSymbol name="exclamationmark.triangle" size={18} color="#666" style={{ marginRight: 12 }} />
+                    <ThemedText style={styles.disclaimerText}>
+                        ai.therapy is not a therapeutic service. No diagnosis, no treatment.{'\n'}
+                        All messages are AI-generated and not a substitute for professional care.{'\n'}
+                        Inspired by therapeutic methods — have fun exploring.
+                    </ThemedText>
+                </View>
+
                 <FlatList
                     ref={flatListRef}
                     data={messages}
@@ -897,5 +907,23 @@ const styles = StyleSheet.create({
     },
     sendButton: {
         padding: 8,
+    },
+    disclaimerBanner: {
+        flexDirection: 'row',
+        backgroundColor: '#fff',
+        padding: 12,
+        marginHorizontal: 12,
+        marginTop: 8,
+        marginBottom: 8,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#e0e0e0',
+        alignItems: 'flex-start',
+    },
+    disclaimerText: {
+        flex: 1,
+        fontSize: 11,
+        lineHeight: 16,
+        color: '#666',
     },
 });

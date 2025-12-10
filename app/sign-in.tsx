@@ -193,7 +193,27 @@ export default function SignInScreen() {
                     )}
                 </View>
 
-                <View style={{ height: 40 }} />
+                {/* Footer */}
+                <View style={styles.footer}>
+                    <ThemedText style={styles.footerText}>
+                        Crafted with ❤️ and{' '}
+                        <ThemedText
+                            style={styles.footerLink}
+                            onPress={() => {
+                                if (Platform.OS === 'web') {
+                                    window.open('https://antigravity.google/', '_blank');
+                                } else {
+                                    // For mobile, you'd use Linking.openURL
+                                    import('expo-linking').then(({ default: Linking }) => {
+                                        Linking.openURL('https://antigravity.google/');
+                                    });
+                                }
+                            }}
+                        >
+                            Google Antigravity
+                        </ThemedText>
+                    </ThemedText>
+                </View>
             </View>
         </View >
     );
@@ -353,5 +373,20 @@ const styles = StyleSheet.create({
         fontSize: 13,
         color: '#2e7d32',
         lineHeight: 18,
+    },
+    footer: {
+        paddingVertical: 20,
+        alignItems: 'center',
+    },
+    footerText: {
+        fontSize: 12,
+        color: '#666',
+        textAlign: 'center',
+    },
+    footerLink: {
+        fontSize: 12,
+        color: '#5B8FD8',
+        fontWeight: '600',
+        textDecorationLine: 'underline',
     },
 });
