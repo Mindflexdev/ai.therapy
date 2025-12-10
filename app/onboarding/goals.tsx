@@ -1,4 +1,19 @@
-description: string;
+import { useRouter } from 'expo-router';
+import React, { useEffect, useRef, useState } from 'react';
+import { Animated, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { ThemedText } from '../../components/themed-text';
+import { IconSymbol } from '../../components/ui/icon-symbol';
+import { Colors } from '../../constants/theme';
+import { useColorScheme } from '../../hooks/use-color-scheme';
+import { supabase } from '../../lib/supabase';
+
+interface Goal {
+    id: string;
+    icon: string;
+    title: string;
+    description: string;
 }
 
 const GOALS: Goal[] = [
@@ -13,6 +28,7 @@ const GOALS: Goal[] = [
 ];
 
 export default function GoalSelectionScreen() {
+    const router = useRouter();
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme ?? 'light'];
     const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
