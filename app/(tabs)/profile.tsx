@@ -424,19 +424,21 @@ export default function ProfileScreen() {
                         </View>
                     )}
 
-                    {/* Daily Insight */}
-                    <View style={[styles.insightCard, { backgroundColor: theme.card }]}>
-                        <LinearGradient
-                            colors={[`${theme.primary}20`, 'transparent']}
-                            style={styles.insightGradient}
-                        />
-                        <ThemedText type="defaultSemiBold" style={styles.insightTitle}>
-                            ✨ Daily Insight
-                        </ThemedText>
-                        <ThemedText style={styles.insightText}>
-                            "{dailyInsight}"
-                        </ThemedText>
-                    </View>
+                    {/* Daily Insight - Only show when analytics data exists */}
+                    {analyticsData.length > 0 && (
+                        <View style={[styles.insightCard, { backgroundColor: theme.card }]}>
+                            <LinearGradient
+                                colors={[`${theme.primary}20`, 'transparent']}
+                                style={styles.insightGradient}
+                            />
+                            <ThemedText type="defaultSemiBold" style={styles.insightTitle}>
+                                ✨ Daily Insight
+                            </ThemedText>
+                            <ThemedText style={styles.insightText}>
+                                "{dailyInsight}"
+                            </ThemedText>
+                        </View>
+                    )}
 
                     {/* Reanalyze Button - Only show if data exists AND user has 50+ messages */}
                     {analyticsData.length > 0 && messageCount >= 50 && (
