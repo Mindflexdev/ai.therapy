@@ -39,6 +39,8 @@ export default function HomeScreen() {
   const [isSearchMode, setIsSearchMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredSections, setFilteredSections] = useState<TopicSection[]>([]);
+  const [userGoals, setUserGoals] = useState<string[]>([]);
+  const [sortedTopics, setSortedTopics] = useState<Topic[]>(TOPICS);
 
   // Menu & Modal States
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
@@ -48,6 +50,45 @@ export default function HomeScreen() {
   const mainListRef = useRef<FlatList>(null);
   const headerListRef = useRef<FlatList>(null);
   const isManualScroll = useRef(false);
+
+  // Load user goals and sort topics
+  useEffect(() => {
+    const loadUserGoals = async () => {
+      try {
+        const { data: { session } } = await (await import('@/lib/supabase')).supabase.auth.getSession();
+        if (!session) return;
+
+        const { data } = await (await import('@/lib/supabase')).supabase
+          .from('users')
+          .select('user_goals')
+          .eq('id', session.user.id)
+          .single();
+
+        if (data?.user_goals && data.user_goals.length > 0) {
+          setUserGoals(data.user_goals);
+
+          // Sort topics: user's goals first, then others
+          const userGoalTopics = TOPICS.filter(topic =>
+            data.user_goals.some((goal: string) =>
+              topic.id.toLowerCase() === goal.toLowerCase() ||
+              topic.title.toLowerCase() === goal.toLowerCase()
+            )
+          );
+          const otherTopics = TOPICS.filter(topic =>
+            !data.user_goals.some((goal: string) =>
+              topic.id.toLowerCase() === goal.toLowerCase() ||
+              topic.title.toLowerCase() === goal.toLowerCase()
+            )
+          );
+          setSortedTopics([...userGoalTopics, ...otherTopics]);
+        }
+      } catch (error) {
+        console.error('Failed to load user goals:', error);
+      }
+    };
+
+    loadUserGoals();
+  }, []);
 
   // Load all characters grouped by topic
   useEffect(() => {
@@ -73,8 +114,8 @@ export default function HomeScreen() {
           });
         }
 
-        // Map the Supabase data to our Topic structure, preserving the order from TOPICS constant
-        const mappedSections: TopicSection[] = TOPICS.map(topic => {
+        // Map the Supabase data to our Topic structure, using sorted topics
+        const mappedSections: TopicSection[] = sortedTopics.map(topic => {
           const foundGroup = groupedData.find(g => g.topicId === topic.id);
           return {
             id: topic.id,
@@ -92,7 +133,7 @@ export default function HomeScreen() {
     };
 
     loadData();
-  }, []);
+  }, [sortedTopics]);;
 
   // Filter sections based on search query
   useEffect(() => {
@@ -118,7 +159,7 @@ export default function HomeScreen() {
       setSelectedTopicId(topicId);
 
       // Also scroll the header to keep the active chip visible
-      const index = TOPICS.findIndex(t => t.id === topicId);
+      const index = sortedTopics.findIndex(t => t.id === topicId);
       if (index !== -1 && headerListRef.current) {
         headerListRef.current.scrollToIndex({ index, animated: true, viewPosition: 0.5 });
       }
@@ -335,7 +376,7 @@ export default function HomeScreen() {
           ref={headerListRef}
           data={[
             { id: 'create-or-created', title: hasCreatedCharacters ? 'Created' : '+', isSpecial: true },
-            ...TOPICS
+            ...sortedTopics
           ]}
           renderItem={({ item }) => {
             if ((item as any).isSpecial) {

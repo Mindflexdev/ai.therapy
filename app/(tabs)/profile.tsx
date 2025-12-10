@@ -329,150 +329,154 @@ export default function ProfileScreen() {
                                 </ThemedText>
                             </View>
                         )}
-                        <TouchableOpacity style={[styles.cameraButton, { backgroundColor: theme.primary }]}>
+                        {/* Camera button hidden - using Google account image only */}
+                        {false && (
                             <IconSymbol name="camera.fill" size={22} color="#fff" />
                         </TouchableOpacity>
-                    </View>
-
-                    <View style={styles.nameRow}>
-                        <ThemedText type="title" style={styles.name}>{userName}</ThemedText>
-                        <TouchableOpacity style={styles.editNameButton}>
-                            <IconSymbol name="pencil" size={18} color={theme.primary} />
-                        </TouchableOpacity>
-                    </View>
-
-                    <View style={[styles.messagesCard, { backgroundColor: theme.card }]}>
-                        <View style={styles.messagesRow}>
-                            <View>
-                                <ThemedText style={styles.messagesLabel}>Free messages left</ThemedText>
-                                <ThemedText type="title" style={[styles.messagesCount, { color: theme.primary }]}>
-                                    {Math.max(0, 100 - messageCount)}
-                                </ThemedText>
-                            </View>
-                            <TouchableOpacity style={[styles.premiumButton, { backgroundColor: theme.primary }]}>
-                                <IconSymbol name="plus" size={16} color="#fff" />
-                                <ThemedText style={styles.premiumButtonText}>Get ai.therapy</ThemedText>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
+                        )}
                 </View>
 
-                {/* Tracking Dashboard */}
-                <View style={styles.trackingSection}>
-                    <View style={styles.sectionHeader}>
-                        <ThemedText type="subtitle" style={styles.sectionTitle}>
-                            Your Psychological Journey
-                        </ThemedText>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <ThemedText style={styles.sectionSubtitle}>
-                                {analyzing
-                                    ? "Analyzing your latest conversations..."
-                                    : lastUpdated
-                                        ? (() => {
-                                            const now = new Date();
-                                            const hoursSince = Math.floor((now.getTime() - lastUpdated.getTime()) / (1000 * 60 * 60));
-                                            const hoursUntilNext = Math.max(0, 24 - hoursSince);
-
-                                            if (hoursSince < 1) {
-                                                return "Updated just now • Reanalyzation Possible Daily";
-                                            } else if (hoursSince < 24) {
-                                                return `Updated ${hoursSince}h ago • Next update in ${hoursUntilNext}h`;
-                                            } else {
-                                                return "Updating soon...";
-                                            }
-                                        })()
-                                        : "AI-powered insights • Updates daily"}
-                            </ThemedText>
-                        </View>
-                    </View>
-
-                    {analyzing ? (
-                        <AnalysisLoading
-                            theme={theme}
-                            errorCode={analysisError}
-                            onComplete={() => {
-                                setAnalyzing(false);
-                                setAnalysisError(null);
-                            }}
-                        />
-                    ) : messageCount < 50 ? (
-                        <View style={[styles.trackingCard, { backgroundColor: theme.card, padding: 24, alignItems: 'center' }]}>
-                            <ThemedText type="subtitle" style={{ fontSize: 18, marginBottom: 8, textAlign: 'center' }}>
-                                🔒 Unlock Deep Analysis
-                            </ThemedText>
-                            <ThemedText style={{ opacity: 0.7, marginBottom: 16, textAlign: 'center' }}>
-                                {messageCount} / 50 messages
-                            </ThemedText>
-                            <View style={[styles.progressBar, { width: '100%', height: 12, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 6, overflow: 'hidden', marginBottom: 16 }]}>
-                                <View
-                                    style={[
-                                        styles.progressFill,
-                                        { width: `${(messageCount / 50) * 100}%`, backgroundColor: theme.primary, height: '100%' }
-                                    ]}
-                                />
-                            </View>
-                            <ThemedText style={{ opacity: 0.6, fontSize: 13, textAlign: 'center', lineHeight: 20 }}>
-                                Chat {50 - messageCount} more times to unlock AI-powered psychological analysis across 8 dimensions
-                            </ThemedText>
-                        </View>
-                    ) : analyticsData.length === 0 ? (
-                        <View style={{ padding: 40, alignItems: 'center' }}>
-                            <ThemedText style={{ fontSize: 16, marginBottom: 8, textAlign: 'center' }}>
-                                Get AI-powered insights
-                            </ThemedText>
-                            <ThemedText style={{ opacity: 0.6, marginBottom: 24, textAlign: 'center' }}>
-                                Analyze your conversations across 8 psychological dimensions
-                            </ThemedText>
-                            <TouchableOpacity
-                                style={[styles.analyzeButton, { backgroundColor: theme.primary }]}
-                                onPress={() => fetchAnalytics(true)}
-                            >
-                                <IconSymbol name="sparkles" size={20} color="#fff" />
-                                <ThemedText style={styles.analyzeButtonText}>Analyze my chats</ThemedText>
-                            </TouchableOpacity>
-                        </View>
-                    ) : (
-                        <View style={styles.trackingGrid}>
-                            {analyticsData.map(renderTrackingCard)}
-                        </View>
-                    )}
-
-                    {/* Daily Insight - Only show when analytics data exists AND user has 50+ messages */}
-                    {analyticsData.length > 0 && messageCount >= 50 && (
-                        <View style={[styles.insightCard, { backgroundColor: theme.card }]}>
-                            <LinearGradient
-                                colors={[`${theme.primary}20`, 'transparent']}
-                                style={styles.insightGradient}
-                            />
-                            <ThemedText type="defaultSemiBold" style={styles.insightTitle}>
-                                ✨ Daily Insight
-                            </ThemedText>
-                            <ThemedText style={styles.insightText}>
-                                "{dailyInsight}"
-                            </ThemedText>
-                        </View>
-                    )}
-
-                    {/* Reanalyze Button - Only show if data exists AND user has 50+ messages */}
-                    {analyticsData.length > 0 && messageCount >= 50 && (
-                        <TouchableOpacity
-                            style={[styles.analyzeButton, { backgroundColor: theme.primary, marginHorizontal: 24, marginTop: 24 }]}
-                            onPress={() => fetchAnalytics(true)}
-                        >
-                            <IconSymbol name="arrow.clockwise" size={20} color="#fff" />
-                            <ThemedText style={styles.analyzeButtonText}>Reanalyze most current chats</ThemedText>
+                <View style={styles.nameRow}>
+                    <ThemedText type="title" style={styles.name}>{userName}</ThemedText>
+                    {/* Edit name button hidden - using Google account name only */}
+                    {false && (
+                        <IconSymbol name="pencil" size={18} color={theme.primary} />
                         </TouchableOpacity>
-                    )}
+                        )}
+            </View>
 
-                    <TouchableOpacity
-                        style={styles.signOutButton}
-                        onPress={handleSignOut}
-                    >
-                        <ThemedText style={styles.signOutText}>Sign Out</ThemedText>
+            <View style={[styles.messagesCard, { backgroundColor: theme.card }]}>
+                <View style={styles.messagesRow}>
+                    <View>
+                        <ThemedText style={styles.messagesLabel}>Free messages left</ThemedText>
+                        <ThemedText type="title" style={[styles.messagesCount, { color: theme.primary }]}>
+                            {Math.max(0, 100 - messageCount)}
+                        </ThemedText>
+                    </View>
+                    <TouchableOpacity style={[styles.premiumButton, { backgroundColor: theme.primary }]}>
+                        <IconSymbol name="plus" size={16} color="#fff" />
+                        <ThemedText style={styles.premiumButtonText}>Get ai.therapy</ThemedText>
                     </TouchableOpacity>
                 </View>
-            </ScrollView>
-        </SafeAreaView>
+            </View>
+        </View>
+
+                {/* Tracking Dashboard */ }
+    <View style={styles.trackingSection}>
+        <View style={styles.sectionHeader}>
+            <ThemedText type="subtitle" style={styles.sectionTitle}>
+                Your Psychological Journey
+            </ThemedText>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <ThemedText style={styles.sectionSubtitle}>
+                    {analyzing
+                        ? "Analyzing your latest conversations..."
+                        : lastUpdated
+                            ? (() => {
+                                const now = new Date();
+                                const hoursSince = Math.floor((now.getTime() - lastUpdated.getTime()) / (1000 * 60 * 60));
+                                const hoursUntilNext = Math.max(0, 24 - hoursSince);
+
+                                if (hoursSince < 1) {
+                                    return "Updated just now • Reanalyzation Possible Daily";
+                                } else if (hoursSince < 24) {
+                                    return `Updated ${hoursSince}h ago • Next update in ${hoursUntilNext}h`;
+                                } else {
+                                    return "Updating soon...";
+                                }
+                            })()
+                            : "AI-powered insights • Updates daily"}
+                </ThemedText>
+            </View>
+        </View>
+
+        {analyzing ? (
+            <AnalysisLoading
+                theme={theme}
+                errorCode={analysisError}
+                onComplete={() => {
+                    setAnalyzing(false);
+                    setAnalysisError(null);
+                }}
+            />
+        ) : messageCount < 50 ? (
+            <View style={[styles.trackingCard, { backgroundColor: theme.card, padding: 24, alignItems: 'center' }]}>
+                <ThemedText type="subtitle" style={{ fontSize: 18, marginBottom: 8, textAlign: 'center' }}>
+                    🔒 Unlock Deep Analysis
+                </ThemedText>
+                <ThemedText style={{ opacity: 0.7, marginBottom: 16, textAlign: 'center' }}>
+                    {messageCount} / 50 messages
+                </ThemedText>
+                <View style={[styles.progressBar, { width: '100%', height: 12, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 6, overflow: 'hidden', marginBottom: 16 }]}>
+                    <View
+                        style={[
+                            styles.progressFill,
+                            { width: `${(messageCount / 50) * 100}%`, backgroundColor: theme.primary, height: '100%' }
+                        ]}
+                    />
+                </View>
+                <ThemedText style={{ opacity: 0.6, fontSize: 13, textAlign: 'center', lineHeight: 20 }}>
+                    Chat {50 - messageCount} more times to unlock AI-powered psychological analysis across 8 dimensions
+                </ThemedText>
+            </View>
+        ) : analyticsData.length === 0 ? (
+            <View style={{ padding: 40, alignItems: 'center' }}>
+                <ThemedText style={{ fontSize: 16, marginBottom: 8, textAlign: 'center' }}>
+                    Get AI-powered insights
+                </ThemedText>
+                <ThemedText style={{ opacity: 0.6, marginBottom: 24, textAlign: 'center' }}>
+                    Analyze your conversations across 8 psychological dimensions
+                </ThemedText>
+                <TouchableOpacity
+                    style={[styles.analyzeButton, { backgroundColor: theme.primary }]}
+                    onPress={() => fetchAnalytics(true)}
+                >
+                    <IconSymbol name="sparkles" size={20} color="#fff" />
+                    <ThemedText style={styles.analyzeButtonText}>Analyze my chats</ThemedText>
+                </TouchableOpacity>
+            </View>
+        ) : (
+            <View style={styles.trackingGrid}>
+                {analyticsData.map(renderTrackingCard)}
+            </View>
+        )}
+
+        {/* Daily Insight - Only show when analytics data exists AND user has 50+ messages */}
+        {analyticsData.length > 0 && messageCount >= 50 && (
+            <View style={[styles.insightCard, { backgroundColor: theme.card }]}>
+                <LinearGradient
+                    colors={[`${theme.primary}20`, 'transparent']}
+                    style={styles.insightGradient}
+                />
+                <ThemedText type="defaultSemiBold" style={styles.insightTitle}>
+                    ✨ Daily Insight
+                </ThemedText>
+                <ThemedText style={styles.insightText}>
+                    "{dailyInsight}"
+                </ThemedText>
+            </View>
+        )}
+
+        {/* Reanalyze Button - Only show if data exists AND user has 50+ messages */}
+        {analyticsData.length > 0 && messageCount >= 50 && (
+            <TouchableOpacity
+                style={[styles.analyzeButton, { backgroundColor: theme.primary, marginHorizontal: 24, marginTop: 24 }]}
+                onPress={() => fetchAnalytics(true)}
+            >
+                <IconSymbol name="arrow.clockwise" size={20} color="#fff" />
+                <ThemedText style={styles.analyzeButtonText}>Reanalyze most current chats</ThemedText>
+            </TouchableOpacity>
+        )}
+
+        <TouchableOpacity
+            style={styles.signOutButton}
+            onPress={handleSignOut}
+        >
+            <ThemedText style={styles.signOutText}>Sign Out</ThemedText>
+        </TouchableOpacity>
+    </View>
+            </ScrollView >
+        </SafeAreaView >
     );
 }
 

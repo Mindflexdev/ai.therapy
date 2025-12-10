@@ -127,7 +127,7 @@ export default function SignInScreen() {
                             Soon available on iOS and Android.
                         </ThemedText>
                         <ThemedText style={styles.waitlistPrompt}>
-                            Join the waitlist to stay in the loop.
+                            Join our waitlist here:
                         </ThemedText>
 
                         {!emailSubmitted ? (
