@@ -438,8 +438,8 @@ export default function ProfileScreen() {
                         </ThemedText>
                     </View>
 
-                    {/* Reanalyze Button - Only show if data exists */}
-                    {analyticsData.length > 0 && (
+                    {/* Reanalyze Button - Only show if data exists AND user has 50+ messages */}
+                    {analyticsData.length > 0 && messageCount >= 50 && (
                         <TouchableOpacity
                             style={[styles.analyzeButton, { backgroundColor: theme.primary, marginHorizontal: 24, marginTop: 24 }]}
                             onPress={() => fetchAnalytics(true)}

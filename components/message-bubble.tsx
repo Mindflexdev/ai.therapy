@@ -11,10 +11,26 @@ interface MessageBubbleProps {
 }
 
 export const MessageBubble = memo(({ text, isUser, avatarUri, theme }: MessageBubbleProps) => {
-    // Clean any metadata prefix from messages
-    // New format: =Talking to:X Style:Y Message:actual_message
-    // We want to show only what comes after "Message:"
-    const cleanText = text.replace(/^=?Talking to:[^M]*Message:/, '').trim();
+    // Bulletproof message cleaning - multiple methods to ensure metadata never shows
+    let cleanText = text;
+
+    // Method 1: Extract everything after "Message:" if present
+    if (cleanText.includes('Message:')) {
+        cleanText = cleanText.split('Message:').slice(1).join('Message:');
+    }
+
+    // Method 2: Remove any remaining metadata patterns
+    cleanText = cleanText.replace(/^=?Talking to:[^M]*Message:/gi, '');
+    cleanText = cleanText.replace(/^=?\(Talking to[^)]*\)\s*/gi, '');
+
+    // Method 3: Remove any leading "=Talking" patterns
+    cleanText = cleanText.replace(/^=?Talking[^:]*:[^:]*:/gi, '');
+
+    // Method 4: Remove any orphaned closing parenthesis at the start
+    cleanText = cleanText.replace(/^\)\s*/g, '');
+
+    // Final cleanup: trim whitespace
+    cleanText = cleanText.trim();
 
     if (isUser) {
         return (

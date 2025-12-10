@@ -216,12 +216,30 @@ export default function ConversationScreen() {
                     }
                 }).filter((msg: any) => msg !== null && msg.text); // Filter out bad parses
 
-                // Strip prefix from all messages
-                // New format: =Talking to:X Style:Y Message:actual_message
-                const cleanMessages = parsedMessages.map(msg => ({
-                    ...msg,
-                    text: msg.text.replace(/^=?Talking to:[^M]*Message:/, '').trim()
-                }));
+                // Bulletproof message cleaning - multiple methods
+                const cleanMessages = parsedMessages.map(msg => {
+                    let cleanText = msg.text;
+
+                    // Method 1: Extract everything after "Message:" if present
+                    if (cleanText.includes('Message:')) {
+                        cleanText = cleanText.split('Message:').slice(1).join('Message:');
+                    }
+
+                    // Method 2: Remove any remaining metadata patterns
+                    cleanText = cleanText.replace(/^=?Talking to:[^M]*Message:/gi, '');
+                    cleanText = cleanText.replace(/^=?\(Talking to[^)]*\)\s*/gi, '');
+
+                    // Method 3: Remove any leading "=Talking" patterns
+                    cleanText = cleanText.replace(/^=?Talking[^:]*:[^:]*:/gi, '');
+
+                    // Method 4: Remove any orphaned closing parenthesis
+                    cleanText = cleanText.replace(/^\)\s*/g, '');
+
+                    return {
+                        ...msg,
+                        text: cleanText.trim()
+                    };
+                });
 
                 // Prepare greeting (system message at start)
                 const greetingText = character.greeting ||

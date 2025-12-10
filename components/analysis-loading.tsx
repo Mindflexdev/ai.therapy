@@ -75,23 +75,24 @@ export function AnalysisLoading({ theme, onComplete }: AnalysisLoadingProps) {
     return (
         <View style={styles.container}>
             <View style={styles.circleContainer}>
-                {/* Simple circular progress using border */}
-                <View style={[styles.circle, { borderColor: theme.card }]}>
-                    <Animated.View
-                        style={[
-                            styles.progressCircle,
-                            {
-                                borderColor: theme.primary,
-                                transform: [{
-                                    rotate: progressPercentage.interpolate({
-                                        inputRange: [0, 100],
-                                        outputRange: ['0deg', '360deg']
-                                    })
-                                }]
-                            }
-                        ]}
-                    />
-                </View>
+                {/* Background circle */}
+                <View style={[styles.circle, { borderColor: theme.card }]} />
+
+                {/* Animated rotating progress circle */}
+                <Animated.View
+                    style={[
+                        styles.progressCircle,
+                        {
+                            borderColor: theme.primary,
+                            transform: [{
+                                rotate: progressPercentage.interpolate({
+                                    inputRange: [0, 100],
+                                    outputRange: ['0deg', '360deg']
+                                })
+                            }]
+                        }
+                    ]}
+                />
 
                 {/* Countdown number in center */}
                 <View style={styles.countdownContainer}>
@@ -148,14 +149,18 @@ const styles = StyleSheet.create({
         position: 'absolute',
         justifyContent: 'center',
         alignItems: 'center',
+        width: '100%',
+        height: '100%',
     },
     countdownText: {
         fontSize: 48,
         fontWeight: 'bold',
+        textAlign: 'center',
     },
     secondsText: {
         fontSize: 14,
         marginTop: 4,
+        textAlign: 'center',
     },
     messageText: {
         fontSize: 18,
