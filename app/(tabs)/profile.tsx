@@ -316,18 +316,26 @@ export default function ProfileScreen() {
                 {/* Profile Header */}
                 <View style={styles.profileHeader}>
                     <View style={styles.profileImageContainer}>
-                        <Image
-                            source={{ uri: '/characters/Dr. Morpheus.jpg' }} // Placeholder
-                            style={styles.profileImage}
-                            contentFit="cover"
-                        />
+                        {avatarUrl ? (
+                            <Image
+                                source={{ uri: avatarUrl }}
+                                style={styles.profileImage}
+                                contentFit="cover"
+                            />
+                        ) : (
+                            <View style={[styles.profileImage, { backgroundColor: theme.primary, justifyContent: 'center', alignItems: 'center' }]}>
+                                <ThemedText style={{ fontSize: 32, color: '#fff', fontWeight: 'bold' }}>
+                                    {userName.charAt(0).toUpperCase()}
+                                </ThemedText>
+                            </View>
+                        )}
                         <TouchableOpacity style={[styles.cameraButton, { backgroundColor: theme.primary }]}>
                             <IconSymbol name="camera.fill" size={22} color="#fff" />
                         </TouchableOpacity>
                     </View>
 
                     <View style={styles.nameRow}>
-                        <ThemedText type="title" style={styles.name}>Moritz Tiedemann</ThemedText>
+                        <ThemedText type="title" style={styles.name}>{userName}</ThemedText>
                         <TouchableOpacity style={styles.editNameButton}>
                             <IconSymbol name="pencil" size={18} color={theme.primary} />
                         </TouchableOpacity>
