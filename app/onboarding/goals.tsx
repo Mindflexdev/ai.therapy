@@ -1,18 +1,5 @@
-import { ThemedText } from '@/components/ThemedText';
-import { IconSymbol } from '@/components/ui/IconSymbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/useColorScheme';
-import { supabase } from '@/lib/supabase';
-import { router } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
-import { Animated, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-
-interface Goal {
-    id: string;
-    icon: string;
-    title: string;
-    description: string;
+title: string;
+description: string;
 }
 
 const GOALS: Goal[] = [
