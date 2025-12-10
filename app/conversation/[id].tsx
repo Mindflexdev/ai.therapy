@@ -448,6 +448,29 @@ export default function ConversationScreen() {
         try {
             const currentUserId = session?.user?.id || 'anonymous';
 
+            // Check message count limit (100 messages)
+            if (session?.user?.id) {
+                const { data: userData } = await supabase
+                    .from('users')
+                    .select('message_count')
+                    .eq('id', session.user.id)
+                    .single();
+
+                if (userData && userData.message_count >= 100) {
+                    // Show upgrade message instead of calling webhook
+                    const upgradeMessage: Message = {
+                        id: (Date.now() + 1).toString(),
+                        text: "We made it to 100 messages! I'll pause here for now.\nCheck your Profile tab to activate your Psychological Analysis.\nIf you want to support us and help build ai.therapy together, your feedback is welcome — and you can continue anytime with \"Get ai.therapy+\".",
+                        isUser: false,
+                        timestamp: new Date(),
+                    };
+                    setMessages((prev) => [...prev, upgradeMessage]);
+                    setIsTyping(false);
+                    scrollToBottom();
+                    return; // Don't call webhook
+                }
+            }
+
             const response = await fetch(WEBHOOK_URL, {
                 method: 'POST',
                 headers: {
