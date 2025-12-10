@@ -168,8 +168,8 @@ export default function RootLayout() {
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
         <Stack.Screen name="sign-in" options={{ headerShown: false, animation: 'fade' }} />
-        <Stack.Screen name="onboarding/language" options={{ headerShown: false, animation: 'fade' }} />
-        <Stack.Screen name="onboarding/goals" options={{ headerShown: false, animation: 'slide_from_right' }} />
+        <Stack.Screen name="onboarding/language" options={{ headerShown: false, presentation: 'modal', animation: 'fade' }} />
+        <Stack.Screen name="onboarding/goals" options={{ headerShown: false, animation: 'fade' }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
         <Stack.Screen name="conversation/[id]" options={{ headerShown: false }} />
