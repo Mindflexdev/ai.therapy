@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Animated, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { LogoWithDots } from '../../components/logo-with-dots';
 import { ThemedText } from '../../components/themed-text';
 import { Colors } from '../../constants/theme';
 import { useColorScheme } from '../../hooks/use-color-scheme';
@@ -18,7 +19,6 @@ export default function LanguageSelectionScreen() {
     const scaleAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
-        // Entrance animation
         Animated.spring(scaleAnim, {
             toValue: 1,
             tension: 50,
@@ -30,154 +30,147 @@ export default function LanguageSelectionScreen() {
     const handleLanguageSelect = async (language: Language) => {
         setSelectedLanguage(language);
 
-        // Save to database
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-            await supabase
-                .from('users')
-                .upsert({
-                    id: session.user.id,
-                    preferred_language: language,
-                    updated_at: new Date().toISOString()
-                });
-        }
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                const { error } = await supabase
+                    .from('users')
+                    .upsert({
+                        id: session.user.id,
+                        preferred_language: language,
+                        updated_at: new Date().toISOString()
+                    });
+                if (error) throw error;
+            }
 
-        // Navigate to goal selection after a brief delay
-        setTimeout(() => {
-            router.push('/onboarding/goals');
-        }, 300);
+            // Navigate to goal selection after a brief delay
+            setTimeout(() => {
+                router.push('/onboarding/goals');
+            }, 300);
+        } catch (error) {
+            console.error('Error saving language:', error);
+            // Even if error, proceed? Better to retry or show error.
+            // For now, proceed.
+            setTimeout(() => {
+                router.push('/onboarding/goals');
+            }, 300);
+        }
     };
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
-            <Animated.View style={[styles.content, { transform: [{ scale: scaleAnim }] }]}>
-                {/* Header */}
-                <View style={styles.header}>
-                    <ThemedText type="title" style={styles.title}>
-                        Welcome to ai.therapy
-                    </ThemedText>
-                    <ThemedText style={styles.subtitle}>
-                        Choose your preferred language
-                    </ThemedText>
-                </View>
+        <View style={styles.mainContainer}>
+            <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+                <Animated.View style={[styles.popupContainer, { transform: [{ scale: scaleAnim }], backgroundColor: theme.card }]}>
 
-                {/* Language Options */}
-                <View style={styles.languageContainer}>
-                    {/* English */}
-                    <TouchableOpacity
-                        style={[
-                            styles.languageCard,
-                            { backgroundColor: theme.card },
-                            selectedLanguage === 'en' && { borderColor: theme.primary, borderWidth: 3 }
-                        ]}
-                        onPress={() => handleLanguageSelect('en')}
-                        activeOpacity={0.7}
-                    >
-                        <View style={styles.flagContainer}>
+                    {/* Header with Logo */}
+                    <View style={styles.header}>
+                        <View style={styles.logoContainer}>
+                            <LogoWithDots fontSize={20} color={theme.text} />
+                        </View>
+                        <ThemedText type="title" style={styles.title}>
+                            Welcome!
+                        </ThemedText>
+                        <ThemedText style={styles.subtitle}>
+                            Please choose your preferred language
+                        </ThemedText>
+                    </View>
+
+                    {/* Language Options */}
+                    <View style={styles.languageContainer}>
+                        {/* English */}
+                        <TouchableOpacity
+                            style={[
+                                styles.languageButton,
+                                { borderColor: selectedLanguage === 'en' ? theme.primary : `${theme.text}20` },
+                                selectedLanguage === 'en' && { backgroundColor: `${theme.primary}15` }
+                            ]}
+                            onPress={() => handleLanguageSelect('en')}
+                            activeOpacity={0.7}
+                        >
                             <ThemedText style={styles.flag}>🇬🇧</ThemedText>
-                        </View>
-                        <ThemedText type="subtitle" style={styles.languageName}>
-                            English
-                        </ThemedText>
-                        <ThemedText style={styles.languageDescription}>
-                            Continue in English
-                        </ThemedText>
-                    </TouchableOpacity>
+                            <ThemedText type="defaultSemiBold" style={styles.languageName}>English</ThemedText>
+                        </TouchableOpacity>
 
-                    {/* German */}
-                    <TouchableOpacity
-                        style={[
-                            styles.languageCard,
-                            { backgroundColor: theme.card },
-                            selectedLanguage === 'de' && { borderColor: theme.primary, borderWidth: 3 }
-                        ]}
-                        onPress={() => handleLanguageSelect('de')}
-                        activeOpacity={0.7}
-                    >
-                        <View style={styles.flagContainer}>
+                        {/* German */}
+                        <TouchableOpacity
+                            style={[
+                                styles.languageButton,
+                                { borderColor: selectedLanguage === 'de' ? theme.primary : `${theme.text}20` },
+                                selectedLanguage === 'de' && { backgroundColor: `${theme.primary}15` }
+                            ]}
+                            onPress={() => handleLanguageSelect('de')}
+                            activeOpacity={0.7}
+                        >
                             <ThemedText style={styles.flag}>🇩🇪</ThemedText>
-                        </View>
-                        <ThemedText type="subtitle" style={styles.languageName}>
-                            Deutsch
-                        </ThemedText>
-                        <ThemedText style={styles.languageDescription}>
-                            Auf Deutsch fortfahren
-                        </ThemedText>
-                    </TouchableOpacity>
-                </View>
-
-                {/* Progress Indicator */}
-                <View style={styles.progressContainer}>
-                    <View style={[styles.progressDot, { backgroundColor: theme.primary }]} />
-                    <View style={[styles.progressDot, { backgroundColor: theme.text, opacity: 0.2 }]} />
-                </View>
-            </Animated.View>
-        </SafeAreaView>
+                            <ThemedText type="defaultSemiBold" style={styles.languageName}>Deutsch</ThemedText>
+                        </TouchableOpacity>
+                    </View>
+                </Animated.View>
+            </SafeAreaView>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
+    mainContainer: {
         flex: 1,
-    },
-    content: {
-        flex: 1,
-        paddingHorizontal: 24,
+        backgroundColor: 'rgba(0,0,0,0.5)',
         justifyContent: 'center',
+        alignItems: 'center',
+    },
+    safeArea: {
+        width: '100%',
+        height: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    popupContainer: {
+        width: '90%',
+        maxWidth: 360,
+        borderRadius: 24,
+        padding: 24,
+        paddingBottom: 40,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.3,
+        shadowRadius: 20,
+        elevation: 10,
     },
     header: {
         alignItems: 'center',
-        marginBottom: 48,
+        marginBottom: 32,
+    },
+    logoContainer: {
+        alignSelf: 'flex-start',
+        marginBottom: 16,
     },
     title: {
-        fontSize: 32,
-        marginBottom: 12,
+        fontSize: 28,
         textAlign: 'center',
+        marginBottom: 8,
     },
     subtitle: {
-        fontSize: 16,
+        fontSize: 14,
         opacity: 0.7,
         textAlign: 'center',
     },
     languageContainer: {
-        gap: 20,
-        marginBottom: 48,
+        gap: 16,
     },
-    languageCard: {
-        padding: 32,
-        borderRadius: 20,
+    languageButton: {
+        flexDirection: 'row',
         alignItems: 'center',
-        borderWidth: 2,
-        borderColor: 'transparent',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 12,
-        elevation: 5,
-    },
-    flagContainer: {
-        marginBottom: 16,
+        justifyContent: 'center',
+        paddingVertical: 16,
+        paddingHorizontal: 24,
+        borderRadius: 30,
+        borderWidth: 1,
+        gap: 12,
     },
     flag: {
-        fontSize: 64,
+        fontSize: 24,
     },
     languageName: {
-        fontSize: 24,
-        marginBottom: 8,
-    },
-    languageDescription: {
-        fontSize: 14,
-        opacity: 0.6,
-    },
-    progressContainer: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        gap: 8,
-        marginTop: 24,
-    },
-    progressDot: {
-        width: 8,
-        height: 8,
-        borderRadius: 4,
+        fontSize: 16,
     },
 });

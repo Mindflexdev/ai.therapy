@@ -1,30 +1,29 @@
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Animated, Dimensions, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { LogoWithDots } from '../../components/logo-with-dots';
 import { ThemedText } from '../../components/themed-text';
-import { IconSymbol } from '../../components/ui/icon-symbol';
 import { Colors } from '../../constants/theme';
 import { useColorScheme } from '../../hooks/use-color-scheme';
 import { supabase } from '../../lib/supabase';
 
+const { width, height } = Dimensions.get('window');
+
 interface Goal {
     id: string;
-    icon: string;
     title: string;
-    description: string;
 }
 
 const GOALS: Goal[] = [
-    { id: 'anxiety', icon: 'heart.fill', title: 'Anxiety & Stress', description: 'Manage worry and find calm' },
-    { id: 'depression', icon: 'cloud.sun.fill', title: 'Depression', description: 'Navigate low moods and sadness' },
-    { id: 'relationships', icon: 'person.2.fill', title: 'Relationships', description: 'Improve connections with others' },
-    { id: 'self-esteem', icon: 'star.fill', title: 'Self-Esteem', description: 'Build confidence and self-worth' },
-    { id: 'trauma', icon: 'shield.fill', title: 'Trauma & PTSD', description: 'Process difficult experiences' },
-    { id: 'sleep', icon: 'moon.fill', title: 'Sleep Issues', description: 'Improve sleep quality' },
-    { id: 'grief', icon: 'heart.slash.fill', title: 'Grief & Loss', description: 'Cope with loss and change' },
-    { id: 'work', icon: 'briefcase.fill', title: 'Work & Career', description: 'Navigate professional challenges' },
+    { id: 'sleep', title: 'Better Sleep' },
+    { id: 'performance', title: 'Improve Performance' },
+    { id: 'self-esteem', title: 'Build Self-Esteem' },
+    { id: 'anxiety', title: 'Reduce Anxiety' },
+    { id: 'stress', title: 'Reduce Stress' },
+    { id: 'happiness', title: 'Be Happier' },
+    { id: 'gratitude', title: 'Practice Gratitude' },
 ];
 
 export default function GoalSelectionScreen() {
@@ -36,7 +35,6 @@ export default function GoalSelectionScreen() {
     const scaleAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
-        // Entrance animation
         Animated.spring(scaleAnim, {
             toValue: 1,
             tension: 50,
@@ -58,215 +56,180 @@ export default function GoalSelectionScreen() {
 
         setIsCompleting(true);
 
-        // Save to database
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-            await supabase
-                .from('users')
-                .upsert({
-                    id: session.user.id,
-                    user_goals: selectedGoals,
-                    onboarding_completed: true,
-                    updated_at: new Date().toISOString()
-                });
-        }
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                const { error } = await supabase
+                    .from('users')
+                    .upsert({
+                        id: session.user.id,
+                        user_goals: selectedGoals,
+                        onboarding_completed: true,
+                        updated_at: new Date().toISOString()
+                    });
 
-        // Navigate to main app
-        setTimeout(() => {
-            router.replace('/(tabs)');
-        }, 500);
+                if (error) throw error;
+            }
+
+            // Navigate to main app
+            setTimeout(() => {
+                router.replace('/(tabs)');
+            }, 500);
+        } catch (error) {
+            console.error('Error saving goals:', error);
+            setIsCompleting(false);
+            alert('Failed to save preferences. Please try again.');
+        }
     };
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
-            <Animated.View style={[styles.content, { transform: [{ scale: scaleAnim }] }]}>
-                {/* Header */}
-                <View style={styles.header}>
-                    <ThemedText type="title" style={styles.title}>
-                        What brings you here?
-                    </ThemedText>
-                    <ThemedText style={styles.subtitle}>
-                        Select the topics you'd like to explore
-                    </ThemedText>
-                </View>
+        <View style={styles.mainContainer}>
+            {/* Background Image or Gradient could go here */}
 
-                {/* Goals Grid */}
-                <ScrollView
-                    style={styles.scrollView}
-                    contentContainerStyle={styles.goalsContainer}
-                    showsVerticalScrollIndicator={false}
-                >
-                    {GOALS.map((goal) => {
-                        const isSelected = selectedGoals.includes(goal.id);
-                        return (
-                            <TouchableOpacity
-                                key={goal.id}
-                                style={[
-                                    styles.goalCard,
-                                    { backgroundColor: theme.card },
-                                    isSelected && {
-                                        borderColor: theme.primary,
-                                        borderWidth: 3,
-                                        backgroundColor: `${theme.primary}15`
-                                    }
-                                ]}
-                                onPress={() => toggleGoal(goal.id)}
-                                activeOpacity={0.7}
-                            >
-                                <View style={[
-                                    styles.iconContainer,
-                                    { backgroundColor: isSelected ? theme.primary : `${theme.primary}20` }
-                                ]}>
-                                    <IconSymbol
-                                        name={goal.icon as any}
-                                        size={24}
-                                        color={isSelected ? '#fff' : theme.primary}
-                                    />
-                                </View>
-                                <ThemedText type="defaultSemiBold" style={styles.goalTitle}>
-                                    {goal.title}
-                                </ThemedText>
-                                <ThemedText style={styles.goalDescription}>
-                                    {goal.description}
-                                </ThemedText>
-                                {isSelected && (
-                                    <View style={[styles.checkmark, { backgroundColor: theme.primary }]}>
-                                        <IconSymbol name="checkmark" size={16} color="#fff" />
-                                    </View>
-                                )}
-                            </TouchableOpacity>
-                        );
-                    })}
-                </ScrollView>
+            <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+                <Animated.View style={[styles.popupContainer, { transform: [{ scale: scaleAnim }], backgroundColor: theme.card }]}>
 
-                {/* Continue Button */}
-                <View style={styles.footer}>
-                    <TouchableOpacity
-                        style={[
-                            styles.continueButton,
-                            { backgroundColor: selectedGoals.length > 0 ? theme.primary : theme.text },
-                            { opacity: selectedGoals.length > 0 ? 1 : 0.3 }
-                        ]}
-                        onPress={handleComplete}
-                        disabled={selectedGoals.length === 0 || isCompleting}
-                        activeOpacity={0.8}
-                    >
-                        <ThemedText style={styles.continueButtonText}>
-                            {isCompleting ? 'Starting your journey...' : `Continue with ${selectedGoals.length} ${selectedGoals.length === 1 ? 'topic' : 'topics'}`}
+                    {/* Header with Logo */}
+                    <View style={styles.header}>
+                        <View style={styles.logoContainer}>
+                            <LogoWithDots fontSize={20} color={theme.text} />
+                        </View>
+                        <ThemedText type="title" style={styles.title}>
+                            What brings you here?
                         </ThemedText>
-                        {!isCompleting && (
-                            <IconSymbol name="arrow.right" size={20} color="#fff" />
-                        )}
-                    </TouchableOpacity>
-
-                    {/* Progress Indicator */}
-                    <View style={styles.progressContainer}>
-                        <View style={[styles.progressDot, { backgroundColor: theme.text, opacity: 0.2 }]} />
-                        <View style={[styles.progressDot, { backgroundColor: theme.primary }]} />
+                        <ThemedText style={styles.subtitle}>
+                            We tailor recommendations based on your goals.
+                        </ThemedText>
                     </View>
-                </View>
-            </Animated.View>
-        </SafeAreaView>
+
+                    {/* Goals List */}
+                    <ScrollView
+                        style={styles.scrollView}
+                        contentContainerStyle={styles.goalsContainer}
+                        showsVerticalScrollIndicator={false}
+                    >
+                        {GOALS.map((goal) => {
+                            const isSelected = selectedGoals.includes(goal.id);
+                            return (
+                                <TouchableOpacity
+                                    key={goal.id}
+                                    style={[
+                                        styles.goalPill,
+                                        {
+                                            borderColor: isSelected ? theme.primary : `${theme.text}20`,
+                                            backgroundColor: isSelected ? `${theme.primary}15` : 'transparent',
+                                        }
+                                    ]}
+                                    onPress={() => toggleGoal(goal.id)}
+                                    activeOpacity={0.7}
+                                >
+                                    <ThemedText style={[
+                                        styles.goalText,
+                                        isSelected && { color: theme.primary, fontWeight: '600' }
+                                    ]}>
+                                        {goal.title}
+                                    </ThemedText>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </ScrollView>
+
+                    {/* Continue Button */}
+                    <View style={styles.footer}>
+                        <TouchableOpacity
+                            style={[
+                                styles.continueButton,
+                                { backgroundColor: selectedGoals.length > 0 ? theme.primary : '#ccc' } // Grey if disabled
+                            ]}
+                            onPress={handleComplete}
+                            disabled={selectedGoals.length === 0 || isCompleting}
+                            activeOpacity={0.8}
+                        >
+                            <ThemedText style={styles.continueButtonText}>
+                                {isCompleting ? 'Saving...' : 'Continue'}
+                            </ThemedText>
+                        </TouchableOpacity>
+                    </View>
+
+                </Animated.View>
+            </SafeAreaView>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
+    mainContainer: {
         flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)', // Semi-transparent background for popup feel
+        justifyContent: 'center',
+        alignItems: 'center',
     },
-    content: {
-        flex: 1,
+    safeArea: {
+        width: '100%',
+        height: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    popupContainer: {
+        width: '90%',
+        maxWidth: 400,
+        maxHeight: '85%',
+        borderRadius: 24,
+        padding: 24,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.3,
+        shadowRadius: 20,
+        elevation: 10,
     },
     header: {
         alignItems: 'center',
-        paddingHorizontal: 24,
-        paddingTop: 24,
-        paddingBottom: 16,
+        marginBottom: 24,
+    },
+    logoContainer: {
+        alignSelf: 'flex-start', // Top left as requested
+        marginBottom: 16,
     },
     title: {
-        fontSize: 28,
-        marginBottom: 8,
+        fontSize: 24,
         textAlign: 'center',
+        marginBottom: 8,
     },
     subtitle: {
-        fontSize: 15,
+        fontSize: 14,
         opacity: 0.7,
         textAlign: 'center',
+        lineHeight: 20,
     },
     scrollView: {
         flex: 1,
+        marginBottom: 24,
     },
     goalsContainer: {
-        paddingHorizontal: 24,
-        paddingBottom: 24,
-        gap: 16,
+        gap: 12,
     },
-    goalCard: {
-        padding: 20,
-        borderRadius: 16,
-        borderWidth: 2,
-        borderColor: 'transparent',
-        position: 'relative',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 3,
+    goalPill: {
+        paddingVertical: 16,
+        paddingHorizontal: 20,
+        borderRadius: 30, // Pill shape
+        borderWidth: 1,
+        alignItems: 'center', // Center text
     },
-    iconContainer: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 12,
-    },
-    goalTitle: {
-        fontSize: 17,
-        marginBottom: 4,
-    },
-    goalDescription: {
-        fontSize: 14,
-        opacity: 0.6,
-        lineHeight: 20,
-    },
-    checkmark: {
-        position: 'absolute',
-        top: 12,
-        right: 12,
-        width: 28,
-        height: 28,
-        borderRadius: 14,
-        justifyContent: 'center',
-        alignItems: 'center',
+    goalText: {
+        fontSize: 16,
     },
     footer: {
-        paddingHorizontal: 24,
-        paddingBottom: 24,
-        paddingTop: 16,
+        // Footer styles
     },
     continueButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 8,
         paddingVertical: 16,
-        borderRadius: 12,
-        marginBottom: 16,
+        borderRadius: 30,
+        alignItems: 'center',
+        width: '100%',
     },
     continueButtonText: {
         color: '#fff',
         fontSize: 16,
         fontWeight: '600',
-    },
-    progressContainer: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        gap: 8,
-    },
-    progressDot: {
-        width: 8,
-        height: 8,
-        borderRadius: 4,
     },
 });
