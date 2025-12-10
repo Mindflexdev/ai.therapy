@@ -63,11 +63,12 @@ export default function GoalSelectionScreen() {
         if (session) {
             await supabase
                 .from('users')
-                .update({
+                .upsert({
+                    id: session.user.id,
                     user_goals: selectedGoals,
-                    onboarding_completed: true
-                })
-                .eq('id', session.user.id);
+                    onboarding_completed: true,
+                    updated_at: new Date().toISOString()
+                });
         }
 
         // Navigate to main app

@@ -35,8 +35,11 @@ export default function LanguageSelectionScreen() {
         if (session) {
             await supabase
                 .from('users')
-                .update({ preferred_language: language })
-                .eq('id', session.user.id);
+                .upsert({
+                    id: session.user.id,
+                    preferred_language: language,
+                    updated_at: new Date().toISOString()
+                });
         }
 
         // Navigate to goal selection after a brief delay

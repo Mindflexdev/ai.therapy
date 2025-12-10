@@ -8,7 +8,7 @@ import { FontAwesome } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Dimensions, Platform, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 
 const { width } = Dimensions.get('window');
@@ -20,6 +20,30 @@ export default function SignInScreen() {
     const [loading, setLoading] = useState(false);
     const [email, setEmail] = useState('');
     const [emailSubmitted, setEmailSubmitted] = useState(false);
+
+    useEffect(() => {
+        // Preload character images for smoother experience
+        const preloadImages = async () => {
+            try {
+                // Fetch public characters avatars
+                const { data } = await supabase
+                    .from('characters')
+                    .select('avatar')
+                    .eq('is_public', true)
+                    .limit(20);
+
+                if (data) {
+                    const urls = data.map(c => c.avatar).filter(url => url && url.startsWith('http'));
+                    // Prefetch in parallel
+                    await Promise.all(urls.map(url => Image.prefetch(url)));
+                }
+            } catch (error) {
+                console.log('Error preloading images:', error);
+            }
+        };
+
+        preloadImages();
+    }, []);
 
     const handleSignIn = async (provider: 'google' | 'facebook' | 'apple') => {
         setLoading(true);
