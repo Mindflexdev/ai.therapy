@@ -58,6 +58,8 @@ export default function ProfileScreen() {
     const [dailyInsight, setDailyInsight] = useState<string>("Analyzing your latest conversations...");
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
     const [messageCount, setMessageCount] = useState(0);
+    const [userName, setUserName] = useState('User');
+    const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
     // Countdown animation state
     const [countdown, setCountdown] = useState(60);
@@ -202,23 +204,26 @@ export default function ProfileScreen() {
         useCallback(() => {
             console.log("Profile Screen Focused - Fetching Data");
 
-            // Fetch message count
-            const fetchMessageCount = async () => {
+            // Fetch message count and user data
+            const fetchUserData = async () => {
                 const { data: { session } } = await supabase.auth.getSession();
                 if (!session) return;
 
                 const { data, error } = await supabase
                     .from('users')
-                    .select('message_count')
+                    .select('message_count, full_name, avatar_url')
                     .eq('id', session.user.id)
                     .single();
 
                 if (data && !error) {
                     setMessageCount(data.message_count || 0);
+                    // Set user name (fallback to email username if no full_name)
+                    setUserName(data.full_name || session.user.email?.split('@')[0] || 'User');
+                    setAvatarUrl(data.avatar_url);
                 }
             };
 
-            fetchMessageCount();
+            fetchUserData();
             fetchAnalytics();
         }, [])
     );
