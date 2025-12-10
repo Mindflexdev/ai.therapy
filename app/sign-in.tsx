@@ -9,7 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Dimensions, Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Dimensions, Platform, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 
 const { width } = Dimensions.get('window');
 
@@ -18,6 +18,8 @@ export default function SignInScreen() {
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme ?? 'light'];
     const [loading, setLoading] = useState(false);
+    const [email, setEmail] = useState('');
+    const [emailSubmitted, setEmailSubmitted] = useState(false);
 
     const handleSignIn = async (provider: 'google' | 'facebook' | 'apple') => {
         setLoading(true);
@@ -69,6 +71,13 @@ export default function SignInScreen() {
         }
     };
 
+    const handleEmailSubmit = () => {
+        if (email.trim()) {
+            // For now, just show success UI (no backend functionality)
+            setEmailSubmitted(true);
+        }
+    };
+
     if (loading) {
         return (
             <View style={styles.loadingContainer}>
@@ -105,6 +114,47 @@ export default function SignInScreen() {
                         <FontAwesome name="google" size={20} color="#DB4437" style={styles.authIcon} />
                         <ThemedText style={styles.authButtonText}>Sign in with Google</ThemedText>
                     </TouchableOpacity>
+
+                    {/* Waitlist Section */}
+                    <View style={styles.waitlistSection}>
+                        <ThemedText style={styles.announcementText}>
+                            Soon coming to iOS and Android
+                        </ThemedText>
+                        <ThemedText style={styles.waitlistPrompt}>
+                            Want to get notified? Join Waitlist here
+                        </ThemedText>
+
+                        {!emailSubmitted ? (
+                            <View style={styles.emailInputContainer}>
+                                <TextInput
+                                    style={styles.emailInput}
+                                    placeholder="Enter your email"
+                                    placeholderTextColor="#999"
+                                    value={email}
+                                    onChangeText={setEmail}
+                                    keyboardType="email-address"
+                                    autoCapitalize="none"
+                                    editable={!emailSubmitted}
+                                />
+                                <TouchableOpacity
+                                    style={styles.submitButton}
+                                    onPress={handleEmailSubmit}
+                                    disabled={!email.trim()}
+                                >
+                                    <FontAwesome name="arrow-right" size={16} color="#fff" />
+                                </TouchableOpacity>
+                            </View>
+                        ) : (
+                            <View style={styles.successContainer}>
+                                <View style={styles.checkmarkCircle}>
+                                    <FontAwesome name="check" size={20} color="#4CAF50" />
+                                </View>
+                                <ThemedText style={styles.successText}>
+                                    We send you the first mail - bestätige jetzt to be notified!
+                                </ThemedText>
+                            </View>
+                        )}
+                    </View>
 
                     {/* Hidden - Set to true to reactivate */}
                     {false && (
@@ -236,5 +286,72 @@ const styles = StyleSheet.create({
         fontSize: 32,
         fontWeight: 'bold',
         color: '#2D3436',
+    },
+    waitlistSection: {
+        marginTop: 24,
+        padding: 20,
+        backgroundColor: '#f9f9f9',
+        borderRadius: 16,
+        alignItems: 'center',
+    },
+    announcementText: {
+        fontSize: 13,
+        color: '#666',
+        marginBottom: 4,
+        textAlign: 'center',
+    },
+    waitlistPrompt: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#333',
+        marginBottom: 16,
+        textAlign: 'center',
+    },
+    emailInputContainer: {
+        flexDirection: 'row',
+        width: '100%',
+        gap: 8,
+    },
+    emailInput: {
+        flex: 1,
+        backgroundColor: '#fff',
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        borderRadius: 12,
+        fontSize: 14,
+        borderWidth: 1,
+        borderColor: '#ddd',
+        color: '#000',
+    },
+    submitButton: {
+        backgroundColor: '#5B8FD8',
+        width: 44,
+        height: 44,
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    successContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        padding: 12,
+        backgroundColor: '#f0f9f4',
+        borderRadius: 12,
+        width: '100%',
+    },
+    checkmarkCircle: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: '#e8f5e9',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    successText: {
+        flex: 1,
+        fontSize: 13,
+        color: '#2e7d32',
+        lineHeight: 18,
     },
 });
