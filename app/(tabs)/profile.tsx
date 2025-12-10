@@ -57,6 +57,7 @@ export default function ProfileScreen() {
     const [analyticsData, setAnalyticsData] = useState<AnalyticsData[]>([]);
     const [dailyInsight, setDailyInsight] = useState<string>("Analyzing your latest conversations...");
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+    const [messageCount, setMessageCount] = useState(0);
 
     // Countdown animation state
     const [countdown, setCountdown] = useState(60);
@@ -177,16 +178,18 @@ export default function ProfileScreen() {
                     console.log("[Profile] n8n Analysis Success:", Object.keys(result));
 
                     if (result && result.tracking_data) {
+                        // Store data but keep analyzing=true until animation completes
                         setAnalyticsData(result.tracking_data);
                         setDailyInsight(result.daily_insight || "Here is your daily analysis.");
                         setLastUpdated(new Date());
+                        // Don't set analyzing=false here - let the AnalysisLoading component call onComplete after 60s
                     }
                 } else {
                     console.error("[Profile] All n8n analytics attempts failed.", error || response?.status);
                     const errorCode = `ERR_${Date.now()}_${response?.status || 'NETWORK'}`;
                     setAnalysisError(errorCode);
+                    setAnalyzing(false); // Only stop on error
                 }
-                setAnalyzing(false);
             }
 
         } catch (e) {
@@ -198,6 +201,24 @@ export default function ProfileScreen() {
     useFocusEffect(
         useCallback(() => {
             console.log("Profile Screen Focused - Fetching Data");
+
+            // Fetch message count
+            const fetchMessageCount = async () => {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session) return;
+
+                const { data, error } = await supabase
+                    .from('users')
+                    .select('message_count')
+                    .eq('id', session.user.id)
+                    .single();
+
+                if (data && !error) {
+                    setMessageCount(data.message_count || 0);
+                }
+            };
+
+            fetchMessageCount();
             fetchAnalytics();
         }, [])
     );
@@ -312,7 +333,7 @@ export default function ProfileScreen() {
                             <View>
                                 <ThemedText style={styles.messagesLabel}>Free messages left</ThemedText>
                                 <ThemedText type="title" style={[styles.messagesCount, { color: theme.primary }]}>
-                                    100
+                                    {Math.max(0, 100 - messageCount)}
                                 </ThemedText>
                             </View>
                             <TouchableOpacity style={[styles.premiumButton, { backgroundColor: theme.primary }]}>
@@ -361,6 +382,26 @@ export default function ProfileScreen() {
                                 setAnalysisError(null);
                             }}
                         />
+                    ) : messageCount < 50 ? (
+                        <View style={[styles.trackingCard, { backgroundColor: theme.card, padding: 24, alignItems: 'center' }]}>
+                            <ThemedText type="subtitle" style={{ fontSize: 18, marginBottom: 8, textAlign: 'center' }}>
+                                🔒 Unlock Deep Analysis
+                            </ThemedText>
+                            <ThemedText style={{ opacity: 0.7, marginBottom: 16, textAlign: 'center' }}>
+                                {messageCount} / 50 messages
+                            </ThemedText>
+                            <View style={[styles.progressBar, { width: '100%', height: 12, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 6, overflow: 'hidden', marginBottom: 16 }]}>
+                                <View
+                                    style={[
+                                        styles.progressFill,
+                                        { width: `${(messageCount / 50) * 100}%`, backgroundColor: theme.primary, height: '100%' }
+                                    ]}
+                                />
+                            </View>
+                            <ThemedText style={{ opacity: 0.6, fontSize: 13, textAlign: 'center', lineHeight: 20 }}>
+                                Chat {50 - messageCount} more times to unlock AI-powered psychological analysis across 8 dimensions
+                            </ThemedText>
+                        </View>
                     ) : analyticsData.length === 0 ? (
                         <View style={{ padding: 40, alignItems: 'center' }}>
                             <ThemedText style={{ fontSize: 16, marginBottom: 8, textAlign: 'center' }}>

@@ -106,32 +106,41 @@ export default function SignInScreen() {
                         <ThemedText style={styles.authButtonText}>Sign in with Google</ThemedText>
                     </TouchableOpacity>
 
-                    <TouchableOpacity
-                        style={styles.authButton}
-                        onPress={() => handleSignIn('facebook')}
-                        disabled={loading}
-                    >
-                        <FontAwesome name="facebook" size={20} color="#4267B2" style={styles.authIcon} />
-                        <ThemedText style={styles.authButtonText}>Sign in with Facebook</ThemedText>
-                    </TouchableOpacity>
+                    {/* Hidden - Set to true to reactivate */}
+                    {false && (
+                        <TouchableOpacity
+                            style={styles.authButton}
+                            onPress={() => handleSignIn('facebook')}
+                            disabled={loading}
+                        >
+                            <FontAwesome name="facebook" size={20} color="#4267B2" style={styles.authIcon} />
+                            <ThemedText style={styles.authButtonText}>Sign in with Facebook</ThemedText>
+                        </TouchableOpacity>
+                    )}
 
-                    <TouchableOpacity
-                        style={styles.authButton}
-                        onPress={() => handleSignIn('apple')}
-                        disabled={loading}
-                    >
-                        <FontAwesome name="apple" size={20} color="#000" style={styles.authIcon} />
-                        <ThemedText style={styles.authButtonText}>Sign in with Apple</ThemedText>
-                    </TouchableOpacity>
+                    {/* Hidden - Set to true to reactivate */}
+                    {false && (
+                        <TouchableOpacity
+                            style={styles.authButton}
+                            onPress={() => handleSignIn('apple')}
+                            disabled={loading}
+                        >
+                            <FontAwesome name="apple" size={20} color="#000" style={styles.authIcon} />
+                            <ThemedText style={styles.authButtonText}>Sign in with Apple</ThemedText>
+                        </TouchableOpacity>
+                    )}
 
-                    <TouchableOpacity
-                        style={[styles.authButton, { backgroundColor: 'transparent', borderWidth: 1, borderColor: '#ccc', elevation: 0 }]}
-                        onPress={handleSkipAuth}
-                        disabled={loading}
-                    >
-                        <FontAwesome name="user-secret" size={20} color="#666" style={styles.authIcon} />
-                        <ThemedText style={[styles.authButtonText, { color: '#666' }]}>Skip Login (Test Mode)</ThemedText>
-                    </TouchableOpacity>
+                    {/* Hidden - Set to true to reactivate */}
+                    {false && (
+                        <TouchableOpacity
+                            style={[styles.authButton, { backgroundColor: 'transparent', borderWidth: 1, borderColor: '#ccc', elevation: 0 }]}
+                            onPress={handleSkipAuth}
+                            disabled={loading}
+                        >
+                            <FontAwesome name="user-secret" size={20} color="#666" style={styles.authIcon} />
+                            <ThemedText style={[styles.authButtonText, { color: '#666' }]}>Skip Login (Test Mode)</ThemedText>
+                        </TouchableOpacity>
+                    )}
                 </View>
 
                 <View style={{ height: 40 }} />

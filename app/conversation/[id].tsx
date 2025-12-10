@@ -217,10 +217,10 @@ export default function ConversationScreen() {
                 }).filter((msg: any) => msg !== null && msg.text); // Filter out bad parses
 
                 // Strip prefix from all messages
-                // Format: =(Talking to Fearless Wolf | Style: Integrative Therapy (AI decides)) text
+                // New format: =Talking to:X Style:Y Message:actual_message
                 const cleanMessages = parsedMessages.map(msg => ({
                     ...msg,
-                    text: msg.text.replace(/^=?\(Talking to [^)]+\)\s*/, '').trim()
+                    text: msg.text.replace(/^=?Talking to:[^M]*Message:/, '').trim()
                 }));
 
                 // Prepare greeting (system message at start)

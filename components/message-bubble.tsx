@@ -12,8 +12,9 @@ interface MessageBubbleProps {
 
 export const MessageBubble = memo(({ text, isUser, avatarUri, theme }: MessageBubbleProps) => {
     // Clean any metadata prefix from messages
-    // Format: =(Talking to X | Style: Y) message
-    const cleanText = text.replace(/^=?\(Talking to [^)]+\)\s*/, '').trim();
+    // New format: =Talking to:X Style:Y Message:actual_message
+    // We want to show only what comes after "Message:"
+    const cleanText = text.replace(/^=?Talking to:[^M]*Message:/, '').trim();
 
     if (isUser) {
         return (

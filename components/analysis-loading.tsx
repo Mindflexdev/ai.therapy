@@ -64,7 +64,7 @@ export function AnalysisLoading({ theme, onComplete }: AnalysisLoadingProps) {
             clearInterval(countdownInterval);
             clearInterval(messageInterval);
         };
-    }, []);
+    }, [onComplete, messageOpacity, progressAnim]);
 
     // Calculate progress percentage
     const progressPercentage = progressAnim.interpolate({
