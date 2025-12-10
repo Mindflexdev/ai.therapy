@@ -1,4 +1,6 @@
-import { Tabs } from 'expo-router';
+import { supabase } from '@/lib/supabase';
+import { Tabs, useRouter } from 'expo-router';
+import { useEffect } from 'react';
 import { Platform } from 'react-native';
 
 import { HapticTab } from '@/components/haptic-tab';
@@ -8,6 +10,23 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const router = useRouter();
+
+  useEffect(() => {
+    const checkOnboarding = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const { data } = await supabase.from('users').select('onboarding_completed').eq('id', session.user.id).single();
+        if (data && !data.onboarding_completed) {
+          router.push('/onboarding/language');
+        }
+      }
+    };
+
+    // Delay to ensure mounted
+    const timer = setTimeout(checkOnboarding, 1000);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <Tabs

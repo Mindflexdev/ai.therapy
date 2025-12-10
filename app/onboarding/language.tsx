@@ -47,13 +47,10 @@ export default function LanguageSelectionScreen() {
             setTimeout(() => {
                 router.push('/onboarding/goals');
             }, 300);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error saving language:', error);
-            // Even if error, proceed? Better to retry or show error.
-            // For now, proceed.
-            setTimeout(() => {
-                router.push('/onboarding/goals');
-            }, 300);
+            const msg = error.message || error.error_description || JSON.stringify(error);
+            alert(`Failed to save language: ${msg}. Please ensure RLS policies are applied.`);
         }
     };
 

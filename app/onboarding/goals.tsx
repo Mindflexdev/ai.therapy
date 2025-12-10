@@ -75,10 +75,12 @@ export default function GoalSelectionScreen() {
             setTimeout(() => {
                 router.replace('/(tabs)');
             }, 500);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error saving goals:', error);
             setIsCompleting(false);
-            alert('Failed to save preferences. Please try again.');
+            // Show more specific error if available
+            const msg = error.message || error.error_description || JSON.stringify(error);
+            alert(`Failed to save preferences: ${msg}. Please ensure RLS policies are applied.`);
         }
     };
 

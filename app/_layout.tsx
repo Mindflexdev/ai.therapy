@@ -108,34 +108,9 @@ export default function RootLayout() {
 
       if (session) {
         // User is signed in
-        if (isOnboardingCompleted) {
-          // Onboarding complete
-          if (inAuthGroup || inOnboardingGroup) {
-            console.log('Redirecting to app (onboarding complete)');
-            router.replace('/(tabs)');
-          }
-        } else {
-          // Needs onboarding (or status is stale)
-          if (!inOnboardingGroup) {
-            // We are not in onboarding, but flag says incomplete.
-            // Verify against DB to ensure it's not just stale state from recent completion.
-            const { data } = await supabase
-              .from('users')
-              .select('onboarding_completed')
-              .eq('id', session.user.id)
-              .single();
-
-            if (data?.onboarding_completed) {
-              // It was stale! Update state and STAY here (or redirect to tabs if we were somewhere weird)
-              console.log('Onboarding verification: Completed. Updating state.');
-              setIsOnboardingCompleted(true);
-              // If we were in a blocked route, we are now fine.
-            } else {
-              // Confirmed incomplete. Redirect.
-              console.log('Redirecting to onboarding (confirmed incomplete)');
-              router.replace('/onboarding/language');
-            }
-          }
+        if (inAuthGroup || inOnboardingGroup) {
+          console.log('Redirecting to app');
+          router.replace('/(tabs)');
         }
       } else if (skipLogin) {
         // Skipped login
@@ -168,8 +143,25 @@ export default function RootLayout() {
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
         <Stack.Screen name="sign-in" options={{ headerShown: false, animation: 'fade' }} />
-        <Stack.Screen name="onboarding/language" options={{ headerShown: false, presentation: 'modal', animation: 'fade' }} />
-        <Stack.Screen name="onboarding/goals" options={{ headerShown: false, animation: 'fade' }} />
+        <Stack.Screen name="sign-in" options={{ headerShown: false, animation: 'fade' }} />
+        <Stack.Screen
+          name="onboarding/language"
+          options={{
+            headerShown: false,
+            presentation: 'transparentModal',
+            animation: 'fade',
+            contentStyle: { backgroundColor: 'transparent' }
+          }}
+        />
+        <Stack.Screen
+          name="onboarding/goals"
+          options={{
+            headerShown: false,
+            presentation: 'transparentModal',
+            animation: 'fade',
+            contentStyle: { backgroundColor: 'transparent' }
+          }}
+        />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
         <Stack.Screen name="conversation/[id]" options={{ headerShown: false }} />

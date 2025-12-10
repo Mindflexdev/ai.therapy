@@ -1,4 +1,3 @@
-import { Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -72,20 +71,15 @@ export default function ConversationScreen() {
     const [session, setSession] = useState<any>(null);
 
     // Audio State
-    const [recording, setRecording] = useState<Audio.Recording | null>(null);
+    const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+    const audioState = useAudioRecorderState(audioRecorder, 100);
     const [isRecording, setIsRecording] = useState(false);
     const [isTranscribing, setIsTranscribing] = useState(false);
-    const [soundLevel, setSoundLevel] = useState(0);
+    // Use audioState.amplitude (if available) or fallback
+    const soundLevel = audioState?.amplitude ?? 0;
     const pulseAnim = useRef(new Animated.Value(1)).current;
 
-    // Cleanup recording on unmount
-    useEffect(() => {
-        return () => {
-            if (recording) {
-                stopRecording();
-            }
-        };
-    }, []);
+
 
     // Animation Loop
     useEffect(() => {
@@ -297,54 +291,29 @@ export default function ConversationScreen() {
     // Audio Functions
     const startRecording = async () => {
         try {
-            console.log('Requesting permissions..');
-            const permission = await Audio.requestPermissionsAsync();
-            if (permission.status !== 'granted') {
-                alert('Permission to access microphone is required!');
-                return;
-            }
-
-            await Audio.setAudioModeAsync({
-                allowsRecordingIOS: true,
-                playsInSilentModeIOS: true,
-            });
-
             console.log('Starting recording..');
-            const { recording } = await Audio.Recording.createAsync(
-                Audio.RecordingOptionsPresets.HIGH_QUALITY
-            );
-
-            setRecording(recording);
-            setIsRecording(true);
-
-            // Metering updates
-            recording.setOnRecordingStatusUpdate((status) => {
-                if (status.metering) {
-                    // Normalize roughly -160dB to 0dB range to 0-1
-                    // Typical metering is -160 (silence) to 0 (loud)
-                    const level = Math.max(0, (status.metering + 160) / 160);
-                    setSoundLevel(level);
-                }
-            });
-
+            if (!audioRecorder.isRecording) {
+                await audioRecorder.recordAsync();
+                setIsRecording(true);
+            }
         } catch (err) {
             console.error('Failed to start recording', err);
+            alert('Could not start recording. Check permissions.');
         }
     };
 
     const stopRecording = async () => {
-        if (!recording) return;
+        if (!isRecording) return;
 
         console.log('Stopping recording..');
         setIsRecording(false);
         try {
-            await recording.stopAndUnloadAsync();
+            await audioRecorder.stopAsync();
         } catch (error) {
-            // Ignore errors if already unloaded
+            // Ignore errors if already stopped
         }
 
-        const uri = recording.getURI();
-        setRecording(null);
+        const uri = audioRecorder.uri;
         console.log('Recording stopped and stored at', uri);
 
         if (uri) {
@@ -353,12 +322,11 @@ export default function ConversationScreen() {
     };
 
     const cancelRecording = async () => {
-        if (!recording) return;
+        if (!isRecording) return;
         setIsRecording(false);
         try {
-            await recording.stopAndUnloadAsync();
+            await audioRecorder.stopAsync();
         } catch (error) { }
-        setRecording(null);
     };
 
     const uploadAudio = async (uri: string) => {
