@@ -1,114 +1,100 @@
-import { router } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
-import { Animated, StyleSheet, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { ThemedText } from '../../components/ThemedText';
-import { Colors } from '../../constants/theme';
-import { useColorScheme } from '../../hooks/useColorScheme';
-import { supabase } from '../../lib/supabase';
+const [selectedLanguage, setSelectedLanguage] = useState<Language | null>(null);
+const scaleAnim = useRef(new Animated.Value(0)).current;
 
-type Language = 'en' | 'de';
+useEffect(() => {
+    // Entrance animation
+    Animated.spring(scaleAnim, {
+        toValue: 1,
+        tension: 50,
+        friction: 7,
+        useNativeDriver: true,
+    }).start();
+}, []);
 
-export default function LanguageSelectionScreen() {
-    const colorScheme = useColorScheme();
-    const theme = Colors[colorScheme ?? 'light'];
-    const [selectedLanguage, setSelectedLanguage] = useState<Language | null>(null);
-    const scaleAnim = useRef(new Animated.Value(0)).current;
+const handleLanguageSelect = async (language: Language) => {
+    setSelectedLanguage(language);
 
-    useEffect(() => {
-        // Entrance animation
-        Animated.spring(scaleAnim, {
-            toValue: 1,
-            tension: 50,
-            friction: 7,
-            useNativeDriver: true,
-        }).start();
-    }, []);
+    // Save to database
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+        await supabase
+            .from('users')
+            .update({ preferred_language: language })
+            .eq('id', session.user.id);
+    }
 
-    const handleLanguageSelect = async (language: Language) => {
-        setSelectedLanguage(language);
+    // Navigate to goal selection after a brief delay
+    setTimeout(() => {
+        router.push('/onboarding/goals');
+    }, 300);
+};
 
-        // Save to database
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-            await supabase
-                .from('users')
-                .update({ preferred_language: language })
-                .eq('id', session.user.id);
-        }
+return (
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
+        <Animated.View style={[styles.content, { transform: [{ scale: scaleAnim }] }]}>
+            {/* Header */}
+            <View style={styles.header}>
+                <ThemedText type="title" style={styles.title}>
+                    Welcome to ai.therapy
+                </ThemedText>
+                <ThemedText style={styles.subtitle}>
+                    Choose your preferred language
+                </ThemedText>
+            </View>
 
-        // Navigate to goal selection after a brief delay
-        setTimeout(() => {
-            router.push('/onboarding/goals');
-        }, 300);
-    };
-
-    return (
-        <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
-            <Animated.View style={[styles.content, { transform: [{ scale: scaleAnim }] }]}>
-                {/* Header */}
-                <View style={styles.header}>
-                    <ThemedText type="title" style={styles.title}>
-                        Welcome to ai.therapy
+            {/* Language Options */}
+            <View style={styles.languageContainer}>
+                {/* English */}
+                <TouchableOpacity
+                    style={[
+                        styles.languageCard,
+                        { backgroundColor: theme.card },
+                        selectedLanguage === 'en' && { borderColor: theme.primary, borderWidth: 3 }
+                    ]}
+                    onPress={() => handleLanguageSelect('en')}
+                    activeOpacity={0.7}
+                >
+                    <View style={styles.flagContainer}>
+                        <ThemedText style={styles.flag}>🇬🇧</ThemedText>
+                    </View>
+                    <ThemedText type="subtitle" style={styles.languageName}>
+                        English
                     </ThemedText>
-                    <ThemedText style={styles.subtitle}>
-                        Choose your preferred language
+                    <ThemedText style={styles.languageDescription}>
+                        Continue in English
                     </ThemedText>
-                </View>
+                </TouchableOpacity>
 
-                {/* Language Options */}
-                <View style={styles.languageContainer}>
-                    {/* English */}
-                    <TouchableOpacity
-                        style={[
-                            styles.languageCard,
-                            { backgroundColor: theme.card },
-                            selectedLanguage === 'en' && { borderColor: theme.primary, borderWidth: 3 }
-                        ]}
-                        onPress={() => handleLanguageSelect('en')}
-                        activeOpacity={0.7}
-                    >
-                        <View style={styles.flagContainer}>
-                            <ThemedText style={styles.flag}>🇬🇧</ThemedText>
-                        </View>
-                        <ThemedText type="subtitle" style={styles.languageName}>
-                            English
-                        </ThemedText>
-                        <ThemedText style={styles.languageDescription}>
-                            Continue in English
-                        </ThemedText>
-                    </TouchableOpacity>
+                {/* German */}
+                <TouchableOpacity
+                    style={[
+                        styles.languageCard,
+                        { backgroundColor: theme.card },
+                        selectedLanguage === 'de' && { borderColor: theme.primary, borderWidth: 3 }
+                    ]}
+                    onPress={() => handleLanguageSelect('de')}
+                    activeOpacity={0.7}
+                >
+                    <View style={styles.flagContainer}>
+                        <ThemedText style={styles.flag}>🇩🇪</ThemedText>
+                    </View>
+                    <ThemedText type="subtitle" style={styles.languageName}>
+                        Deutsch
+                    </ThemedText>
+                    <ThemedText style={styles.languageDescription}>
+                        Auf Deutsch fortfahren
+                    </ThemedText>
+                </TouchableOpacity>
+            </View>
 
-                    {/* German */}
-                    <TouchableOpacity
-                        style={[
-                            styles.languageCard,
-                            { backgroundColor: theme.card },
-                            selectedLanguage === 'de' && { borderColor: theme.primary, borderWidth: 3 }
-                        ]}
-                        onPress={() => handleLanguageSelect('de')}
-                        activeOpacity={0.7}
-                    >
-                        <View style={styles.flagContainer}>
-                            <ThemedText style={styles.flag}>🇩🇪</ThemedText>
-                        </View>
-                        <ThemedText type="subtitle" style={styles.languageName}>
-                            Deutsch
-                        </ThemedText>
-                        <ThemedText style={styles.languageDescription}>
-                            Auf Deutsch fortfahren
-                        </ThemedText>
-                    </TouchableOpacity>
-                </View>
-
-                {/* Progress Indicator */}
-                <View style={styles.progressContainer}>
-                    <View style={[styles.progressDot, { backgroundColor: theme.primary }]} />
-                    <View style={[styles.progressDot, { backgroundColor: theme.text, opacity: 0.2 }]} />
-                </View>
-            </Animated.View>
-        </SafeAreaView>
-    );
+            {/* Progress Indicator */}
+            <View style={styles.progressContainer}>
+                <View style={[styles.progressDot, { backgroundColor: theme.primary }]} />
+                <View style={[styles.progressDot, { backgroundColor: theme.text, opacity: 0.2 }]} />
+            </View>
+        </Animated.View>
+    </SafeAreaView>
+);
 }
 
 const styles = StyleSheet.create({

@@ -107,7 +107,7 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
         <Stack.Screen name="conversation/[id]" options={{ headerShown: false }} />
-        <Stack.Screen name="create-character" options={{ headerShown: false }} />
+
         <Stack.Screen
           name="player"
           options={{

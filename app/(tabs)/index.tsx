@@ -212,7 +212,7 @@ export default function HomeScreen() {
   const handleEdit = (char: Character) => {
     setActiveMenuId(null);
     router.push({
-      pathname: '/create-character',
+      pathname: '/(tabs)/create',
       params: { editMode: 'true', characterData: JSON.stringify(char) }
     } as any);
   };
