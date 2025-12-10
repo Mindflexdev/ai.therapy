@@ -361,7 +361,7 @@ export default function ProfileScreen() {
                                             const hoursUntilNext = Math.max(0, 24 - hoursSince);
 
                                             if (hoursSince < 1) {
-                                                return "Updated just now • Refreshes daily";
+                                                return "Updated just now • Reanalyzation Possible Daily";
                                             } else if (hoursSince < 24) {
                                                 return `Updated ${hoursSince}h ago • Next update in ${hoursUntilNext}h`;
                                             } else {
