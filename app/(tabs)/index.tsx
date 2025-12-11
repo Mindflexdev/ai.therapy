@@ -133,7 +133,7 @@ export default function HomeScreen() {
     };
 
     loadData();
-  }, [sortedTopics]);;
+  }, [sortedTopics]);
 
   // Filter sections based on search query
   useEffect(() => {

@@ -712,8 +712,8 @@ async function fetchAndProcessCharacters() {
 async function initGoalTabs() {
     const grid = document.querySelector('.character-cards-grid');
 
-    // Show loading state
-    grid.innerHTML = '<div style="color:white; text-align:center; padding:2rem; width:100%;">Loading your guides...</div>';
+    // Show loading state with spinner
+    grid.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;padding:3rem;width:100%;"><div style="width:40px;height:40px;border:3px solid rgba(255,255,255,0.1);border-top-color:#5B8FD9;border-radius:50%;animation:spin 1s linear infinite;"></div></div><style>@keyframes spin{to{transform:rotate(360deg);}}</style>';
 
     // Fetch data
     let allCharacters = await fetchAndProcessCharacters();
