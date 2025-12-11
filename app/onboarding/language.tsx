@@ -72,7 +72,6 @@ export default function LanguageSelectionScreen() {
                         </ThemedText>
                     </View>
 
-    // Simplified Language Buttons
                     <View style={styles.languageContainer}>
                         {/* English */}
                         <TouchableOpacity

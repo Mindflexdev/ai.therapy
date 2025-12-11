@@ -104,7 +104,6 @@ export default function GoalSelectionScreen() {
                         </ThemedText>
                     </View>
 
-    // Goals List - Changed to Chips Layout
                     <View style={styles.goalsContainer}>
                         {GOALS.map((goal) => {
                             const isSelected = selectedGoals.includes(goal.id);

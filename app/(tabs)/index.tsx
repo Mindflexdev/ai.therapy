@@ -154,8 +154,9 @@ export default function HomeScreen() {
 
       // Also scroll the header to keep the active chip visible
       const index = sortedTopics.findIndex(t => t.id === topicId);
-      if (index !== -1 && headerListRef.current) {
-        headerListRef.current.scrollToIndex({ index, animated: true, viewPosition: 0.5 });
+      if (index > 0 && headerListRef.current) {
+        // Offset by +1 because of the 'Created/Plus' chip at start of headerList
+        headerListRef.current.scrollToIndex({ index: index + 1, animated: true, viewPosition: 0.5 });
       }
     }
   }).current;
@@ -331,12 +332,6 @@ export default function HomeScreen() {
                 style={styles.searchButton}
                 onPress={() => setIsSearchMode(true)}>
                 <IconSymbol name="magnifyingglass" size={24} color={theme.text} />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.feedbackButton, { backgroundColor: theme.primary }]}
-                onPress={() => router.push('/feedback')}
-              >
-                <ThemedText style={styles.feedbackButtonText}>Feedback?</ThemedText>
               </TouchableOpacity>
             </View>
           </>

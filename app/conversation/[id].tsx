@@ -27,6 +27,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { createCacheKey, queryCache } from '@/lib/query-cache';
 import { generateSessionId } from '@/lib/session';
 import { supabase } from '@/lib/supabase';
+import { RecordingPresets, useAudioRecorder } from 'expo-audio';
 
 interface Message {
     id: string;
@@ -70,8 +71,8 @@ export default function ConversationScreen() {
     const [session, setSession] = useState<any>(null);
 
     // Audio State
-    // Audio Hooks Stubbed
-    // const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+    // Audio Hooks
+    const audioRecorder = useAudioRecorder(RecordingPresets.LowQuality);
     // const audioState = useAudioRecorderState(audioRecorder, 100);
     const [isRecording, setIsRecording] = useState(false);
     const [isTranscribing, setIsTranscribing] = useState(false);
@@ -235,9 +236,10 @@ export default function ConversationScreen() {
                     };
                 });
 
-                // Prepare greeting (system message at start)
-                const greetingText = character.greeting ||
+                // Prepare greeting with description
+                const baseGreeting = character.greeting ||
                     `Hello! I'm ${character.name}. ${character.description} I'm here to support you on your journey. How are you feeling today?`;
+                const greetingText = `*${character.description}*\n\n${baseGreeting}`;
 
                 const greetingMsg: Message = {
                     id: '0', // Consistent ID for greeting
@@ -251,8 +253,9 @@ export default function ConversationScreen() {
                 setMessages([greetingMsg, ...cleanMessages]);
             } else {
                 // No history? Set initial greeting
-                const greeting = character.greeting ||
+                const baseGreeting = character.greeting ||
                     `Hello! I'm ${character.name}. ${character.description} I'm here to support you on your journey. How are you feeling today?`;
+                const greeting = `*${character.description}*\n\n${baseGreeting}`;
 
                 setMessages([{
                     id: '1',
@@ -288,13 +291,36 @@ export default function ConversationScreen() {
         setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
     }, []);
 
-    // Audio Functions (Stubbed)
     const startRecording = async () => {
-        alert("Audio recording coming soon!");
+        try {
+            console.log('Starting recording..');
+            if (!audioRecorder.isRecording) {
+                await audioRecorder.recordAsync();
+                setIsRecording(true);
+            }
+        } catch (err) {
+            console.error('Failed to start recording', err);
+            alert('Could not start recording. Check permissions.');
+        }
     };
 
     const stopRecording = async () => {
-        // No-op
+        if (!isRecording) return;
+
+        console.log('Stopping recording..');
+        setIsRecording(false);
+        try {
+            await audioRecorder.stopAsync();
+        } catch (error) {
+            // Ignore errors if already stopped
+        }
+
+        const uri = audioRecorder.uri;
+        console.log('Recording stopped and stored at', uri);
+
+        if (uri) {
+            uploadAudio(uri);
+        }
     };
 
     const uploadAudio = async (uri: string) => {
@@ -302,7 +328,11 @@ export default function ConversationScreen() {
     };
 
     const cancelRecording = async () => {
-        // Stubbed
+        if (!isRecording) return;
+        setIsRecording(false);
+        try {
+            await audioRecorder.stopAsync();
+        } catch (error) { }
     };
 
     // Memoized send message function
@@ -471,6 +501,16 @@ export default function ConversationScreen() {
         );
     }, [isTyping, character?.image, theme]);
 
+    // Disclaimer Header for FlatList
+    const disclaimerHeader = useMemo(() => (
+        <View style={styles.disclaimerBanner}>
+            <IconSymbol name="exclamationmark.triangle" size={18} color="#666" style={{ marginRight: 12, marginTop: 2 }} />
+            <ThemedText style={styles.disclaimerText}>
+                Disclaimer: ai.therapy is a creative mental-wellness platform and not a therapeutic service. All ai.therapists are fictional AI characters. Their role titles (“Therapist,” “Psychologist,” “Dr.,” “Coach,” etc.) are used solely for imaginative portrayal and have no professional, clinical, or medical meaning. The therapeutic approaches and modalities mentioned on the platform (e.g., CBT, ACT, DBT, Psychodynamic, Schema, Gestalt, MBCT, etc.) are used exclusively for inspired, model-like purposes and do not constitute real therapeutic application. Neither the ai.therapy platform nor its AI characters hold qualifications or licenses to practice medicine or psychotherapy. No promise of healing is made. Everything they say is intended for inspiration, reflection, and everyday support—not for diagnosis, treatment, or therapy.
+            </ThemedText>
+        </View>
+    ), []);
+
     if (isLoading) {
         return (
             <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
@@ -514,36 +554,23 @@ export default function ConversationScreen() {
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
             <View style={[styles.header, { borderBottomColor: theme.icon }]}>
-                <View style={styles.headerLeft}>
-                    <TouchableOpacity onPress={handleBack} style={[styles.backButton, { flexDirection: 'row', alignItems: 'center', gap: 12 }]}>
-                        <IconSymbol name="chevron.right" size={24} color={theme.text} style={{ transform: [{ rotate: '180deg' }] }} />
-                        {character && (
-                            <ThemedText type="defaultSemiBold" style={{ fontSize: 16 }}>{character.name}</ThemedText>
-                        )}
-                    </TouchableOpacity>
-                </View>
+                <TouchableOpacity onPress={handleBack} style={[styles.backButton, { flexDirection: 'row', alignItems: 'center', flex: 1, paddingRight: 8 }]}>
+                    <IconSymbol name="chevron.right" size={24} color={theme.text} style={{ transform: [{ rotate: '180deg' }] }} />
+                    {character && (
+                        <ThemedText type="defaultSemiBold" numberOfLines={1} style={{ fontSize: 16, flex: 1 }}>{character.name}</ThemedText>
+                    )}
+                </TouchableOpacity>
 
-                <View style={styles.headerCenter}>
-                    <TouchableOpacity
-                        style={[styles.styleSelector, { backgroundColor: theme.card }]}
-                        onPress={handleStyleModalOpen}
-                    >
-                        <IconSymbol name="sparkles" size={14} color={theme.primary} />
-                        <ThemedText style={styles.styleSelectorText} numberOfLines={1}>
-                            {activeTherapyStyles.map(s => STYLE_ABBREVIATIONS[s] || s).join(', ')}
-                        </ThemedText>
-                        <IconSymbol name="chevron.down" size={12} color={theme.icon} />
-                    </TouchableOpacity>
-                </View>
-
-                <View style={styles.headerRight}>
-                    <TouchableOpacity
-                        style={[styles.feedbackButton, { backgroundColor: theme.primary }]}
-                        onPress={handleFeedback}
-                    >
-                        <ThemedText style={styles.feedbackButtonText}>Feedback</ThemedText>
-                    </TouchableOpacity>
-                </View>
+                <TouchableOpacity
+                    style={[styles.styleSelector, { backgroundColor: theme.card, marginLeft: 8 }]}
+                    onPress={handleStyleModalOpen}
+                >
+                    <IconSymbol name="sparkles" size={14} color={theme.primary} />
+                    <ThemedText style={styles.styleSelectorText} numberOfLines={1}>
+                        {activeTherapyStyles.map(s => STYLE_ABBREVIATIONS[s] || s).join(', ')}
+                    </ThemedText>
+                    <IconSymbol name="chevron.down" size={12} color={theme.icon} />
+                </TouchableOpacity>
             </View>
 
             {/* Therapy Style Modal (Main Selection) */}
@@ -569,15 +596,7 @@ export default function ConversationScreen() {
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 keyboardVerticalOffset={100}
             >
-                {/* Disclaimer Banner */}
-                <View style={styles.disclaimerBanner}>
-                    <IconSymbol name="exclamationmark.triangle" size={18} color="#666" style={{ marginRight: 12 }} />
-                    <ThemedText style={styles.disclaimerText}>
-                        ai.therapy is not a therapeutic service. No diagnosis, no treatment.{'\n'}
-                        All messages are AI-generated and not a substitute for professional care.{'\n'}
-                        Inspired by therapeutic methods — have fun exploring.
-                    </ThemedText>
-                </View>
+                {/* Disclaimer Moved to ListHeaderComponent */}
 
                 <FlatList
                     ref={flatListRef}
@@ -587,6 +606,7 @@ export default function ConversationScreen() {
                     contentContainerStyle={styles.messagesList}
                     showsVerticalScrollIndicator={false}
                     ListFooterComponent={typingIndicator}
+                    ListHeaderComponent={disclaimerHeader}
                     removeClippedSubviews={true}
                     maxToRenderPerBatch={10}
                     updateCellsBatchingPeriod={50}

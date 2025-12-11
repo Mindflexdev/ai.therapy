@@ -3922,7 +3922,7 @@ body.light-mode .modal-techniques li {
 }
 
 
-@media (max-width: 900px) {
+@media (max-width: 1100px) {
     .nav-cta {
         padding: 0.6rem 1rem;
         font-size: 0.8rem;
@@ -4056,7 +4056,40 @@ body.light-mode .modal-techniques li {
         width: 100%;
     }
 
-    /* ... (lines 4058-4175 skipped for brevity in replacement, but I must match Target to be safe. I'll target just the grid and the text) */
+    .guide-card {
+        flex: 0 0 auto;
+        width: 45%;
+        /* 1/2 width as requested */
+        min-width: 150px;
+        max-width: 300px;
+        scroll-snap-align: start;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .guide-image {
+        height: 220px;
+        width: 100%;
+        object-fit: cover;
+    }
+
+    .guide-info {
+        padding: 1rem 0.5rem;
+        background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
 
     .guide-name {
         display: block !important;
