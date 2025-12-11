@@ -51,50 +51,44 @@ export default function HomeScreen() {
   const headerListRef = useRef<FlatList>(null);
   const isManualScroll = useRef(false);
 
-  // Load user goals and sort topics
+  // Load user goals, sort topics, and load characters - all in one effect
   useEffect(() => {
-    const loadUserGoals = async () => {
-      try {
-        const { data: { session } } = await (await import('@/lib/supabase')).supabase.auth.getSession();
-        if (!session) return;
-
-        const { data } = await (await import('@/lib/supabase')).supabase
-          .from('users')
-          .select('user_goals')
-          .eq('id', session.user.id)
-          .single();
-
-        if (data?.user_goals && data.user_goals.length > 0) {
-          setUserGoals(data.user_goals);
-
-          // Sort topics: user's goals first, then others
-          const userGoalTopics = TOPICS.filter(topic =>
-            data.user_goals.some((goal: string) =>
-              topic.id.toLowerCase() === goal.toLowerCase() ||
-              topic.title.toLowerCase() === goal.toLowerCase()
-            )
-          );
-          const otherTopics = TOPICS.filter(topic =>
-            !data.user_goals.some((goal: string) =>
-              topic.id.toLowerCase() === goal.toLowerCase() ||
-              topic.title.toLowerCase() === goal.toLowerCase()
-            )
-          );
-          setSortedTopics([...userGoalTopics, ...otherTopics]);
-        }
-      } catch (error) {
-        console.error('Failed to load user goals:', error);
-      }
-    };
-
-    loadUserGoals();
-  }, []);
-
-  // Load all characters grouped by topic
-  useEffect(() => {
-    const loadData = async () => {
+    const loadEverything = async () => {
       setIsLoading(true);
       try {
+        // 1. Load user goals and sort topics
+        const { data: { session } } = await (await import('@/lib/supabase')).supabase.auth.getSession();
+        let finalSortedTopics = TOPICS;
+
+        if (session) {
+          const { data } = await (await import('@/lib/supabase')).supabase
+            .from('users')
+            .select('user_goals')
+            .eq('id', session.user.id)
+            .single();
+
+          if (data?.user_goals && data.user_goals.length > 0) {
+            setUserGoals(data.user_goals);
+
+            // Sort topics: user's goals first, then others
+            const userGoalTopics = TOPICS.filter(topic =>
+              data.user_goals.some((goal: string) =>
+                topic.id.toLowerCase() === goal.toLowerCase() ||
+                topic.title.toLowerCase() === goal.toLowerCase()
+              )
+            );
+            const otherTopics = TOPICS.filter(topic =>
+              !data.user_goals.some((goal: string) =>
+                topic.id.toLowerCase() === goal.toLowerCase() ||
+                topic.title.toLowerCase() === goal.toLowerCase()
+              )
+            );
+            finalSortedTopics = [...userGoalTopics, ...otherTopics];
+            setSortedTopics(finalSortedTopics);
+          }
+        }
+
+        // 2. Load characters using the sorted topics
         const groupedData = await getAllCharactersGroupedByTopic();
 
         // Get user's created public characters
@@ -115,7 +109,7 @@ export default function HomeScreen() {
         }
 
         // Map the Supabase data to our Topic structure, using sorted topics
-        const mappedSections: TopicSection[] = sortedTopics.map(topic => {
+        const mappedSections: TopicSection[] = finalSortedTopics.map(topic => {
           const foundGroup = groupedData.find(g => g.topicId === topic.id);
           return {
             id: topic.id,
@@ -126,14 +120,14 @@ export default function HomeScreen() {
 
         setSections([...allSections, ...mappedSections]);
       } catch (error) {
-        console.error('Failed to load characters:', error);
+        console.error('Failed to load data:', error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadData();
-  }, [sortedTopics]);
+    loadEverything();
+  }, []); // Only run once on mount
 
   // Filter sections based on search query
   useEffect(() => {
