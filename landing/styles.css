@@ -4014,19 +4014,19 @@ body.light-mode .modal-techniques li {
         border-color: transparent;
     }
 
-    /* ===== MOBILE CHARACTER SECTION - DISABLED (Using horizontal scroll for all sizes) ===== */
+    /* ===== MOBILE CHARACTER SECTION - Horizontal scroll on all sizes ===== */
 
-    /* Character section container - immersive experience */
-    /* .character-grid-section {
+    /* Character section container */
+    .character-grid-section {
         width: 100%;
         max-width: 100%;
         padding: 0;
         order: 2;
         position: relative;
-    } */
+    }
 
     /* Decorative glow behind active card */
-    /* .character-grid-section::before {
+    .character-grid-section::before {
         content: '';
         position: absolute;
         top: 50%;
@@ -4038,11 +4038,11 @@ body.light-mode .modal-techniques li {
         filter: blur(40px);
         pointer-events: none;
         z-index: 0;
-    } */
+    }
 
-    /* .character-cards-grid {
-        display: flex;
-        overflow-x: auto;
+    .character-cards-grid {
+        display: flex !important;
+        overflow-x: auto !important;
         scroll-snap-type: x mandatory;
         gap: 2%;
         padding: 1.5rem 0;
@@ -4053,17 +4053,17 @@ body.light-mode .modal-techniques li {
         margin: 0;
         max-width: 100%;
         width: 100%;
-    } */
+    }
 
-    /* .character-cards-grid::-webkit-scrollbar {
+    .character-cards-grid::-webkit-scrollbar {
         display: none;
-    } */
+    }
 
     /* Show 2.2 cards on mobile (with peek), swipe for more */
-    /* .guide-card {
-        flex: 0 0 45%;
-        width: 45%;
-        min-width: 150px;
+    .guide-card {
+        flex: 0 0 45% !important;
+        width: 45% !important;
+        min-width: 150px !important;
         scroll-snap-align: start;
         margin: 0;
         background: linear-gradient(165deg,
@@ -4081,20 +4081,20 @@ body.light-mode .modal-techniques li {
             0 0 0 1px rgba(255, 255, 255, 0.05) inset;
         transform: scale(1);
         transition: transform 0.3s ease, box-shadow 0.3s ease;
-    } */
+    }
 
     /* Active card gets slight emphasis */
-    /* .guide-card:first-child {
+    .guide-card:first-child {
         transform: scale(1);
-    } */
+    }
 
-    /* .guide-card:hover {
+    .guide-card:hover {
         transform: scale(1);
         box-shadow:
             0 30px 60px -15px rgba(0, 0, 0, 0.5),
             0 0 0 1px rgba(255, 255, 255, 0.08) inset,
             0 -20px 40px -20px rgba(91, 143, 217, 0.15) inset;
-    } */
+    }
 
     /* Dramatic image container */
     .guide-image {
