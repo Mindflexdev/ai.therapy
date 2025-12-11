@@ -103,35 +103,35 @@ export default function RootLayout() {
 
       const inAuthGroup = segments[0] === 'sign-in';
       const inOnboardingGroup = segments[0] === 'onboarding';
+      const inTabsGroup = segments[0] === '(tabs)';
 
-      console.log('Navigation check:', { session: !!session, isOnboardingCompleted, skipLogin, inAuthGroup, segments });
+      console.log('Navigation check:', { session: !!session, isOnboardingCompleted, skipLogin, inAuthGroup, inTabsGroup, segments });
 
       if (session) {
         // User is signed in
-        // Only redirect away from auth/onboarding if onboarding is completed
-        // OR if they are in auth group (sign-in) - always redirect from sign-in to either onboarding or tabs
         if (inAuthGroup) {
+          // Just logged in from sign-in page
           if (isOnboardingCompleted) {
             router.replace('/(tabs)');
           } else {
-            // If onboarding not complete, let TabLayout logic handle it or redirect there
-            // But actually, if they are in sign-in and logged in, we should send them somewhere
             router.replace('/(tabs)'); // TabLayout will redirect to onboarding if needed
           }
         } else if (inOnboardingGroup) {
-          // If in onboarding, only redirect out if completed
+          // In onboarding, only redirect out if completed
           if (isOnboardingCompleted) {
             router.replace('/(tabs)');
           }
         }
+        // If already in tabs, do nothing (prevent redirect loop)
       } else if (skipLogin) {
         // Skipped login
         if (inAuthGroup) {
           router.replace('/(tabs)');
         }
       } else {
-        // Not signed in
-        if (!inAuthGroup) {
+        // Not signed in and not skipped
+        if (!inAuthGroup && inTabsGroup) {
+          // Trying to access tabs without auth
           console.log('Redirecting to sign-in');
           router.replace('/sign-in');
         }
@@ -154,7 +154,6 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
-        <Stack.Screen name="sign-in" options={{ headerShown: false, animation: 'fade' }} />
         <Stack.Screen name="sign-in" options={{ headerShown: false, animation: 'fade' }} />
         <Stack.Screen
           name="onboarding/language"
