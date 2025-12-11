@@ -101,7 +101,7 @@ export default function RootLayout() {
         setSkipLogin(shouldSkip);
       }
 
-      const inAuthGroup = segments[0] === 'sign-in';
+      const inAuthGroup = segments[0] === 'sign-in' || segments.length === 0;
       const inOnboardingGroup = segments[0] === 'onboarding';
       const inTabsGroup = segments[0] === '(tabs)';
 
