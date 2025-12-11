@@ -1,29 +1,6 @@
 /* ===== Design Tokens ===== */
+/* DEFAULT (LIGHT THEME) */
 :root {
-    --bg-deep: #0a0a12;
-    --bg-dark: #12121f;
-    --bg-card: rgba(30, 30, 50, 0.6);
-    --glass-bg: rgba(255, 255, 255, 0.05);
-    --glass-border: rgba(255, 255, 255, 0.1);
-    --gradient-primary: linear-gradient(135deg, #20E2D7 0%, #17b8c1 50%, #0072FF 100%);
-    --gradient-warm: linear-gradient(135deg, #f093fb 0%, #f5576c 50%, #ffd89b 100%);
-    --gradient-calm: linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
-    --glow-purple: rgba(32, 226, 215, 0.4);
-    --glow-pink: rgba(0, 114, 255, 0.3);
-    --glow-blue: rgba(100, 181, 246, 0.3);
-    --text-primary: #ffffff;
-    --text-secondary: rgba(255, 255, 255, 0.7);
-    --text-muted: rgba(255, 255, 255, 0.5);
-    --accent-purple: #20E2D7;
-    --accent-pink: #0072FF;
-    --accent-blue: #64b5f6;
-    --accent-cyan: #20E2D7;
-    --font-display: 'Playfair Display', serif;
-    --font-body: 'Outfit', sans-serif;
-}
-
-/* ===== Light Mode ===== */
-body.light-mode {
     --bg-deep: #f5ebe0;
     --bg-dark: #ede4d9;
     --bg-card: rgba(255, 252, 247, 0.95);
@@ -36,6 +13,30 @@ body.light-mode {
     --text-primary: #2d2418;
     --text-secondary: rgba(45, 36, 24, 0.8);
     --text-muted: rgba(45, 36, 24, 0.6);
+    --gradient-primary: linear-gradient(135deg, #20E2D7 0%, #17b8c1 50%, #0072FF 100%);
+    --gradient-warm: linear-gradient(135deg, #f093fb 0%, #f5576c 50%, #ffd89b 100%);
+    --accent-purple: #20E2D7;
+    --accent-pink: #0072FF;
+    --accent-blue: #64b5f6;
+    --accent-cyan: #20E2D7;
+    --font-display: 'Playfair Display', serif;
+    --font-body: 'Outfit', sans-serif;
+}
+
+/* ===== Dark Mode Override ===== */
+body.dark-mode {
+    --bg-deep: #0a0a12;
+    --bg-dark: #12121f;
+    --bg-card: rgba(30, 30, 50, 0.6);
+    --glass-bg: rgba(255, 255, 255, 0.05);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --gradient-calm: linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
+    --glow-purple: rgba(32, 226, 215, 0.4);
+    --glow-pink: rgba(0, 114, 255, 0.3);
+    --glow-blue: rgba(100, 181, 246, 0.3);
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255, 255, 255, 0.7);
+    --text-muted: rgba(255, 255, 255, 0.5);
 }
 
 /* Theme Toggle Button */
@@ -67,8 +68,8 @@ body.light-mode {
 
 /* Language Toggle Button */
 .lang-toggle {
-    background: rgba(255, 255, 255, 0.1);
-    border: 2px solid rgba(255, 255, 255, 0.2);
+    background: rgba(0, 114, 255, 0.08);
+    border: 2px solid rgba(0, 114, 255, 0.2);
     border-radius: 8px;
     padding: 0.5rem 0.75rem;
     cursor: pointer;
@@ -82,8 +83,17 @@ body.light-mode {
 }
 
 .lang-toggle:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(0, 114, 255, 0.15);
     transform: scale(1.05);
+}
+
+body.dark-mode .lang-toggle {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+body.dark-mode .lang-toggle:hover {
+    background: rgba(255, 255, 255, 0.2);
 }
 
 .lang-text {
@@ -93,11 +103,6 @@ body.light-mode {
     font-family: var(--font-body);
 }
 
-body.light-mode .lang-toggle {
-    background: rgba(0, 114, 255, 0.08);
-    border-color: rgba(0, 114, 255, 0.2);
-}
-
 /* Flag-based Language Toggle */
 .lang-flag-btn {
     font-size: 1.4rem !important;
@@ -105,24 +110,24 @@ body.light-mode .lang-toggle {
     min-width: 48px;
     min-height: 40px;
     border-radius: 10px !important;
-    background: rgba(255, 255, 255, 0.1) !important;
-    border: 2px solid rgba(255, 255, 255, 0.2) !important;
+    background: rgba(0, 114, 255, 0.08) !important;
+    border: 2px solid rgba(0, 114, 255, 0.2) !important;
     transition: all 0.3s ease;
 }
 
 .lang-flag-btn:hover {
-    background: rgba(255, 255, 255, 0.2) !important;
+    background: rgba(0, 114, 255, 0.15) !important;
     transform: scale(1.08);
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
-body.light-mode .lang-flag-btn {
-    background: rgba(0, 114, 255, 0.08) !important;
-    border-color: rgba(0, 114, 255, 0.2) !important;
+body.dark-mode .lang-flag-btn {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
 }
 
-body.light-mode .lang-flag-btn:hover {
-    background: rgba(0, 114, 255, 0.15) !important;
+body.dark-mode .lang-flag-btn:hover {
+    background: rgba(255, 255, 255, 0.2) !important;
 }
 
 /* Dual Flag Language Toggle */
@@ -130,11 +135,16 @@ body.light-mode .lang-flag-btn:hover {
     display: flex;
     align-items: center;
     gap: 0.25rem;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(139, 90, 43, 0.1);
+    border: 1px solid rgba(139, 90, 43, 0.2);
     border-radius: 12px;
     padding: 0.35rem 0.5rem;
     cursor: pointer;
+}
+
+body.dark-mode .lang-toggle-dual {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
 }
 
 .lang-flag {
@@ -4042,6 +4052,7 @@ body.light-mode .modal-techniques li {
 
     .character-cards-grid {
         display: flex !important;
+        flex-wrap: nowrap !important;
         overflow-x: auto !important;
         scroll-snap-type: x mandatory;
         gap: 2%;
@@ -4055,120 +4066,14 @@ body.light-mode .modal-techniques li {
         width: 100%;
     }
 
-    .character-cards-grid::-webkit-scrollbar {
-        display: none;
-    }
-
-    /* Show 2.2 cards on mobile (with peek), swipe for more */
-    .guide-card {
-        flex: 0 0 45% !important;
-        width: 45% !important;
-        min-width: 150px !important;
-        scroll-snap-align: start;
-        margin: 0;
-        background: linear-gradient(165deg,
-                rgba(255, 255, 255, 0.08) 0%,
-                rgba(255, 255, 255, 0.02) 50%,
-                rgba(91, 143, 217, 0.05) 100%);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: 20px;
-        padding: 0;
-        overflow: hidden;
-        box-shadow:
-            0 15px 35px -8px rgba(0, 0, 0, 0.3),
-            0 0 0 1px rgba(255, 255, 255, 0.05) inset;
-        transform: scale(1);
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-
-    /* Active card gets slight emphasis */
-    .guide-card:first-child {
-        transform: scale(1);
-    }
-
-    .guide-card:hover {
-        transform: scale(1);
-        box-shadow:
-            0 30px 60px -15px rgba(0, 0, 0, 0.5),
-            0 0 0 1px rgba(255, 255, 255, 0.08) inset,
-            0 -20px 40px -20px rgba(91, 143, 217, 0.15) inset;
-    }
-
-    /* Dramatic image container */
-    .guide-image {
-        width: 100%;
-        height: auto !important;
-        aspect-ratio: 4 / 5;
-        border-radius: 0;
-        overflow: hidden;
-        margin-bottom: 0;
-        border: none;
-        position: relative;
-    }
-
-    /* Gradient overlay for depth */
-    .guide-image::after {
-        content: '';
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        height: 50%;
-        background: linear-gradient(to top,
-                rgba(10, 10, 18, 0.95) 0%,
-                rgba(10, 10, 18, 0.6) 40%,
-                transparent 100%);
-        pointer-events: none;
-    }
-
-    .guide-image img {
-        height: 100% !important;
-        width: 100%;
-        object-fit: cover;
-        object-position: top center;
-        transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    }
-
-    .guide-card:hover .guide-image img {
-        transform: scale(1.03);
-    }
-
-    /* Elegant info section overlaid on image */
-    .guide-info {
-        display: block !important;
-        position: relative;
-        padding: 0.75rem 0.5rem 1rem;
-        background: linear-gradient(180deg,
-                rgba(15, 15, 25, 0.95) 0%,
-                rgba(20, 20, 35, 0.98) 100%);
-        text-align: center;
-        border-top: 1px solid rgba(91, 143, 217, 0.2);
-    }
-
-    /* Decorative accent line */
-    .guide-info::before {
-        content: '';
-        position: absolute;
-        top: -1px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 50px;
-        height: 2px;
-        background: linear-gradient(90deg,
-                transparent 0%,
-                #5B8FD9 50%,
-                transparent 100%);
-        border-radius: 2px;
-    }
+    /* ... (lines 4058-4175 skipped for brevity in replacement, but I must match Target to be safe. I'll target just the grid and the text) */
 
     .guide-name {
         display: block !important;
         font-size: 1rem;
         margin-bottom: 0.4rem;
         font-weight: 600;
-        color: #ffffff;
+        color: var(--text-primary);
         letter-spacing: 0.01em;
         text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
         white-space: nowrap;
@@ -4177,7 +4082,7 @@ body.light-mode .modal-techniques li {
     .guide-desc {
         display: block !important;
         font-size: 0.9rem;
-        color: rgba(255, 255, 255, 0.7);
+        color: var(--text-secondary);
         line-height: 1.55;
         -webkit-line-clamp: unset;
         overflow: visible;

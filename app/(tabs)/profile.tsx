@@ -145,8 +145,8 @@ export default function ProfileScreen() {
                 }
             }
 
-            // 2. If stale or missing, call n8n
-            if (!analyzing) {
+            // 2. If stale or missing, call n8n ONLY if explicitly requested
+            if (!analyzing && forceRefresh) {
                 setAnalyzing(true); // Show analyzing UI
 
                 let response;
@@ -218,7 +218,7 @@ export default function ProfileScreen() {
                 if (data && !error) {
                     setMessageCount(data.message_count || 0);
                     // Set user name (fallback to email username if no full_name)
-                    setUserName(data.full_name || session.user.email?.split('@')[0] || 'User');
+                    setUserName(data.full_name || session.user.email || 'User');
                     setAvatarUrl(data.avatar_url);
                 }
             };
