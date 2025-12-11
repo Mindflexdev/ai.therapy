@@ -59,11 +59,38 @@ export async function generateCharacterImage(
         }
 
         const data = await response.json();
-        console.log('✅ Response data:', data);
+        console.log('✅ Response data:', JSON.stringify(data, null, 2));
+
+        let imageUrl = '';
+
+        // Handle array response (as provided in user example)
+        if (Array.isArray(data) && data.length > 0) {
+            // Check for data[0].data.result[0].image
+            if (data[0]?.data?.result?.[0]?.image) {
+                imageUrl = data[0].data.result[0].image;
+            }
+            // Check for data[0].output (sometimes n8n returns this)
+            else if (data[0]?.imageUrl || data[0]?.image_url || data[0]?.url) {
+                imageUrl = data[0].imageUrl || data[0].image_url || data[0].url;
+            }
+        }
+        // Handle object response
+        else if (data) {
+            // Check for standard fields
+            if (data.imageUrl || data.image_url || data.url) {
+                imageUrl = data.imageUrl || data.image_url || data.url;
+            }
+            // Check for nested data.result[0].image
+            else if (data.data?.result?.[0]?.image) {
+                imageUrl = data.data.result[0].image;
+            }
+        }
+
+        console.log('🖼️ Extracted Image URL:', imageUrl);
 
         return {
-            imageUrl: data.imageUrl || data.image_url || data.url,
-            success: true,
+            imageUrl: imageUrl,
+            success: !!imageUrl,
         };
     } catch (error) {
         console.error('❌ Error generating character image:', error);
