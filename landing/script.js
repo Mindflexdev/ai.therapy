@@ -17,11 +17,12 @@ function initThemeToggle() {
     // Check for saved preference - default to LIGHT mode
     const savedTheme = localStorage.getItem('theme') || 'light';
 
-    // Apply saved theme (Default is light, so only need to add class for dark)
-    if (savedTheme === 'dark') {
-        document.body.classList.add('dark-mode');
+    // Apply saved theme (always, even if toggle is hidden)
+    // Dark is default in CSS now, so we add 'light-mode' class if theme is light
+    if (savedTheme === 'light') {
+        document.body.classList.add('light-mode');
     } else {
-        document.body.classList.remove('dark-mode');
+        document.body.classList.remove('light-mode');
     }
 
     // If toggle element exists, set up interactivity
@@ -39,18 +40,12 @@ function initThemeToggle() {
     icons.forEach(icon => {
         icon.addEventListener('click', () => {
             const newTheme = icon.dataset.theme;
-            // Check current theme by presence of dark-mode class
-            const isDark = document.body.classList.contains('dark-mode');
-            const currentTheme = isDark ? 'dark' : 'light';
+            const currentTheme = document.body.classList.contains('light-mode') ? 'light' : 'dark';
 
             if (newTheme === currentTheme) return; // Already active
 
             // Toggle theme
-            if (newTheme === 'dark') {
-                document.body.classList.add('dark-mode');
-            } else {
-                document.body.classList.remove('dark-mode');
-            }
+            document.body.classList.toggle('light-mode');
 
             // Update active states
             icons.forEach(i => i.classList.toggle('active', i.dataset.theme === newTheme));
@@ -826,6 +821,15 @@ async function initGoalTabs() {
             </div>
         `;
         }).join('');
+
+        // Add click handlers for redirect to app
+        grid.querySelectorAll('.guide-card').forEach(card => {
+            card.style.cursor = 'pointer';
+            card.onclick = (e) => {
+                // Prevent redirect if clicking on specific interactive elements if any
+                window.location.href = '/app';
+            };
+        });
 
         // Apply language to new descriptions
         const currentLang = localStorage.getItem('lang') || 'en';

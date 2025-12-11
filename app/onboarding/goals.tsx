@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Dimensions, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Animated, Dimensions, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { LogoWithDots } from '../../components/logo-with-dots';
@@ -19,11 +19,11 @@ interface Goal {
 const GOALS: Goal[] = [
     { id: 'sleep', title: 'Better Sleep' },
     { id: 'performance', title: 'Improve Performance' },
-    { id: 'self-esteem', title: 'Build Self-Esteem' },
-    { id: 'anxiety', title: 'Reduce Anxiety' },
+    { id: 'self-worth', title: 'Build Self-Esteem' }, // ID: self-worth
+    { id: 'fears', title: 'Reduce Anxiety' }, // ID: fears
     { id: 'stress', title: 'Reduce Stress' },
-    { id: 'happiness', title: 'Be Happier' },
-    { id: 'gratitude', title: 'Practice Gratitude' },
+    { id: 'happier', title: 'Be Happier' }, // ID: happier
+    { id: 'grateful', title: 'Practice Gratitude' }, // ID: grateful
 ];
 
 export default function GoalSelectionScreen() {
@@ -104,12 +104,8 @@ export default function GoalSelectionScreen() {
                         </ThemedText>
                     </View>
 
-                    {/* Goals List */}
-                    <ScrollView
-                        style={styles.scrollView}
-                        contentContainerStyle={styles.goalsContainer}
-                        showsVerticalScrollIndicator={false}
-                    >
+    // Goals List - Changed to Chips Layout
+                    <View style={styles.goalsContainer}>
                         {GOALS.map((goal) => {
                             const isSelected = selectedGoals.includes(goal.id);
                             return (
@@ -134,14 +130,14 @@ export default function GoalSelectionScreen() {
                                 </TouchableOpacity>
                             );
                         })}
-                    </ScrollView>
+                    </View>
 
-                    {/* Continue Button */}
+                    {/* Continue Button small spacing */}
                     <View style={styles.footer}>
                         <TouchableOpacity
                             style={[
                                 styles.continueButton,
-                                { backgroundColor: selectedGoals.length > 0 ? theme.primary : '#ccc' } // Grey if disabled
+                                { backgroundColor: selectedGoals.length > 0 ? theme.primary : '#ccc' }
                             ]}
                             onPress={handleComplete}
                             disabled={selectedGoals.length === 0 || isCompleting}
@@ -162,7 +158,7 @@ export default function GoalSelectionScreen() {
 const styles = StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.5)', // Semi-transparent background for popup feel
+        backgroundColor: 'rgba(0,0,0,0.7)', // Darker overlay for better focus
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -175,9 +171,9 @@ const styles = StyleSheet.create({
     popupContainer: {
         width: '90%',
         maxWidth: 400,
-        maxHeight: '85%',
-        borderRadius: 24,
+        borderRadius: 20,
         padding: 24,
+        paddingBottom: 24,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 10 },
         shadowOpacity: 0.3,
@@ -186,52 +182,54 @@ const styles = StyleSheet.create({
     },
     header: {
         alignItems: 'center',
-        marginBottom: 24,
+        marginBottom: 20,
     },
     logoContainer: {
-        alignSelf: 'flex-start', // Top left as requested
-        marginBottom: 16,
+        marginBottom: 12,
     },
     title: {
-        fontSize: 24,
+        fontSize: 22,
         textAlign: 'center',
-        marginBottom: 8,
+        marginBottom: 6,
+        fontWeight: 'bold',
     },
     subtitle: {
-        fontSize: 14,
+        fontSize: 13,
         opacity: 0.7,
         textAlign: 'center',
-        lineHeight: 20,
-    },
-    scrollView: {
-        flex: 1,
-        marginBottom: 24,
+        marginBottom: 0,
     },
     goalsContainer: {
-        gap: 12,
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        gap: 10,
+        marginBottom: 24,
     },
     goalPill: {
-        paddingVertical: 16,
-        paddingHorizontal: 20,
-        borderRadius: 30, // Pill shape
+        paddingVertical: 10,
+        paddingHorizontal: 16,
+        borderRadius: 20,
         borderWidth: 1,
-        alignItems: 'center', // Center text
+        alignItems: 'center',
+        minWidth: '40%', // Ensure consistent sizing
     },
     goalText: {
-        fontSize: 16,
+        fontSize: 13,
+        textAlign: 'center',
     },
     footer: {
-        // Footer styles
+        width: '100%',
     },
     continueButton: {
-        paddingVertical: 16,
-        borderRadius: 30,
+        paddingVertical: 12,
+        borderRadius: 25,
         alignItems: 'center',
         width: '100%',
     },
     continueButtonText: {
         color: '#fff',
-        fontSize: 16,
+        fontSize: 15,
         fontWeight: '600',
     },
 });

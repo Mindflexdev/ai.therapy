@@ -60,6 +60,7 @@ export default function ProfileScreen() {
     const [messageCount, setMessageCount] = useState(0);
     const [userName, setUserName] = useState('User');
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+    const [selectedLanguage, setSelectedLanguage] = useState<'en' | 'de'>('en');
 
     // Countdown animation state
     const [countdown, setCountdown] = useState(60);
@@ -211,15 +212,17 @@ export default function ProfileScreen() {
 
                 const { data, error } = await supabase
                     .from('users')
-                    .select('message_count, full_name, avatar_url')
+                    .select('message_count, full_name, avatar_url, preferred_language')
                     .eq('id', session.user.id)
                     .single();
 
                 if (data && !error) {
                     setMessageCount(data.message_count || 0);
-                    // Set user name (fallback to email username if no full_name)
                     setUserName(data.full_name || session.user.email || 'User');
                     setAvatarUrl(data.avatar_url);
+                    if (data.preferred_language) {
+                        setSelectedLanguage(data.preferred_language);
+                    }
                 }
             };
 
@@ -227,6 +230,19 @@ export default function ProfileScreen() {
             fetchAnalytics();
         }, [])
     );
+
+    const handleLanguageToggle = async (lang: 'en' | 'de') => {
+        setSelectedLanguage(lang);
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                await supabase.from('users').update({ preferred_language: lang }).eq('id', session.user.id);
+            }
+            // Ideally trigger app-wide language change here if context exists
+        } catch (e) {
+            console.error('Error updating language:', e);
+        }
+    };
 
     const handleSignOut = async () => {
         try {
@@ -333,6 +349,28 @@ export default function ProfileScreen() {
 
                     <View style={styles.nameRow}>
                         <ThemedText type="title" style={styles.name}>{userName}</ThemedText>
+                    </View>
+
+                    {/* Language Toggle */}
+                    <View style={styles.languageToggleContainer}>
+                        <TouchableOpacity
+                            style={[
+                                styles.langButton,
+                                selectedLanguage === 'en' && { backgroundColor: theme.primary, borderColor: theme.primary }
+                            ]}
+                            onPress={() => handleLanguageToggle('en')}
+                        >
+                            <ThemedText style={[styles.langText, selectedLanguage === 'en' && { color: '#fff', fontWeight: 'bold' }]}>EN</ThemedText>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[
+                                styles.langButton,
+                                selectedLanguage === 'de' && { backgroundColor: theme.primary, borderColor: theme.primary }
+                            ]}
+                            onPress={() => handleLanguageToggle('de')}
+                        >
+                            <ThemedText style={[styles.langText, selectedLanguage === 'de' && { color: '#fff', fontWeight: 'bold' }]}>DE</ThemedText>
+                        </TouchableOpacity>
                     </View>
 
                     <View style={[styles.messagesCard, { backgroundColor: theme.card }]}>
@@ -516,4 +554,7 @@ const styles = StyleSheet.create({
     signOutText: { color: '#FF6B6B', fontSize: 16, fontWeight: '600' },
     analyzeButton: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 14, paddingHorizontal: 24, borderRadius: 12 },
     analyzeButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+    languageToggleContainer: { flexDirection: 'row', gap: 12, marginBottom: 24 },
+    langButton: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(150,150,150,0.3)', minWidth: 44, alignItems: 'center' },
+    langText: { fontSize: 12, opacity: 0.8 },
 });

@@ -49,7 +49,7 @@ export default function SignInScreen() {
         setLoading(true);
         try {
             const redirectTo = Platform.OS === 'web'
-                ? window.location.origin // For web, redirect back to current origin
+                ? (typeof window !== 'undefined' ? window.location.href : '') // Redirect back to this specific page (app context)
                 : 'therapyai://login-callback'; // For mobile, use deep link
 
             const { data, error } = await supabase.auth.signInWithOAuth({

@@ -1,4 +1,3 @@
-import * as FileSystem from 'expo-file-system';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -71,12 +70,13 @@ export default function ConversationScreen() {
     const [session, setSession] = useState<any>(null);
 
     // Audio State
-    const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
-    const audioState = useAudioRecorderState(audioRecorder, 100);
+    // Audio Hooks Stubbed
+    // const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+    // const audioState = useAudioRecorderState(audioRecorder, 100);
     const [isRecording, setIsRecording] = useState(false);
     const [isTranscribing, setIsTranscribing] = useState(false);
     // Use audioState.amplitude (if available) or fallback
-    const soundLevel = audioState?.amplitude ?? 0;
+    const soundLevel = 0; // audioState?.amplitude ?? 0;
     const pulseAnim = useRef(new Animated.Value(1)).current;
 
 
@@ -288,111 +288,21 @@ export default function ConversationScreen() {
         setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
     }, []);
 
-    // Audio Functions
+    // Audio Functions (Stubbed)
     const startRecording = async () => {
-        try {
-            console.log('Starting recording..');
-            if (!audioRecorder.isRecording) {
-                await audioRecorder.recordAsync();
-                setIsRecording(true);
-            }
-        } catch (err) {
-            console.error('Failed to start recording', err);
-            alert('Could not start recording. Check permissions.');
-        }
+        alert("Audio recording coming soon!");
     };
 
     const stopRecording = async () => {
-        if (!isRecording) return;
-
-        console.log('Stopping recording..');
-        setIsRecording(false);
-        try {
-            await audioRecorder.stopAsync();
-        } catch (error) {
-            // Ignore errors if already stopped
-        }
-
-        const uri = audioRecorder.uri;
-        console.log('Recording stopped and stored at', uri);
-
-        if (uri) {
-            uploadAudio(uri);
-        }
-    };
-
-    const cancelRecording = async () => {
-        if (!isRecording) return;
-        setIsRecording(false);
-        try {
-            await audioRecorder.stopAsync();
-        } catch (error) { }
+        // No-op
     };
 
     const uploadAudio = async (uri: string) => {
-        setIsTranscribing(true);
-        try {
-            const currentUserId = session?.user?.id || 'anonymous';
-            const sessionId = generateSessionId(currentUserId, id); // Use character ID from route
+        // Stubbed
+    };
 
-            // Handle Web vs Mobile
-            let responseData;
-
-            if (Platform.OS === 'web') {
-                // Web: Fetch blob -> FormData -> fetch()
-                const response = await fetch(uri);
-                const blob = await response.blob();
-
-                const formData = new FormData();
-                // @ts-ignore - 'file' is correct for React Native / Web FormData
-                formData.append('file', blob, 'recording.m4a');
-
-                const uploadRes = await fetch(AUDIO_WEBHOOK_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${session?.access_token}`,
-                        // Do NOT set Content-Type header manually for FormData, browser does it with boundary
-                    },
-                    body: formData,
-                });
-
-                if (!uploadRes.ok) throw new Error(`Upload failed: ${uploadRes.status}`);
-                responseData = await uploadRes.json();
-
-            } else {
-                // Mobile: Use FileSystem.uploadAsync
-                const fileInfo = await FileSystem.getInfoAsync(uri);
-                if (!fileInfo.exists) throw new Error("File does not exist");
-
-                const uploadResult = await FileSystem.uploadAsync(AUDIO_WEBHOOK_URL, uri, {
-                    httpMethod: 'POST',
-                    uploadType: FileSystem.FileSystemUploadType.MULTIPART,
-                    headers: {
-                        'Authorization': `Bearer ${session?.access_token}`,
-                    },
-                    fieldName: 'file',
-                    mimeType: 'audio/m4a',
-                });
-
-                if (uploadResult.status !== 200) {
-                    throw new Error(`Upload failed: ${uploadResult.status}`);
-                }
-                responseData = JSON.parse(uploadResult.body);
-            }
-
-            const transcription = responseData.text || responseData.transcription || responseData.output;
-
-            if (transcription) {
-                // Auto-send the transcribed text
-                sendMessage(transcription);
-            }
-
-        } catch (error) {
-            console.error("Transcription error:", error);
-            alert("Could not transcribe audio.");
-        } finally {
-            setIsTranscribing(false);
-        }
+    const cancelRecording = async () => {
+        // Stubbed
     };
 
     // Memoized send message function

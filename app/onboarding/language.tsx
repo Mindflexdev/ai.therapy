@@ -72,7 +72,7 @@ export default function LanguageSelectionScreen() {
                         </ThemedText>
                     </View>
 
-                    {/* Language Options */}
+    // Simplified Language Buttons
                     <View style={styles.languageContainer}>
                         {/* English */}
                         <TouchableOpacity
@@ -111,7 +111,7 @@ export default function LanguageSelectionScreen() {
 const styles = StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.5)',
+        backgroundColor: 'rgba(0,0,0,0.7)', // Darker overlay
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -122,11 +122,11 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     popupContainer: {
-        width: '90%',
-        maxWidth: 360,
-        borderRadius: 24,
+        width: '85%',
+        maxWidth: 320,
+        borderRadius: 20,
         padding: 24,
-        paddingBottom: 40,
+        paddingBottom: 32,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 10 },
         shadowOpacity: 0.3,
@@ -135,16 +135,16 @@ const styles = StyleSheet.create({
     },
     header: {
         alignItems: 'center',
-        marginBottom: 32,
+        marginBottom: 24,
     },
     logoContainer: {
-        alignSelf: 'flex-start',
         marginBottom: 16,
     },
     title: {
-        fontSize: 28,
+        fontSize: 24,
         textAlign: 'center',
         marginBottom: 8,
+        fontWeight: 'bold',
     },
     subtitle: {
         fontSize: 14,
@@ -152,22 +152,23 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     languageContainer: {
-        gap: 16,
+        gap: 12,
+        width: '100%',
     },
     languageButton: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: 16,
-        paddingHorizontal: 24,
-        borderRadius: 30,
+        paddingVertical: 12, // Reduced from 16
+        paddingHorizontal: 20,
+        borderRadius: 25,
         borderWidth: 1,
-        gap: 12,
+        gap: 10,
     },
     flag: {
-        fontSize: 24,
+        fontSize: 20, // Reduced from 24
     },
     languageName: {
-        fontSize: 16,
+        fontSize: 15, // Reduced from 16
     },
 });
