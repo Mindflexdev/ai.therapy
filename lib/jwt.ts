@@ -1,7 +1,7 @@
 // Proper JWT generation for n8n webhook authentication
 // Uses Web Crypto API for HMAC-SHA256 signing
 
-const JWT_SECRET = 'therapy-ai-character-gen-2024-secure-key-xyz789';
+const JWT_SECRET = 'nwMrqSPlftSWQkj34mTV+J3+9sB6bfWROxvXVLOrm0F736Wnw8eNxULAB21XfS+na3V/xAIGbfi/faOffklGgA==';
 
 // Base64 URL encode
 function base64UrlEncode(arrayBuffer: ArrayBuffer): string {

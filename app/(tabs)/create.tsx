@@ -2,6 +2,7 @@ import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
+    ActivityIndicator,
     Alert,
     KeyboardAvoidingView,
     Platform,
@@ -77,15 +78,20 @@ export default function CreateCharacterScreen() {
         if (currentStep === 'imageDescription' && characterData.imageDescription.trim()) {
             setIsGeneratingImage(true);
             try {
+                console.log('🎨 Starting image generation from handleNext...');
                 const result = await generateCharacterImage({
                     description: characterData.imageDescription,
                     characterName: characterData.name,
                 });
+                console.log('🎨 Image generation result:', result);
                 if (result.success && result.imageUrl) {
                     setGeneratedImageUrl(result.imageUrl);
+                    console.log('✅ Image URL set:', result.imageUrl);
+                } else {
+                    console.error('❌ Image generation failed:', result.error);
                 }
             } catch (error) {
-                console.error('Error generating image:', error);
+                console.error('❌ Error generating image:', error);
             } finally {
                 setIsGeneratingImage(false);
             }
@@ -352,7 +358,7 @@ export default function CreateCharacterScreen() {
                             Describe {characterData.name || 'your ai.therapist'}'s appearance
                         </ThemedText>
                         <ThemedText style={styles.stepDescription}>
-                            Describe how your ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist looks. AI will generate the image for you.
+                            💡 The more detailed your description, the better the AI-generated image will be!
                         </ThemedText>
                         <TextInput
                             style={[styles.textArea, { backgroundColor: theme.card, color: theme.text }]}
@@ -363,9 +369,6 @@ export default function CreateCharacterScreen() {
                             multiline
                             numberOfLines={4}
                         />
-                        <ThemedText style={styles.helperText}>
-                            💡 The more detailed your description, the better the AI-generated image will be!
-                        </ThemedText>
                     </View>
                 );
 
@@ -382,7 +385,10 @@ export default function CreateCharacterScreen() {
                                         contentFit="cover"
                                     />
                                 ) : isGeneratingImage ? (
-                                    <IconSymbol name="hourglass" size={64} color={theme.icon} />
+                                    <View style={styles.loadingContainer}>
+                                        <ActivityIndicator size="large" color={theme.primary} />
+                                        <ThemedText style={[styles.loadingText, { color: theme.icon }]}>Generating...</ThemedText>
+                                    </View>
                                 ) : (
                                     <IconSymbol name="person" size={64} color={theme.icon} />
                                 )}
@@ -405,7 +411,7 @@ export default function CreateCharacterScreen() {
                                 onPress={handleGenerateImage}
                                 disabled={!characterData.imageDescription.trim()}
                             >
-                                <ThemedText style={styles.generateButtonText}>🔄 Regenerate Image</ThemedText>
+                                <ThemedText style={styles.generateButtonText}>� Regenerate Image</ThemedText>
                             </TouchableOpacity>
                         )}
                     </View>
@@ -866,5 +872,14 @@ const styles = StyleSheet.create({
         marginTop: 16,
         lineHeight: 16,
         textAlign: 'left',
+    },
+    loadingContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 12,
+    },
+    loadingText: {
+        fontSize: 14,
+        opacity: 0.7,
     },
 });
