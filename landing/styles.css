@@ -3922,8 +3922,7 @@ body.light-mode .modal-techniques li {
 }
 
 
-
-@media (max-width: 768px) {
+@media (max-width: 600px) {
     .nav-cta {
         padding: 0.6rem 1rem;
         font-size: 0.8rem;
