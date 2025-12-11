@@ -5,6 +5,7 @@ import { Dimensions, FlatList, Platform, Pressable, StyleSheet, TextInput, Touch
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { LogoWithDots } from '@/components/logo-with-dots';
+import { OnboardingModal } from '@/components/onboarding-modal';
 import { ThemedText } from '@/components/themed-text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Character, Topic, TOPICS } from '@/constants/data';
@@ -41,6 +42,7 @@ export default function HomeScreen() {
   const [filteredSections, setFilteredSections] = useState<TopicSection[]>([]);
   const [userGoals, setUserGoals] = useState<string[]>([]);
   const [sortedTopics, setSortedTopics] = useState<Topic[]>(TOPICS);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   // Menu & Modal States
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
@@ -50,6 +52,25 @@ export default function HomeScreen() {
   const mainListRef = useRef<FlatList>(null);
   const headerListRef = useRef<FlatList>(null);
   const isManualScroll = useRef(false);
+
+  // Check onboarding status
+  useEffect(() => {
+    const checkOnboarding = async () => {
+      const { data: { session } } = await (await import('@/lib/supabase')).supabase.auth.getSession();
+      if (session) {
+        const { data } = await (await import('@/lib/supabase')).supabase
+          .from('users')
+          .select('onboarding_completed')
+          .eq('id', session.user.id)
+          .single();
+
+        if (data && !data.onboarding_completed) {
+          setShowOnboarding(true);
+        }
+      }
+    };
+    checkOnboarding();
+  }, []);
 
   // Load user goals, sort topics, and load characters - all in one effect
   useEffect(() => {
@@ -152,12 +173,11 @@ export default function HomeScreen() {
       const topicId = firstVisible.item.id;
       setSelectedTopicId(topicId);
 
-      // Also scroll the header to keep the active chip visible
-      const index = sortedTopics.findIndex(t => t.id === topicId);
-      if (index > 0 && headerListRef.current) {
-        // Offset by +1 because of the 'Created/Plus' chip at start of headerList
-        headerListRef.current.scrollToIndex({ index: index + 1, animated: true, viewPosition: 0.5 });
-      }
+      // Auto-scroll disabled per user request to prevent jumping
+      // const index = sortedTopics.findIndex(t => t.id === topicId);
+      // if (index > 0 && headerListRef.current) {
+      //   headerListRef.current.scrollToIndex({ index: index + 1, animated: true, viewPosition: 0.5 });
+      // }
     }
   }).current;
 
@@ -484,6 +504,41 @@ export default function HomeScreen() {
           </Pressable>
         </Pressable>
       )}
+
+      {/* Onboarding Modal */}
+      <OnboardingModal
+        visible={showOnboarding}
+        onComplete={() => {
+          setShowOnboarding(false);
+          // Reload data to show sorted topics
+          const reloadData = async () => {
+            const { data: { session } } = await (await import('@/lib/supabase')).supabase.auth.getSession();
+            if (session) {
+              const { data } = await (await import('@/lib/supabase')).supabase
+                .from('users')
+                .select('user_goals')
+                .eq('id', session.user.id)
+                .single();
+
+              if (data?.user_goals && data.user_goals.length > 0) {
+                setUserGoals(data.user_goals);
+                const userGoalTopics = TOPICS.filter(topic =>
+                  data.user_goals.some((goal: string) =>
+                    topic.id.toLowerCase() === goal.toLowerCase()
+                  )
+                );
+                const otherTopics = TOPICS.filter(topic =>
+                  !data.user_goals.some((goal: string) =>
+                    topic.id.toLowerCase() === goal.toLowerCase()
+                  )
+                );
+                setSortedTopics([...userGoalTopics, ...otherTopics]);
+              }
+            }
+          };
+          reloadData();
+        }}
+      />
     </SafeAreaView>
   );
 }

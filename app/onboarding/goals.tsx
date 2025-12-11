@@ -19,11 +19,11 @@ interface Goal {
 const GOALS: Goal[] = [
     { id: 'sleep', title: 'Better Sleep' },
     { id: 'performance', title: 'Improve Performance' },
-    { id: 'self-worth', title: 'Build Self-Esteem' }, // ID: self-worth
-    { id: 'fears', title: 'Reduce Anxiety' }, // ID: fears
+    { id: 'self-worth', title: 'Build Self-Esteem' },
+    { id: 'fears', title: 'Reduce Anxiety' },
     { id: 'stress', title: 'Reduce Stress' },
-    { id: 'happier', title: 'Be Happier' }, // ID: happier
-    { id: 'grateful', title: 'Practice Gratitude' }, // ID: grateful
+    { id: 'happier', title: 'Be Happier' },
+    { id: 'grateful', title: 'Practice Gratitude' },
 ];
 
 export default function GoalSelectionScreen() {

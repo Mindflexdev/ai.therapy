@@ -27,7 +27,6 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { createCacheKey, queryCache } from '@/lib/query-cache';
 import { generateSessionId } from '@/lib/session';
 import { supabase } from '@/lib/supabase';
-import { RecordingPresets, useAudioRecorder } from 'expo-audio';
 
 interface Message {
     id: string;
@@ -71,9 +70,14 @@ export default function ConversationScreen() {
     const [session, setSession] = useState<any>(null);
 
     // Audio State
-    // Audio Hooks
-    const audioRecorder = useAudioRecorder(RecordingPresets.LowQuality);
-    // const audioState = useAudioRecorderState(audioRecorder, 100);
+    // Audio Hooks Stubbed (Crash Fix)
+    // const audioRecorder = useAudioRecorder(RecordingPresets.LowQuality);
+    const audioRecorder = {
+        isRecording: false,
+        recordAsync: async () => { alert("Audio recording coming soon to Web!"); },
+        stopAsync: async () => { },
+        uri: null
+    };
     const [isRecording, setIsRecording] = useState(false);
     const [isTranscribing, setIsTranscribing] = useState(false);
     // Use audioState.amplitude (if available) or fallback
