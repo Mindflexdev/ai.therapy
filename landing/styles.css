@@ -774,7 +774,7 @@ body.light-mode .toggle-btn:hover {
     box-shadow: 0 10px 30px rgba(91, 143, 217, 0.4);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 600px) {
     .nav-cta {
         padding: 0.5rem 1rem;
         font-size: 0.85rem;
