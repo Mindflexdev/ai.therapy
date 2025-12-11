@@ -1,13 +1,12 @@
 {
-    "version": 2,
-    "routes": [
+    "buildCommand": "expo export --platform web --output-dir dist/app && cp -r landing/* dist/",
+    "outputDirectory": "dist",
+    "installCommand": "npm install",
+    "framework": null,
+    "rewrites": [
         {
-            "src": "^/app(/.*)?$",
-            "dest": "/app-build/index.html"
-        },
-        {
-            "src": "/(.*)",
-            "dest": "/landing/$1"
+            "source": "/app/:path*",
+            "destination": "/app/index.html"
         }
     ]
 }
