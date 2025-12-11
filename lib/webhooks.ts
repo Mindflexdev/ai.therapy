@@ -32,6 +32,7 @@ export async function generateCharacterImage(
 
         const requestBody = {
             description: request.description,
+            appearance: request.description, // Explicit appearance field
             characterName: request.characterName,
             timestamp: new Date().toISOString(),
         };
