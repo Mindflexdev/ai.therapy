@@ -108,9 +108,21 @@ export default function RootLayout() {
 
       if (session) {
         // User is signed in
-        if (inAuthGroup || inOnboardingGroup) {
-          console.log('Redirecting to app');
-          router.replace('/(tabs)');
+        // Only redirect away from auth/onboarding if onboarding is completed
+        // OR if they are in auth group (sign-in) - always redirect from sign-in to either onboarding or tabs
+        if (inAuthGroup) {
+          if (isOnboardingCompleted) {
+            router.replace('/(tabs)');
+          } else {
+            // If onboarding not complete, let TabLayout logic handle it or redirect there
+            // But actually, if they are in sign-in and logged in, we should send them somewhere
+            router.replace('/(tabs)'); // TabLayout will redirect to onboarding if needed
+          }
+        } else if (inOnboardingGroup) {
+          // If in onboarding, only redirect out if completed
+          if (isOnboardingCompleted) {
+            router.replace('/(tabs)');
+          }
         }
       } else if (skipLogin) {
         // Skipped login
