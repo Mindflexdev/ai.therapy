@@ -1,7 +1,7 @@
 import { ThemedText } from '@/components/themed-text';
 import { Image } from 'expo-image';
 import React, { memo } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 interface MessageBubbleProps {
     text: string;
@@ -9,6 +9,47 @@ interface MessageBubbleProps {
     avatarUri?: string;
     theme: any;
 }
+
+// Parse text with asterisks for roleplay actions
+const parseRoleplayText = (text: string, isUser: boolean) => {
+    const parts: React.ReactNode[] = [];
+    let currentIndex = 0;
+
+    // Regex to match text between asterisks: *text*
+    const asteriskRegex = /\*([^*]+)\*/g;
+    let match;
+
+    while ((match = asteriskRegex.exec(text)) !== null) {
+        // Add text before the match
+        if (match.index > currentIndex) {
+            parts.push(
+                <Text key={`text-${currentIndex}`}>
+                    {text.substring(currentIndex, match.index)}
+                </Text>
+            );
+        }
+
+        // Add the italic text (content between asterisks)
+        parts.push(
+            <Text key={`italic-${match.index}`} style={styles.roleplayAction}>
+                {match[1]}
+            </Text>
+        );
+
+        currentIndex = match.index + match[0].length;
+    }
+
+    // Add remaining text after last match
+    if (currentIndex < text.length) {
+        parts.push(
+            <Text key={`text-${currentIndex}`}>
+                {text.substring(currentIndex)}
+            </Text>
+        );
+    }
+
+    return parts.length > 0 ? parts : text;
+};
 
 export const MessageBubble = memo(({ text, isUser, avatarUri, theme }: MessageBubbleProps) => {
     // Bulletproof message cleaning - multiple methods to ensure metadata never shows
@@ -32,11 +73,13 @@ export const MessageBubble = memo(({ text, isUser, avatarUri, theme }: MessageBu
     // Final cleanup: trim whitespace
     cleanText = cleanText.trim();
 
+    const formattedText = parseRoleplayText(cleanText, isUser);
+
     if (isUser) {
         return (
             <View style={styles.userContainer}>
                 <View style={[styles.userBubble, { backgroundColor: theme.primary }]}>
-                    <ThemedText style={styles.userText}>{cleanText}</ThemedText>
+                    <Text style={styles.userText}>{formattedText}</Text>
                 </View>
             </View>
         );
@@ -48,7 +91,7 @@ export const MessageBubble = memo(({ text, isUser, avatarUri, theme }: MessageBu
                 <Image source={{ uri: avatarUri }} style={styles.avatar} contentFit="cover" />
             )}
             <View style={[styles.aiBubble, { backgroundColor: theme.card }]}>
-                <ThemedText style={styles.aiText}>{cleanText}</ThemedText>
+                <ThemedText style={styles.aiText}>{formattedText}</ThemedText>
             </View>
         </View>
     );
@@ -92,5 +135,9 @@ const styles = StyleSheet.create({
     aiText: {
         fontSize: 15,
         lineHeight: 20,
+    },
+    roleplayAction: {
+        fontStyle: 'italic',
+        opacity: 0.85,
     },
 });
