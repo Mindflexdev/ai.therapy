@@ -23,8 +23,8 @@ const GOALS: Goal[] = [
 ];
 
 const LANGUAGES = [
-    { id: 'en', title: 'English', flag: '🇬🇧' },
-    { id: 'de', title: 'Deutsch', flag: '🇩🇪' },
+    { id: 'en', title: 'English', flag: 'GB' },
+    { id: 'de', title: 'Deutsch', flag: 'DE' },
 ];
 
 export function OnboardingModal({ visible, onComplete }: { visible: boolean; onComplete: () => void }) {
@@ -140,7 +140,7 @@ export function OnboardingModal({ visible, onComplete }: { visible: boolean; onC
                                         onPress={() => handleLanguageSelect(lang.id)}
                                         activeOpacity={0.7}
                                     >
-                                        <ThemedText style={styles.flag}>{lang.flag}</ThemedText>
+                                        <ThemedText style={styles.flag}>{lang.flag === 'GB' ? '🇬🇧' : '🇩🇪'}</ThemedText>
                                         <ThemedText type="defaultSemiBold" style={styles.languageName}>{lang.title}</ThemedText>
                                     </TouchableOpacity>
                                 ))}
@@ -213,7 +213,7 @@ export function OnboardingModal({ visible, onComplete }: { visible: boolean; onC
 const styles = StyleSheet.create({
     modalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.7)',
+        backgroundColor: 'rgba(0,0,0,0.4)',
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -222,6 +222,8 @@ const styles = StyleSheet.create({
         maxWidth: 400,
         borderRadius: 20,
         padding: 24,
+        borderWidth: 2,
+        borderColor: '#5B8FD9',
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 10 },
         shadowOpacity: 0.3,

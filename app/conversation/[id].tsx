@@ -240,10 +240,9 @@ export default function ConversationScreen() {
                     };
                 });
 
-                // Prepare greeting with description
-                const baseGreeting = character.greeting ||
+                // Prepare greeting (without roleplay description)
+                const greetingText = character.greeting ||
                     `Hello! I'm ${character.name}. ${character.description} I'm here to support you on your journey. How are you feeling today?`;
-                const greetingText = `*${character.description}*\n\n${baseGreeting}`;
 
                 const greetingMsg: Message = {
                     id: '0', // Consistent ID for greeting
@@ -256,10 +255,9 @@ export default function ConversationScreen() {
                 // We map history to ensure no duplicates if n8n saved the greeting (unlikely)
                 setMessages([greetingMsg, ...cleanMessages]);
             } else {
-                // No history? Set initial greeting
-                const baseGreeting = character.greeting ||
+                // No history? Set initial greeting (without roleplay description)
+                const greeting = character.greeting ||
                     `Hello! I'm ${character.name}. ${character.description} I'm here to support you on your journey. How are you feeling today?`;
-                const greeting = `*${character.description}*\n\n${baseGreeting}`;
 
                 setMessages([{
                     id: '1',

@@ -156,6 +156,19 @@ export default function ChatScreen() {
                             <ThemedText style={{ opacity: 0.6 }}>No active chats yet.</ThemedText>
                         </View>
                     }
+                    ListFooterComponent={
+                        <View style={[styles.feedbackSection, { backgroundColor: theme.card, borderColor: theme.icon }]}>
+                            <ThemedText style={[styles.feedbackText, { color: theme.text }]}>
+                                We're a young psychology startup from Berlin, and your feedback means the world to us — let's make ai.therapy better together!
+                            </ThemedText>
+                            <TouchableOpacity
+                                style={[styles.feedbackButton, { backgroundColor: theme.primary }]}
+                                onPress={() => router.push('/feedback' as any)}
+                            >
+                                <ThemedText style={styles.feedbackButtonText}>Give Feedback</ThemedText>
+                            </TouchableOpacity>
+                        </View>
+                    }
                 />
             )}
         </SafeAreaView>
@@ -226,5 +239,31 @@ const styles = StyleSheet.create({
     timestamp: {
         fontSize: 12,
         opacity: 0.5,
+    },
+    feedbackSection: {
+        margin: 16,
+        marginTop: 24,
+        padding: 20,
+        borderRadius: 16,
+        borderWidth: 1,
+        alignItems: 'center',
+        gap: 12,
+    },
+    feedbackText: {
+        fontSize: 14,
+        textAlign: 'center',
+        lineHeight: 20,
+        opacity: 0.8,
+    },
+    feedbackButton: {
+        paddingVertical: 10,
+        paddingHorizontal: 24,
+        borderRadius: 20,
+        marginTop: 4,
+    },
+    feedbackButtonText: {
+        color: '#fff',
+        fontSize: 14,
+        fontWeight: '600',
     },
 });

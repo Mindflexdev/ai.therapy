@@ -20,7 +20,7 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { generateCharacterImage } from '@/lib/webhooks';
 
-type Step = 'goal' | 'name' | 'characteristics' | 'therapyStyle' | 'image' | 'greeting' | 'visibility' | 'review';
+type Step = 'goal' | 'name' | 'characteristics' | 'therapyStyle' | 'imageDescription' | 'imageGeneration' | 'greeting' | 'visibility' | 'review';
 
 import { ALL_THERAPY_OPTIONS, STYLE_ABBREVIATIONS } from '@/constants/therapy';
 
@@ -69,16 +69,35 @@ export default function CreateCharacterScreen() {
         }
     }, [params]);
 
-    const handleNext = () => {
-        const steps: Step[] = ['goal', 'name', 'characteristics', 'therapyStyle', 'image', 'greeting', 'visibility', 'review'];
+    const handleNext = async () => {
+        const steps: Step[] = ['goal', 'name', 'characteristics', 'therapyStyle', 'imageDescription', 'imageGeneration', 'greeting', 'visibility', 'review'];
         const currentIndex = steps.indexOf(currentStep);
+
+        // Auto-generate image when moving from imageDescription to imageGeneration
+        if (currentStep === 'imageDescription' && characterData.imageDescription.trim()) {
+            setIsGeneratingImage(true);
+            try {
+                const result = await generateCharacterImage({
+                    description: characterData.imageDescription,
+                    characterName: characterData.name,
+                });
+                if (result.success && result.imageUrl) {
+                    setGeneratedImageUrl(result.imageUrl);
+                }
+            } catch (error) {
+                console.error('Error generating image:', error);
+            } finally {
+                setIsGeneratingImage(false);
+            }
+        }
+
         if (currentIndex < steps.length - 1) {
             setCurrentStep(steps[currentIndex + 1]);
         }
     };
 
     const handleBack = () => {
-        const steps: Step[] = ['goal', 'name', 'characteristics', 'therapyStyle', 'image', 'greeting', 'visibility', 'review'];
+        const steps: Step[] = ['goal', 'name', 'characteristics', 'therapyStyle', 'imageDescription', 'imageGeneration', 'greeting', 'visibility', 'review'];
         const currentIndex = steps.indexOf(currentStep);
         if (currentIndex > 0) {
             setCurrentStep(steps[currentIndex - 1]);
@@ -260,12 +279,8 @@ export default function CreateCharacterScreen() {
                 return (
                     <View style={styles.stepContainer}>
                         <ThemedText type="title" style={styles.stepTitle}>
-                            Conversation inspired by...
+                            Which approach does {characterData.name || 'your character'} take?
                         </ThemedText>
-                        <ThemedText style={styles.stepDescription}>
-                            Select one or multiple therapy styles for {characterData.name}
-                        </ThemedText>
-
 
                         <View style={styles.therapyStylesContainer}>
                             {ALL_THERAPY_OPTIONS.map((category) => (
@@ -288,35 +303,36 @@ export default function CreateCharacterScreen() {
                                                 onPress={() => toggleTherapyStyle(style.name)}
                                             >
                                                 <View style={styles.therapyStyleContent}>
-                                                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                                                    <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8 }}>
                                                         <ThemedText style={[
                                                             styles.therapyStyleName,
                                                             { color: isSelected ? '#fff' : theme.text, flex: 1, marginRight: 8 }
                                                         ]}>
                                                             {style.name}
                                                         </ThemedText>
+                                                        <TouchableOpacity
+                                                            style={[styles.learnMoreButton, { backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : theme.tint + '15' }]}
+                                                            onPress={(e) => {
+                                                                e.stopPropagation();
+                                                                router.push({ pathname: '/therapy-detail-modal', params: { name: style.name } });
+                                                            }}
+                                                        >
+                                                            <IconSymbol name="info.circle" size={14} color={isSelected ? '#fff' : theme.tint} />
+                                                            <ThemedText style={[styles.learnMoreText, { color: isSelected ? '#fff' : theme.tint }]}>Learn more</ThemedText>
+                                                        </TouchableOpacity>
                                                     </View>
-
-                                                    <TouchableOpacity
-                                                        style={[styles.learnMoreButton, { backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : theme.tint + '15', marginBottom: 6 }]}
-                                                        onPress={(e) => {
-                                                            e.stopPropagation();
-                                                            router.push({ pathname: '/therapy-detail-modal', params: { name: style.name } });
-                                                        }}
-                                                    >
-                                                        <IconSymbol name="info.circle" size={14} color={isSelected ? '#fff' : theme.tint} />
-                                                        <ThemedText style={[styles.learnMoreText, { color: isSelected ? '#fff' : theme.tint }]}>Learn more</ThemedText>
-                                                    </TouchableOpacity>
 
                                                     <ThemedText style={[
                                                         styles.therapyStyleDescription,
-                                                        { color: isSelected ? 'rgba(255,255,255,0.9)' : theme.icon }
+                                                        { color: isSelected ? 'rgba(255,255,255,0.9)' : theme.icon, marginBottom: 8 }
                                                     ]}>
                                                         {style.description}
                                                     </ThemedText>
                                                 </View>
                                                 {isSelected && (
-                                                    <IconSymbol name="checkmark.circle.fill" size={24} color="#fff" />
+                                                    <View style={styles.checkmarkContainer}>
+                                                        <IconSymbol name="checkmark.circle.fill" size={24} color="#fff" />
+                                                    </View>
                                                 )}
                                             </TouchableOpacity>
                                         );
@@ -327,36 +343,9 @@ export default function CreateCharacterScreen() {
                     </View>
                 );
 
-            case 'image':
+            case 'imageDescription':
                 return (
                     <View style={styles.stepContainer}>
-                        {/* Image Preview */}
-                        <View style={styles.imagePreviewSection}>
-                            <View style={[styles.imagePreviewContainer, { backgroundColor: theme.card, borderColor: theme.icon }]}>
-                                {generatedImageUrl ? (
-                                    <Image
-                                        source={{ uri: generatedImageUrl }}
-                                        style={styles.imagePreview}
-                                        contentFit="cover"
-                                    />
-                                ) : characterData.imageDescription ? (
-                                    <Image
-                                        source={{ uri: '/characters/athena.jpg' }}
-                                        style={styles.imagePreview}
-                                        contentFit="cover"
-                                    />
-                                ) : (
-                                    <IconSymbol name="person" size={64} color={theme.icon} />
-                                )}
-                                <TouchableOpacity style={[styles.uploadButton, { backgroundColor: theme.primary }]}>
-                                    <IconSymbol name="plus" size={20} color="#fff" />
-                                </TouchableOpacity>
-                            </View>
-                            <ThemedText style={styles.imagePreviewHint}>
-                                Upload your own image or describe below for AI generation
-                            </ThemedText>
-                        </View>
-
                         <ThemedText type="title" style={styles.stepTitle}>
                             Describe {characterData.name}'s appearance
                         </ThemedText>
@@ -372,22 +361,51 @@ export default function CreateCharacterScreen() {
                             multiline
                             numberOfLines={4}
                         />
-                        {/* Generate Image Button */}
-                        <TouchableOpacity
-                            style={[styles.generateButton, { backgroundColor: theme.primary }]}
-                            onPress={handleGenerateImage}
-                            disabled={isGeneratingImage || !characterData.imageDescription.trim()}
-                        >
-                            {isGeneratingImage ? (
-                                <ThemedText style={styles.generateButtonText}>Generating...</ThemedText>
-                            ) : (
-                                <ThemedText style={styles.generateButtonText}>✨ Generate Image</ThemedText>
-                            )}
-                        </TouchableOpacity>
-
                         <ThemedText style={styles.helperText}>
                             💡 The more detailed your description, the better the AI-generated image will be!
                         </ThemedText>
+                    </View>
+                );
+
+            case 'imageGeneration':
+                return (
+                    <View style={styles.stepContainer}>
+                        {/* Image Preview */}
+                        <View style={styles.imagePreviewSection}>
+                            <View style={[styles.imagePreviewContainer, { backgroundColor: theme.card, borderColor: theme.icon }]}>
+                                {generatedImageUrl ? (
+                                    <Image
+                                        source={{ uri: generatedImageUrl }}
+                                        style={styles.imagePreview}
+                                        contentFit="cover"
+                                    />
+                                ) : isGeneratingImage ? (
+                                    <IconSymbol name="hourglass" size={64} color={theme.icon} />
+                                ) : (
+                                    <IconSymbol name="person" size={64} color={theme.icon} />
+                                )}
+                            </View>
+                        </View>
+
+                        <ThemedText type="title" style={styles.stepTitle}>
+                            {isGeneratingImage ? 'Generating your image...' : 'Your character image'}
+                        </ThemedText>
+                        <ThemedText style={styles.stepDescription}>
+                            {isGeneratingImage
+                                ? 'Please wait while we create your character image...'
+                                : 'Your description on the previous page generated this image'
+                            }
+                        </ThemedText>
+
+                        {!isGeneratingImage && (
+                            <TouchableOpacity
+                                style={[styles.generateButton, { backgroundColor: theme.primary }]}
+                                onPress={handleGenerateImage}
+                                disabled={!characterData.imageDescription.trim()}
+                            >
+                                <ThemedText style={styles.generateButtonText}>🔄 Regenerate Image</ThemedText>
+                            </TouchableOpacity>
+                        )}
                     </View>
                 );
 
@@ -712,11 +730,13 @@ const styles = StyleSheet.create({
         marginTop: 16,
     },
     therapyStyleButton: {
+        position: 'relative',
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         paddingVertical: 14,
         paddingHorizontal: 16,
+        paddingBottom: 40,
         borderRadius: 12,
         marginBottom: 12,
         borderWidth: 2,
@@ -832,5 +852,10 @@ const styles = StyleSheet.create({
     selectedStylesPreviewTextSimple: {
         fontSize: 14,
         textAlign: 'center',
+    },
+    checkmarkContainer: {
+        position: 'absolute',
+        bottom: 12,
+        right: 12,
     },
 });

@@ -52,6 +52,7 @@ export default function HomeScreen() {
   const mainListRef = useRef<FlatList>(null);
   const headerListRef = useRef<FlatList>(null);
   const isManualScroll = useRef(false);
+  const hasCheckedOnboarding = useRef(false);
 
   // Check onboarding status
   useEffect(() => {
@@ -508,35 +509,54 @@ export default function HomeScreen() {
       {/* Onboarding Modal */}
       <OnboardingModal
         visible={showOnboarding}
-        onComplete={() => {
+        onComplete={async () => {
           setShowOnboarding(false);
           // Reload data to show sorted topics
-          const reloadData = async () => {
-            const { data: { session } } = await (await import('@/lib/supabase')).supabase.auth.getSession();
-            if (session) {
-              const { data } = await (await import('@/lib/supabase')).supabase
-                .from('users')
-                .select('user_goals')
-                .eq('id', session.user.id)
-                .single();
+          const { data: { session } } = await (await import('@/lib/supabase')).supabase.auth.getSession();
+          if (session) {
+            const { data } = await (await import('@/lib/supabase')).supabase
+              .from('users')
+              .select('user_goals')
+              .eq('id', session.user.id)
+              .single();
+            
+            if (data?.user_goals && data.user_goals.length > 0) {
+              console.log('Reloading with user goals:', data.user_goals);
+              setUserGoals(data.user_goals);
+              const userGoalTopics = TOPICS.filter(topic =>
+                data.user_goals.some((goal: string) =>
+                  topic.id.toLowerCase() === goal.toLowerCase()
+                )
+              );
+              const otherTopics = TOPICS.filter(topic =>
+                !data.user_goals.some((goal: string) =>
+                  topic.id.toLowerCase() === goal.toLowerCase()
+                )
+              );
+              const newSortedTopics = [...userGoalTopics, ...otherTopics];
+              console.log('New sorted topics:', newSortedTopics.map(t => t.id));
+              setSortedTopics(newSortedTopics);
+              
+              // Force reload sections with new sorting
+              const groupedData = await getAllCharactersGroupedByTopic();
+              const { getUserCharacters } = await import('@/constants/storage');
+              const userChars = await getUserCharacters();
+              const publicUserChars = userChars.filter(c => c.isPublic);
 
-              if (data?.user_goals && data.user_goals.length > 0) {
-                setUserGoals(data.user_goals);
-                const userGoalTopics = TOPICS.filter(topic =>
-                  data.user_goals.some((goal: string) =>
-                    topic.id.toLowerCase() === goal.toLowerCase()
-                  )
-                );
-                const otherTopics = TOPICS.filter(topic =>
-                  !data.user_goals.some((goal: string) =>
-                    topic.id.toLowerCase() === goal.toLowerCase()
-                  )
-                );
-                setSortedTopics([...userGoalTopics, ...otherTopics]);
+              const allSections: TopicSection[] = [];
+              if (publicUserChars.length > 0) {
+                setHasCreatedCharacters(true);
+                allSections.push({ id: 'created', title: 'Created', characters: publicUserChars });
               }
+
+              const mappedSections = newSortedTopics.map(topic => {
+                const foundGroup = groupedData.find(g => g.topicId === topic.id);
+                return { id: topic.id, title: topic.title, characters: foundGroup ? foundGroup.characters : [] };
+              }).filter(s => s.characters.length > 0);
+
+              setSections([...allSections, ...mappedSections]);
             }
-          };
-          reloadData();
+          }
         }}
       />
     </SafeAreaView>
