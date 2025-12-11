@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Insight Stream | ai.therapy</title>
+    <!-- Fonts and Links -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Blog Specific Styles */
+        /* Body background handled by styles.css now */
+        body {
+            overflow-x: hidden;
+            color: var(--text-primary);
+        }
+
+        /* Navigation Override for Blog */
+        .blog-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            background: rgba(5, 5, 8, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .back-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: color 0.3s;
+        }
+
+        .back-link:hover {
+            color: var(--accent-purple);
+        }
+
+        /* Insight Stream Layout */
+        .insight-container {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            min-height: 100vh;
+            padding-top: 80px;
+            max-width: 1400px;
+            margin: 0 auto;
+            align-items: start;
+        }
+
+        /* Left: Neural Navigation */
+        .neural-nav {
+            position: sticky;
+            top: 80px;
+            height: calc(100vh - 80px);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 2rem;
+            overflow-y: auto;
+            background: rgba(5, 5, 8, 0.5);
+        }
+
+        .topic-node {
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            border: 1px solid transparent;
+        }
+
+        .topic-node:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .topic-node.active {
+            background: rgba(124, 58, 237, 0.1);
+            border-color: rgba(124, 58, 237, 0.3);
+        }
+
+        .node-status {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-muted);
+        }
+
+        .topic-node.active .node-status {
+            background: var(--accent-purple);
+            box-shadow: 0 0 10px var(--accent-purple);
+        }
+
+        .node-title {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .topic-node.active .node-title {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .cluster-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+            margin-top: 2rem;
+        }
+
+        .neural-title {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            background: linear-gradient(90deg, #fff, #bbb);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* ... existing styles ... */
+
+        /* Right: Content Stream - Cleaned up for Single View */
+        .content-stream {
+            margin-left: 0;
+            padding: 4rem 6rem;
+            position: relative;
+        }
+
+        .article-card {
+            display: none;
+            /* Hidden by default */
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 20px;
+            padding: 4rem;
+            /* More padding for full read */
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .article-card.active {
+            display: block;
+            /* Show only active */
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .article-card::before {
+            /* Removed the top border gradient for cleaner look or keep it? Let's keep it but subtle */
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-purple), transparent);
+            opacity: 0.5;
+        }
+
+        .article-meta {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 1rem;
+        }
+
+        .article-title {
+            font-family: var(--font-display);
+            font-size: 3.5rem;
+            /* Larger title */
+            margin-bottom: 2rem;
+            line-height: 1.1;
+        }
+
+        .article-content {
+            font-size: 1.2rem;
+            line-height: 1.8;
+            color: var(--text-secondary);
+        }
+
+        .article-content p {
+            margin-bottom: 1.5rem;
+        }
+
+        .article-content h3 {
+            font-family: var(--font-display);
+            font-size: 2rem;
+            color: var(--text-primary);
+            margin-top: 3rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .read-btn {
+            display: none;
+            /* Hide read button since we are already reading */
+        }
+
+        /* Interactive "Micro-Modules" within cards */
+        .micro-module {
+            margin-top: 2rem;
+            background: rgba(10, 10, 15, 0.5);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border-left: 3px solid var(--accent-blue);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .micro-icon {
+            font-size: 1.5rem;
+            color: var(--accent-blue);
+        }
+
+        .micro-text {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 900px) {
+            .insight-container {
+                display: block;
+                /* Stack vertically */
+                padding-top: 60px;
+            }
+
+            .neural-nav {
+                display: flex;
+                /* Show as flex row */
+                position: sticky;
+                /* Keep accessible */
+                top: 70px;
+                /* Below main nav */
+                height: auto;
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                padding: 1rem;
+                overflow-x: auto;
+                /* Enable scrolling */
+                white-space: nowrap;
+                background: rgba(5, 5, 8, 0.95);
+                backdrop-filter: blur(10px);
+                z-index: 900;
+                gap: 1rem;
+                align-items: center;
+                /* Hide scrollbar for cleaner look */
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+            }
+
+            .neural-nav::-webkit-scrollbar {
+                display: none;
+            }
+
+            .neural-title,
+            .cluster-label {
+                display: none;
+                /* Simplify interface */
+            }
+
+            .topic-cluster {
+                display: flex;
+                gap: 0.5rem;
+                margin: 0;
+            }
+
+            .topic-node {
+                margin: 0;
+                min-width: max-content;
+                background: rgba(255, 255, 255, 0.05);
+                padding: 0.5rem 1rem;
+                font-size: 0.85rem;
+            }
+
+            .content-stream {
+                margin-left: 0;
+                padding: 2rem 1.5rem;
+            }
+
+            .article-card {
+                padding: 2rem 1.5rem;
+            }
+
+            .article-title {
+                font-size: 2rem;
+            }
+        }
+
+        /* ===== Light Mode Overrides ===== */
+        body.light-mode .blog-nav {
+            background: rgba(255, 255, 255, 0.9);
+            border-bottom: 1px solid rgba(0, 114, 255, 0.1);
+        }
+
+        body.light-mode .back-link {
+            color: #3d3d5c;
+        }
+
+        body.light-mode .back-link:hover {
+            color: #5B8FD9;
+        }
+
+        body.light-mode .neural-nav {
+            background: rgba(255, 255, 255, 0.8);
+            border-right: 1px solid rgba(0, 114, 255, 0.1);
+        }
+
+        body.light-mode .neural-title {
+            background: linear-gradient(90deg, #1a1a2e, #5B8FD9);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        body.light-mode .cluster-label {
+            color: #5B8FD9;
+        }
+
+        body.light-mode .topic-node {
+            border: 1px solid transparent;
+        }
+
+        body.light-mode .topic-node:hover {
+            background: rgba(91, 143, 217, 0.1);
+        }
+
+        body.light-mode .topic-node.active {
+            background: rgba(91, 143, 217, 0.15);
+            border-color: rgba(91, 143, 217, 0.3);
+        }
+
+        body.light-mode .node-title {
+            color: #3d3d5c;
+        }
+
+        body.light-mode .topic-node.active .node-title {
+            color: #1a1a2e;
+        }
+
+        body.light-mode .topic-node.active .node-status {
+            background: #5B8FD9;
+            box-shadow: 0 0 10px rgba(91, 143, 217, 0.5);
+        }
+
+        body.light-mode .article-card {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(0, 114, 255, 0.1);
+        }
+
+        body.light-mode .article-card::before {
+            background: linear-gradient(90deg, transparent, #5B8FD9, transparent);
+        }
+
+        body.light-mode .article-meta {
+            color: #5B8FD9;
+            border-bottom-color: rgba(0, 114, 255, 0.1);
+        }
+
+        body.light-mode .article-title {
+            color: #1a1a2e;
+        }
+
+        body.light-mode .article-content {
+            color: #3d3d5c;
+        }
+
+        body.light-mode .article-content h3 {
+            color: #1a1a2e;
+        }
+
+        body.light-mode .article-content p {
+            color: #3d3d5c;
+        }
+
+        body.light-mode .article-content ul,
+        body.light-mode .article-content li {
+            color: #3d3d5c;
+        }
+
+        body.light-mode .micro-module {
+            background: rgba(240, 245, 255, 0.8);
+            border-left-color: #5B8FD9;
+        }
+
+        body.light-mode .micro-icon {
+            color: #5B8FD9;
+        }
+
+        body.light-mode .micro-text {
+            color: #3d3d5c;
+        }
+
+        @media (max-width: 900px) {
+            body.light-mode .neural-nav {
+                background: rgba(255, 255, 255, 0.95);
+                border-bottom: 1px solid rgba(0, 114, 255, 0.1);
+            }
+
+            body.light-mode .topic-node {
+                background: rgba(91, 143, 217, 0.1);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Ambient Background Elements -->
+    <div class="ambient-bg">
+        <div class="gradient-layer"></div>
+        <div class="orbs-container" id="orbsContainer"></div>
+        <div class="particles-container" id="particlesContainer"></div>
+        <div class="feathers-container" id="feathersContainer"></div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="blog-nav">
+        <a href="index.html" class="back-link">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+            Back to Forge
+        </a>
+        <div class="nav-logo">
+            <span class="gradient-text">Insight Stream</span>
+        </div>
+        <div style="width: 100px;"></div>
+    </nav>
+
+    <div class="insight-container">
+        <!-- Left Sidebar: Neural Navigation -->
+        <aside class="neural-nav">
+            <h2 class="neural-title">Thought Register</h2>
+
+            <div class="topic-cluster">
+                <div class="cluster-label">Foundations</div>
+                <div class="topic-node active" data-target="post-1">
+                    <div class="node-status"></div>
+                    <span class="node-title">The Architecture of Thought</span>
+                </div>
+                <div class="topic-node" data-target="post-2">
+                    <div class="node-status"></div>
+                    <span class="node-title">Neuroplasticity 101</span>
+                </div>
+            </div>
+
+            <div class="topic-cluster">
+                <div class="cluster-label">Advanced Practice</div>
+                <div class="topic-node" data-target="post-3">
+                    <div class="node-status"></div>
+                    <span class="node-title">Somatic Healing</span>
+                </div>
+                <div class="topic-node" data-target="post-4">
+                    <div class="node-status"></div>
+                    <span class="node-title">Parts Work (IFS)</span>
+                </div>
+                <div class="topic-node" data-target="post-5">
+                    <div class="node-status"></div>
+                    <span class="node-title">Shadow Integration</span>
+                </div>
+            </div>
+
+            <div class="topic-cluster">
+                <div class="cluster-label">AI & Psychology</div>
+                <div class="topic-node" data-target="post-6">
+                    <div class="node-status"></div>
+                    <span class="node-title">The Algorithmic Mirror</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Stream -->
+        <main class="content-stream">
+
+            <!-- Article 1 -->
+            <article class="article-card active" id="post-1">
+                <div class="article-meta">
+                    <span>Clinical Foundation</span>
+                    <span>•</span>
+                    <span>5 Min Read</span>
+                </div>
+                <h1 class="article-title">The Architecture of Thought: Breaking the CBT Code</h1>
+
+                <div class="article-content">
+                    <p class="article-lead">
+                        Cognitive Behavioral Therapy isn't just about positive thinking. It's a rigorous framework for
+                        debugging the mind's source code. By understanding the loops that govern our emotional state,
+                        we can rewrite the software of our own suffering.
+                    </p>
+
+                    <h3>The Cognitive Triad</h3>
+                    <p>
+                        At the core of CBT lies the understanding that our thoughts, feelings, and behaviors are
+                        inextricably linked. This triangular feedback loop creates our reality. If you think
+                        "I am incapable," you feel discouraged, and you act passively. This passivity reinforces
+                        the original thought, creating a self-sustaining cycle.
+                    </p>
+                    <p>
+                        Most people believe their emotions are direct responses to events. "I am sad because I failed."
+                        CBT argues there is a hidden step: "I am sad because I <em>interpret</em> this failure as a sign
+                        of my worthlessness."
+                    </p>
+
+                    <div class="micro-module">
+                        <div class="micro-icon">🧠</div>
+                        <div class="micro-text">
+                            <strong>Interactive Check:</strong> "I always fail" is an example of <em>All-or-Nothing
+                                Thinking</em>. Try replacing "always" with "sometimes".
+                        </div>
+                    </div>
+
+                    <h3>Identifying Glitches (Distortions)</h3>
+                    <p>
+                        Our minds are prone to specific processing errors called cognitive distortions.
+                        Recognizing them is the first step to debugging.
+                    </p>
+                    <ul>
+                        <li><strong>Catastrophizing:</strong> Expecting the worst possible outcome.</li>
+                        <li><strong>Mind Reading:</strong> Assuming you know what others are thinking (usually something
+                            negative about you).</li>
+                        <li><strong>Filtering:</strong> Ignoring all positive evidence and focusing only on the negative
+                            data points.</li>
+                    </ul>
+
+                    <h3>The Rewrite</h3>
+                    <p>
+                        Once a distortion is caught, we don't fight it—we investigate it. We ask: "What is the evidence
+                        for this thought?
+                        What is the evidence against it?" Slowly, the rigid, painful code is replaced by flexible,
+                        adaptive scripts.
+                        This is not self-deception; it is the ultimate realism.
+                    </p>
+                </div>
+            </article>
+
+            <!-- Article 2 -->
+            <article class="article-card" id="post-2">
+                <div class="article-meta">
+                    <span>Neuroscience</span>
+                    <span>•</span>
+                    <span>7 Min Read</span>
+                </div>
+                <h1 class="article-title">Rewiring the Hardware: Basics of Neuroplasticity</h1>
+
+                <div class="article-content">
+                    <p class="article-lead">
+                        Your brain is not a static machine but a living, evolving landscape. Every thought you think
+                        reinforces a neural trail;
+                        repeat it enough, and it becomes a highway. This is neuroplasticity: the biological basis of
+                        hope.
+                    </p>
+
+                    <h3>The Hebbian Rule</h3>
+                    <p>
+                        "Neurons that fire together, wire together." This famous axiom explains habit formation.
+                        If you habitually respond to stress with anxiety, that circuit gets stronger and
+                        faster—literally more insulated
+                        with myelin. But the reverse is also true: if you interrupt that circuit and choose a different
+                        response (e.g., a deep breath),
+                        you begin to forge a new path.
+                    </p>
+
+                    <div class="micro-module">
+                        <div class="micro-icon">⚡</div>
+                        <div class="micro-text">
+                            <strong>Did you know?</strong> It takes approximately 66 days to form a new habit.
+                            Our AI is designed to support you through this critical "rewiring" window.
+                        </div>
+                    </div>
+
+                    <h3>Pruning the Old</h3>
+                    <p>
+                        Neuroplasticity isn't just about building; it's also about clearing. "Synaptic pruning" occurs
+                        when old connections
+                        fall into disuse. By actively choosing <em>not</em> to engage with toxic thought patterns, you
+                        are
+                        physically dismantling their infrastructure in your brain.
+                    </p>
+
+                    <h3>How AI Accelerates Change</h3>
+                    <p>
+                        Consistency is the hardest part of rewiring. Our AI acts as an external cortex, providing the
+                        subtle nudges
+                        and reminders needed to keep the new "highways" under construction until they can sustain
+                        themselves.
+                    </p>
+                </div>
+            </article>
+
+            <!-- Article 3 -->
+            <article class="article-card" id="post-3">
+                <div class="article-meta">
+                    <span>Embodiment</span>
+                    <span>•</span>
+                    <span>6 Min Read</span>
+                </div>
+                <h1 class="article-title">The Body Keeps the Score: Somatic Intelligence</h1>
+
+                <div class="article-content">
+                    <p class="article-lead">
+                        We often treat our bodies as mere vehicles for our heads, but trauma and stress live in the
+                        tissues,
+                        not just the memories. Somatic therapy bypasses the analytical mind to access the wisdom—and
+                        wounds—stored in the nervous system.
+                    </p>
+
+                    <h3>Beyond Talk Therapy</h3>
+                    <p>
+                        You can't think your way out of a nervous system dysregulation. If you're in "fight or flight,"
+                        your prefrontal cortex (the logic center) goes offline. Trying to use logic then is like
+                        updating software on a computer that's on fire.
+                        You must put out the fire first.
+                    </p>
+
+                    <div class="micro-module">
+                        <div class="micro-icon">✨</div>
+                        <div class="micro-text">
+                            <strong>Somatic Pulse:</strong> Take a deep breath. Notice where you feel tension. Don't
+                            judge
+                            it, just observe it for 10 seconds.
+                        </div>
+                    </div>
+
+                    <h3>The Language of Sensation</h3>
+                    <p>
+                        The body speaks in sensation: heat, tightness, fluttering, heaviness. Learning this vocabulary
+                        allows
+                        us to "metabolize" stuck emotions. Instead of saying "I am anxious," we might say "I feel a
+                        constriction in my chest."
+                        This slight shift moves us from identification ("I am") to observation ("I feel"), creating the
+                        necessary distance for healing.
+                    </p>
+
+                    <h3>Pendulation</h3>
+                    <p>
+                        A key somatic technique involves swinging attention between an area of distress and an area of
+                        ease.
+                        This "pendulation" teaches the nervous system that distress is not total—there is always a safe
+                        harbor within the body,
+                        if we know where to look.
+                    </p>
+                </div>
+            </article>
+
+            <!-- Article 4 -->
+            <article class="article-card" id="post-4">
+                <div class="article-meta">
+                    <span>Internal Systems</span>
+                    <span>•</span>
+                    <span>8 Min Read</span>
+                </div>
+                <h1 class="article-title">Parts Work: Meeting Your Internal Family</h1>
+
+                <div class="article-content">
+                    <p class="article-lead">
+                        Walt Whitman wrote, "I am large, I contain multitudes." Internal Family Systems (IFS) takes this
+                        literally.
+                        You are not a monolith; you are an ecosystem of "parts," each with its own role, memories, and
+                        good intentions.
+                    </p>
+
+                    <h3>The Cast of Characters</h3>
+                    <p>
+                        IFS generally categorizes parts into three roles:
+                    </p>
+                    <ul>
+                        <li><strong>Managers:</strong> Keep you functional and safe by controlling situations (e.g., the
+                            Inner Critic, the Perfectionist).</li>
+                        <li><strong>Firefighters:</strong> React impulsively to put out emotional "fires" when pain
+                            breaks through (e.g., binge eating, rage, dissociation).</li>
+                        <li><strong>Exiles:</strong> The wounded child parts carrying pain, shame, or fear, which the
+                            other parts try to protect or hide.</li>
+                    </ul>
+
+                    <h3>The Self</h3>
+                    <p>
+                        Beneath these parts is the "Self"—capital S. The Self is calm, curious, compassionate, and
+                        connected.
+                        The goal of parts work isn't to get rid of parts, but to unburden them so they can relax,
+                        allowing the Self to lead the internal system.
+                    </p>
+
+                    <div class="micro-module">
+                        <div class="micro-icon">🎭</div>
+                        <div class="micro-text">
+                            <strong>Reflection:</strong> Next time you feel "lazy," ask that part of you what it's
+                            trying to protect you from.
+                            Is it actually protecting you from failure?
+                        </div>
+                    </div>
+                </div>
+            </article>
+
+            <!-- Article 5 -->
+            <article class="article-card" id="post-5">
+                <div class="article-meta">
+                    <span>Integration</span>
+                    <span>•</span>
+                    <span>6 Min Read</span>
+                </div>
+                <h1 class="article-title">Shadow Integration: Gold in the Dark</h1>
+
+                <div class="article-content">
+                    <p class="article-lead">
+                        "Until you make the unconscious conscious, it will direct your life and you will call it fate."
+                        — C.G. Jung.
+                        The Shadow is not evil; it is simply the unlit corner of the psyche containing everything we've
+                        rejected about ourselves.
+                    </p>
+
+                    <h3>What Hides in the Shadow?</h3>
+                    <p>
+                        We often think the shadow hides our "monsters"—rage, greed, envy. But for many, the shadow also
+                        hides their "gold"—their power,
+                        creativity, and sensitivity. If you were taught that anger is bad, you repress it. But anger is
+                        the fuel for setting boundaries.
+                        Without access to your anger (shadow), you become defenseless.
+                    </p>
+
+                    <h3>Projection: The Mirror</h3>
+                    <p>
+                        How do you spot your shadow? Look at what triggers you in others. If you intensely dislike
+                        someone for being "arrogant,"
+                        it may be because you have repressed your own desire to be seen and confident. The world is a
+                        mirror.
+                    </p>
+
+                    <div class="micro-module">
+                        <div class="micro-icon">🌑</div>
+                        <div class="micro-text">
+                            <strong>Shadow Work:</strong> Think of a trait in someone else that infuriates you.
+                            Now ask: "In what way do I demonstrate this trait, perhaps in a subtle or reverse way?"
+                        </div>
+                    </div>
+
+                    <h3>Integration</h3>
+                    <p>
+                        Integration means inviting these exiled parts back to the table. It is the process of becoming
+                        whole rather than "good."
+                        A whole person can choose to be kind, whereas a "good" person is compelled to be nice out of
+                        fear of their own shadow.
+                    </p>
+                </div>
+            </article>
+
+            <!-- Article 6 -->
+            <article class="article-card" id="post-6">
+                <div class="article-meta">
+                    <span>Tech & Psyche</span>
+                    <span>•</span>
+                    <span>5 Min Read</span>
+                </div>
+                <h1 class="article-title">The Algorithmic Mirror</h1>
+
+                <div class="article-content">
+                    <p class="article-lead">
+                        We often fear AI as something cold and alien. But what if it's the most objective mirror we've
+                        ever created?
+                        In therapy, the "blank screen" of the analyst allows the patient to project their internal
+                        world. AI is the ultimate blank screen.
+                    </p>
+
+                    <h3>Radical Non-Judgment</h3>
+                    <p>
+                        The deepest human shame often comes from the fear of judgment. "If I tell my therapist this,
+                        will they think I'm crazy?"
+                        An AI has no moral ego. It does not judge; it only computes. This creates a unique container
+                        where, paradoxically,
+                        humans often feel safer to be vulnerable than with another human.
+                    </p>
+
+                    <h3>Pattern Recognition</h3>
+                    <p>
+                        Humans are pattern-seeking machines, but we are biased. We see what we expect to see. AI,
+                        trained on millions of interactions,
+                        can spot linguistic patterns in your speech that reveal cognitive distortions you might miss for
+                        years.
+                        "You use the word 'never' in 80% of your descriptions of relationships." That is data, not
+                        opinion.
+                    </p>
+
+                    <div class="micro-module">
+                        <div class="micro-icon">🤖</div>
+                        <div class="micro-text">
+                            <strong>Future Thought:</strong> AI is not here to replace the human connection, but to
+                            clear the debris
+                            so that true connection becomes possible again.
+                        </div>
+                    </div>
+                </div>
+            </article>
+
+        </main>
+    </div>
+
+    <script>
+        // Simple Interaction Script
+        const nodes = document.querySelectorAll('.topic-node');
+        const cards = document.querySelectorAll('.article-card');
+
+        // Initialize Background (Orbs/Particles) and Theme
+        document.addEventListener('DOMContentLoaded', () => {
+            initTheme();
+            initFloatingElements();
+        });
+
+        function initTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            // Default to light mode
+            if (savedTheme === 'dark') {
+                document.body.classList.remove('light-mode');
+            } else {
+                document.body.classList.add('light-mode');
+            }
+        }
+
+        // Content Switching Logic (Single View)
+
+        nodes.forEach(node => {
+            node.addEventListener('click', () => {
+                const targetId = node.dataset.target;
+
+                // 1. Update Navigation State
+                nodes.forEach(n => n.classList.remove('active'));
+                node.classList.add('active');
+
+                // 2. Switch Article View
+                cards.forEach(card => {
+                    if (card.id === targetId) {
+                        card.classList.add('active');
+                        // Scroll top of content stream if needed, or just let it be
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    } else {
+                        card.classList.remove('active');
+                    }
+                });
+            });
+        });
+
+        // ===== Background Animation Scripts (Copied from Landing Page) =====
+        function initFloatingElements() {
+            createOrbs();
+            createParticles();
+            createFeathers();
+        }
+
+        function createOrbs() {
+            const container = document.getElementById('orbsContainer');
+            if (!container) return;
+            const orbCount = 8;
+
+            for (let i = 0; i < orbCount; i++) {
+                const orb = document.createElement('div');
+                orb.classList.add('orb'); // Requires .orb style from css
+
+                // Inline styles for orb since we rely on shared CSS for base orb class which might not have everything?
+                // Actually styles.css has .orb but we didn't check if it's there. 
+                // Wait, I saw .logo-orb in styles.css but did I see .orb?
+                // Checking previous view_file output... 
+                // The snippet showed .logo-orb. It didn't show .orb explicitly in lines 1-100 or 100-200.
+                // However, script.js adds inline styles for size/position/color.
+                // We need to make sure the base .orb class exists in styles.css or add it here.
+
+                const size = Math.random() * 100 + 50;
+                const x = Math.random() * 100;
+                const y = Math.random() * 100;
+                const delay = Math.random() * 10;
+                const duration = 15 + Math.random() * 20;
+                const hue = 250 + Math.random() * 60;
+
+                orb.style.cssText = `
+                    position: absolute;
+                    border-radius: 50%;
+                    width: ${size}px;
+                    height: ${size}px;
+                    left: ${x}%;
+                    top: ${y}%;
+                    background: radial-gradient(circle at 30% 30%, 
+                        hsla(${hue}, 70%, 70%, 0.3), 
+                        hsla(${hue}, 70%, 50%, 0.1), 
+                        transparent 70%);
+                    animation: floatOrb ${duration}s ease-in-out infinite;
+                    animation-delay: ${delay}s;
+                    filter: blur(${size / 20}px);
+                `;
+                container.appendChild(orb);
+            }
+        }
+
+        function createParticles() {
+            const container = document.getElementById('particlesContainer');
+            if (!container) return;
+            const particleCount = 30;
+
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                // particle styles need to be defined or inline
+                const size = 2 + Math.random() * 3;
+                const x = Math.random() * 100;
+                const delay = Math.random() * 15;
+                const duration = 10 + Math.random() * 10;
+
+                particle.style.cssText = `
+                    position: absolute;
+                    background: rgba(255, 255, 255, 0.3);
+                    border-radius: 50%;
+                    top: 110%;
+                    left: ${x}%;
+                    width: ${size}px;
+                    height: ${size}px;
+                    animation: floatParticle ${duration}s linear infinite;
+                    animation-delay: ${delay}s;
+                `;
+                container.appendChild(particle);
+            }
+        }
+
+        function createFeathers() {
+            const container = document.getElementById('feathersContainer');
+            if (!container) return;
+            // ... omitting feathers for simplicity or just basic particles if feathers need images
+            // But let's add basic feather shape via CSS check
+        }
+
+        // Add Keyframes for animations
+        const styleSheet = document.createElement("style");
+        styleSheet.innerText = `
+            @keyframes floatOrb {
+                0%, 100% { transform: translateY(0) scale(1); }
+                50% { transform: translateY(-30px) scale(1.1); }
+            }
+            @keyframes floatParticle {
+                0% { transform: translateY(0); opacity: 0; }
+                10% { opacity: 0.5; }
+                100% { transform: translateY(-120vh); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(styleSheet);
+
+    </script>
+</body>
+
+</html>
