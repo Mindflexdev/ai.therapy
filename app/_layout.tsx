@@ -205,6 +205,7 @@ export default function RootLayout() {
         />
       </Stack>
       <StatusBar style="auto" />
+      {Platform.OS === 'web' && <Analytics />}
     </ThemeProvider>
   );
 }
