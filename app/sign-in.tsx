@@ -48,8 +48,11 @@ export default function SignInScreen() {
     const handleSignIn = async (provider: 'google' | 'facebook' | 'apple') => {
         setLoading(true);
         try {
+            // Construct the redirect URL to always point to /app/
             const redirectTo = Platform.OS === 'web'
-                ? (typeof window !== 'undefined' ? window.location.href : '') // Redirect back to this specific page (app context)
+                ? (typeof window !== 'undefined'
+                    ? `${window.location.origin}/app/`
+                    : 'https://ai.therapy.free/app/')
                 : 'therapyai://login-callback'; // For mobile, use deep link
 
             const { data, error } = await supabase.auth.signInWithOAuth({

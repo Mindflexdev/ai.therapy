@@ -70,7 +70,7 @@ export default function CreateCharacterScreen() {
     }, [params]);
 
     const handleNext = async () => {
-        const steps: Step[] = ['goal', 'name', 'characteristics', 'therapyStyle', 'imageDescription', 'imageGeneration', 'greeting', 'visibility', 'review'];
+        const steps: Step[] = ['goal', 'name', 'characteristics', 'imageDescription', 'imageGeneration', 'therapyStyle', 'greeting', 'visibility', 'review'];
         const currentIndex = steps.indexOf(currentStep);
 
         // Auto-generate image when moving from imageDescription to imageGeneration
@@ -97,7 +97,7 @@ export default function CreateCharacterScreen() {
     };
 
     const handleBack = () => {
-        const steps: Step[] = ['goal', 'name', 'characteristics', 'therapyStyle', 'imageDescription', 'imageGeneration', 'greeting', 'visibility', 'review'];
+        const steps: Step[] = ['goal', 'name', 'characteristics', 'imageDescription', 'imageGeneration', 'therapyStyle', 'greeting', 'visibility', 'review'];
         const currentIndex = steps.indexOf(currentStep);
         if (currentIndex > 0) {
             setCurrentStep(steps[currentIndex - 1]);
@@ -204,6 +204,9 @@ export default function CreateCharacterScreen() {
                             multiline
                             numberOfLines={4}
                         />
+                        <ThemedText style={styles.disclaimerText}>
+                            Disclaimer: ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapy is a creative mental-wellness platform and not a therapeutic service. All ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapists are fictional AI characters. Their role titles ("Therapist," "Psychologist," "Dr.," "Coach," etc.) are used solely for imaginative portrayal and have no professional, clinical, or medical meaning. The therapeutic approaches and modalities mentioned on the platform (e.g., CBT, ACT, DBT, Psychodynamic, Schema, Gestalt, MBCT, etc.) are used exclusively for inspired, model-like purposes and do not constitute real therapeutic application. Neither the ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapy platform nor its AI characters hold qualifications or licenses to practice medicine or psychotherapy. No promise of healing is made. Everything they say is intended for inspiration, reflection, and everyday support—not for diagnosis, treatment, or therapy.
+                        </ThemedText>
                     </View>
                 );
 
@@ -211,14 +214,14 @@ export default function CreateCharacterScreen() {
                 return (
                     <View style={styles.stepContainer}>
                         <ThemedText type="title" style={styles.stepTitle}>
-                            Name your character
+                            Name your ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist
                         </ThemedText>
                         <ThemedText style={styles.stepDescription}>
-                            What should we call your character?
+                            What should we call your ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist?
                         </ThemedText>
                         <TextInput
                             style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
-                            placeholder="Character name..."
+                            placeholder="ai.therapist name..."
                             placeholderTextColor={theme.icon}
                             value={characterData.name}
                             onChangeText={(text) => setCharacterData({ ...characterData, name: text })}
@@ -230,7 +233,7 @@ export default function CreateCharacterScreen() {
                 return (
                     <View style={styles.stepContainer}>
                         <ThemedText type="title" style={styles.stepTitle}>
-                            Who is {characterData.name || 'your character'}?
+                            Who is {characterData.name || 'your ai.therapist'}?
                         </ThemedText>
                         <ThemedText style={styles.stepDescription}>
                             Describe their personality, expertise, and characteristics
@@ -279,7 +282,7 @@ export default function CreateCharacterScreen() {
                 return (
                     <View style={styles.stepContainer}>
                         <ThemedText type="title" style={styles.stepTitle}>
-                            Which approach does {characterData.name || 'your character'} take?
+                            What's {characterData.name || 'your ai.therapist'}'s style?
                         </ThemedText>
 
                         <View style={styles.therapyStylesContainer}>
@@ -303,31 +306,30 @@ export default function CreateCharacterScreen() {
                                                 onPress={() => toggleTherapyStyle(style.name)}
                                             >
                                                 <View style={styles.therapyStyleContent}>
-                                                    <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8 }}>
-                                                        <ThemedText style={[
-                                                            styles.therapyStyleName,
-                                                            { color: isSelected ? '#fff' : theme.text, flex: 1, marginRight: 8 }
-                                                        ]}>
-                                                            {style.name}
-                                                        </ThemedText>
-                                                        <TouchableOpacity
-                                                            style={[styles.learnMoreButton, { backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : theme.tint + '15' }]}
-                                                            onPress={(e) => {
-                                                                e.stopPropagation();
-                                                                router.push({ pathname: '/therapy-detail-modal', params: { name: style.name } });
-                                                            }}
-                                                        >
-                                                            <IconSymbol name="info.circle" size={14} color={isSelected ? '#fff' : theme.tint} />
-                                                            <ThemedText style={[styles.learnMoreText, { color: isSelected ? '#fff' : theme.tint }]}>Learn more</ThemedText>
-                                                        </TouchableOpacity>
-                                                    </View>
+                                                    <ThemedText style={[
+                                                        styles.therapyStyleName,
+                                                        { color: isSelected ? '#fff' : theme.text, marginBottom: 4 }
+                                                    ]}>
+                                                        {style.name}
+                                                    </ThemedText>
 
                                                     <ThemedText style={[
                                                         styles.therapyStyleDescription,
-                                                        { color: isSelected ? 'rgba(255,255,255,0.9)' : theme.icon, marginBottom: 8 }
+                                                        { color: isSelected ? 'rgba(255,255,255,0.9)' : theme.icon, marginBottom: 6 }
                                                     ]}>
                                                         {style.description}
                                                     </ThemedText>
+
+                                                    <TouchableOpacity
+                                                        style={[styles.learnMoreButton, { backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : theme.tint + '15' }]}
+                                                        onPress={(e) => {
+                                                            e.stopPropagation();
+                                                            router.push({ pathname: '/therapy-detail-modal', params: { name: style.name } });
+                                                        }}
+                                                    >
+                                                        <IconSymbol name="info.circle" size={14} color={isSelected ? '#fff' : theme.tint} />
+                                                        <ThemedText style={[styles.learnMoreText, { color: isSelected ? '#fff' : theme.tint }]}>Learn more</ThemedText>
+                                                    </TouchableOpacity>
                                                 </View>
                                                 {isSelected && (
                                                     <View style={styles.checkmarkContainer}>
@@ -347,10 +349,10 @@ export default function CreateCharacterScreen() {
                 return (
                     <View style={styles.stepContainer}>
                         <ThemedText type="title" style={styles.stepTitle}>
-                            Describe {characterData.name}'s appearance
+                            Describe {characterData.name || 'your ai.therapist'}'s appearance
                         </ThemedText>
                         <ThemedText style={styles.stepDescription}>
-                            Describe how your character looks. AI will generate the image for you.
+                            Describe how your ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist looks. AI will generate the image for you.
                         </ThemedText>
                         <TextInput
                             style={[styles.textArea, { backgroundColor: theme.card, color: theme.text }]}
@@ -388,7 +390,7 @@ export default function CreateCharacterScreen() {
                         </View>
 
                         <ThemedText type="title" style={styles.stepTitle}>
-                            {isGeneratingImage ? 'Generating your image...' : 'Your character image'}
+                            {isGeneratingImage ? 'Generating your image...' : `Is this ${characterData.name || 'your ai.therapist'}?`}
                         </ThemedText>
                         <ThemedText style={styles.stepDescription}>
                             {isGeneratingImage
@@ -547,7 +549,7 @@ export default function CreateCharacterScreen() {
                     <IconSymbol name="chevron.right" size={24} color={theme.text} style={{ transform: [{ rotate: '180deg' }] }} />
                 </TouchableOpacity>
                 <ThemedText type="defaultSemiBold" style={styles.headerTitle}>
-                    {editingId ? 'Edit Character' : 'Create Character'}
+                    {editingId ? 'Edit ai.therapist' : 'Create ai.therapist'}
                 </ThemedText>
                 <View style={{ width: 40 }} />
             </View>
@@ -575,7 +577,7 @@ export default function CreateCharacterScreen() {
                         <TouchableOpacity
                             style={[styles.button, { backgroundColor: theme.primary }]}
                             onPress={handleCreate}>
-                            <ThemedText style={styles.buttonText}>{editingId ? 'Save Changes' : 'Create Character!'}</ThemedText>
+                            <ThemedText style={styles.buttonText}>{editingId ? 'Save Changes' : 'Create!'}</ThemedText>
                         </TouchableOpacity>
                     ) : (
                         <TouchableOpacity
@@ -734,11 +736,11 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'flex-start',
-        paddingVertical: 14,
-        paddingHorizontal: 16,
-        paddingBottom: 40,
+        paddingVertical: 10,
+        paddingHorizontal: 14,
+        paddingBottom: 32,
         borderRadius: 12,
-        marginBottom: 12,
+        marginBottom: 10,
         borderWidth: 2,
     },
     therapyStyleText: {
@@ -750,11 +752,11 @@ const styles = StyleSheet.create({
         borderWidth: 3,
     },
     categorySection: {
-        marginBottom: 24,
+        marginBottom: 16,
     },
     categoryTitle: {
         fontSize: 16,
-        marginBottom: 12,
+        marginBottom: 8,
         opacity: 0.8,
     },
     therapyStyleContent: {
@@ -857,5 +859,12 @@ const styles = StyleSheet.create({
         position: 'absolute',
         bottom: 12,
         right: 12,
+    },
+    disclaimerText: {
+        fontSize: 11,
+        opacity: 0.6,
+        marginTop: 16,
+        lineHeight: 16,
+        textAlign: 'left',
     },
 });
