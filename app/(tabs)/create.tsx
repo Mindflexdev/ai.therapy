@@ -33,7 +33,6 @@ const GENERATION_MESSAGES = [
     { text: 'Analyzing therapeutic approach...', icon: '🧠' },
     { text: 'Assigning modalities...', icon: '📋' },
     { text: 'Personalizing appearance...', icon: '🎨' },
-    { text: 'Infusing warmth & empathy...', icon: '💫' },
     { text: 'Almost there...', icon: '🌟' },
 ];
 
