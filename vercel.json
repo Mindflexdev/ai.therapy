@@ -1,5 +1,5 @@
 {
-    "buildCommand": "expo export --platform web --output-dir dist/app && cp -r landing/* dist/",
+    "buildCommand": "expo export --platform web --output-dir dist/app && cp -r public/* dist/",
     "outputDirectory": "dist",
     "installCommand": "npm install",
     "framework": null,
