@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Dimensions, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Dimensions, Modal, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -22,6 +22,7 @@ export default function SubscribeScreen() {
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme ?? 'light'];
     const [isYearly, setIsYearly] = useState(true);
+    const [showComingSoonModal, setShowComingSoonModal] = useState(false);
 
     // Premium feature colors - each feature has its own unique accent
     const featureColors = {
@@ -191,7 +192,10 @@ export default function SubscribeScreen() {
                         )}
                     </View>
 
-                    <TouchableOpacity style={styles.subscribeButton}>
+                    <TouchableOpacity
+                        style={styles.subscribeButton}
+                        onPress={() => setShowComingSoonModal(true)}
+                    >
                         <LinearGradient
                             colors={['#8B5CF6', '#6366F1']}
                             start={{ x: 0, y: 0 }}
@@ -209,6 +213,67 @@ export default function SubscribeScreen() {
                     </ThemedText>
                 </View>
             </View>
+
+            {/* Coming Soon Modal */}
+            <Modal
+                visible={showComingSoonModal}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setShowComingSoonModal(false)}
+            >
+                <TouchableOpacity
+                    style={styles.modalOverlay}
+                    activeOpacity={1}
+                    onPress={() => setShowComingSoonModal(false)}
+                >
+                    <TouchableOpacity
+                        activeOpacity={1}
+                        style={styles.modalContent}
+                        onPress={(e) => e.stopPropagation()}
+                    >
+                        {/* Sparkle Icon */}
+                        <View style={styles.modalIconContainer}>
+                            <LinearGradient
+                                colors={['#8B5CF6', '#6366F1']}
+                                style={styles.modalIconGradient}
+                            >
+                                <IconSymbol name="sparkles" size={32} color="#FFFFFF" />
+                            </LinearGradient>
+                        </View>
+
+                        {/* Title */}
+                        <ThemedText style={styles.modalTitle}>
+                            Coming Soon!
+                        </ThemedText>
+
+                        {/* Message */}
+                        <ThemedText style={styles.modalMessage}>
+                            We're putting the finishing touches on ai.therapy+ to ensure you get the best possible experience. Premium subscriptions will be available very soon.
+                        </ThemedText>
+
+                        <ThemedText style={styles.modalSubMessage}>
+                            Thank you for your patience and enthusiasm! We can't wait to bring you these amazing features.
+                        </ThemedText>
+
+                        {/* Close Button */}
+                        <TouchableOpacity
+                            style={styles.modalButton}
+                            onPress={() => setShowComingSoonModal(false)}
+                        >
+                            <LinearGradient
+                                colors={['#8B5CF6', '#6366F1']}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 0 }}
+                                style={styles.modalButtonGradient}
+                            >
+                                <ThemedText style={styles.modalButtonText}>
+                                    Got it!
+                                </ThemedText>
+                            </LinearGradient>
+                        </TouchableOpacity>
+                    </TouchableOpacity>
+                </TouchableOpacity>
+            </Modal>
         </View>
     );
 }
@@ -458,5 +523,71 @@ const styles = StyleSheet.create({
         color: '#9CA3AF',
         fontSize: 11,
         textAlign: 'center',
+    },
+    // Modal styles
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 24,
+    },
+    modalContent: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 24,
+        padding: 32,
+        width: '100%',
+        maxWidth: 360,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.15,
+        shadowRadius: 24,
+        elevation: 10,
+    },
+    modalIconContainer: {
+        marginBottom: 20,
+    },
+    modalIconGradient: {
+        width: 72,
+        height: 72,
+        borderRadius: 36,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    modalTitle: {
+        fontSize: 24,
+        fontWeight: '800',
+        color: '#1F2937',
+        marginBottom: 12,
+        textAlign: 'center',
+    },
+    modalMessage: {
+        fontSize: 15,
+        color: '#4B5563',
+        textAlign: 'center',
+        lineHeight: 22,
+        marginBottom: 12,
+    },
+    modalSubMessage: {
+        fontSize: 14,
+        color: '#6B7280',
+        textAlign: 'center',
+        lineHeight: 20,
+        marginBottom: 24,
+    },
+    modalButton: {
+        width: '100%',
+        borderRadius: 14,
+        overflow: 'hidden',
+    },
+    modalButtonGradient: {
+        paddingVertical: 16,
+        alignItems: 'center',
+    },
+    modalButtonText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: '700',
     },
 });
