@@ -35,9 +35,9 @@ export default function RootLayout() {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        // Create a timeout promise that resolves after 2500ms
+        // Create a timeout promise that resolves after 8000ms (increased for slow networks)
         const timeoutPromise = new Promise((resolve) => {
-          setTimeout(() => resolve('timeout'), 2500);
+          setTimeout(() => resolve('timeout'), 8000);
         });
 
         // Race the actual initialization against the timeout
