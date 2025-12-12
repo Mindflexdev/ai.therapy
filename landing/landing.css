@@ -688,50 +688,13 @@ body.light-mode .toggle-btn:hover {
         display: none;
     }
 
-    /* 1. Remove whitespace at top */
+    /* Reduce whitespace at top */
     .hero {
         padding-top: 4rem;
     }
 
     .hero-title {
         font-size: 2.25rem;
-    }
-
-    /* 2. Character Slider - 2 cards visible with peaks */
-    .character-cards-grid {
-        gap: 0.75rem;
-        padding: 1rem;
-        /* Reduce side padding to let cards reach edges */
-        scroll-padding-left: 1rem;
-        /* Align snap to start with padding */
-    }
-
-    .guide-card {
-        /* Fit 2 cards + gap + peaks */
-        /* width: ~42vw results in 84vw for 2 cards. Gap is small. ~15vw left for peaks */
-        width: 42vw;
-        min-width: 150px;
-        max-width: none;
-        border-radius: 16px;
-    }
-
-    /* 3. Higher images */
-    .guide-image {
-        height: 440px;
-        /* Increased height so faces aren't cut off */
-    }
-
-    .guide-info {
-        padding: 1rem;
-    }
-
-    .guide-name {
-        font-size: 1.1rem;
-    }
-
-    .guide-desc {
-        font-size: 0.85rem;
-        line-height: 1.4;
     }
 }
 
@@ -972,12 +935,11 @@ body.light-mode .section-disclaimer {
     display: none;
 }
 
-/* Guide Card - consistent design across all sizes */
+/* Guide Card - unified responsive design for all screen sizes */
 .guide-card {
     flex: 0 0 auto;
-    width: 280px;
-    max-width: 320px;
-    min-width: 240px;
+    /* Responsive width: min 200px, preferred 20vw, max 320px */
+    width: clamp(200px, 20vw, 320px);
     scroll-snap-align: center;
     background: linear-gradient(165deg,
             rgba(255, 255, 255, 0.08) 0%,
