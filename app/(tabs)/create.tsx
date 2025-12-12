@@ -570,6 +570,7 @@ export default function CreateCharacterScreen() {
                     characterName: characterData.name,
                     greeting: characterData.greeting,
                     therapyStyles: characterData.therapyStyles,
+                    goal: characterData.goal,
                 });
                 console.log('🎨 Image generation result:', result);
                 if (result.success && result.imageUrl) {
@@ -620,6 +621,7 @@ export default function CreateCharacterScreen() {
                 characterName: characterData.name,
                 greeting: characterData.greeting,
                 therapyStyles: characterData.therapyStyles,
+                goal: characterData.goal,
             });
 
             if (result.success && result.imageUrl) {
