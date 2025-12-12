@@ -348,23 +348,26 @@ export default function MindGymScreen() {
                     </ScrollView>
                 </View>
 
+                {/* Bottom Padding */}
+                <View style={{ height: 40 }} />
             </ScrollView>
 
             {/* Coming Soon Overlay */}
-            <View style={[styles.overlay, { backgroundColor: 'rgba(0,0,0,0.6)' }]}>
+            <View style={[styles.overlay, { backgroundColor: 'rgba(0,0,0,0.85)' }]}>
                 <View style={styles.overlayContent}>
                     <Image
-                        source={require('../../assets/images/lotus.png')}
-                        style={{ width: 100, height: 100, marginBottom: 16 }}
+                        source={require('@/assets/images/lotus.png')}
+                        style={{ width: 120, height: 120, marginBottom: 24, opacity: 0.9 }}
                         contentFit="contain"
                     />
-                    <ThemedText type="title" style={styles.overlayTitle}>Coming Soon</ThemedText>
+                    <ThemedText type="title" style={styles.overlayTitle}>MindGym</ThemedText>
                     <ThemedText style={styles.overlayText}>
-                        Create any guided meditation you want, read out loud by any ai.therapy character.
+                        Your mental fitness studio is coming soon.
+                        Join us for guided sessions with your ai.therapist.
                     </ThemedText>
                 </View>
             </View>
-        </SafeAreaView>
+        </SafeAreaView >
     );
 }
 
