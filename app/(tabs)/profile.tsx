@@ -443,8 +443,8 @@ export default function ProfileScreen() {
                         </View>
                     )}
 
-                    {/* Daily Insight - Only show when analytics data exists AND user has 50+ messages */}
-                    {analyticsData.length > 0 && messageCount >= 50 && (
+                    {/* Daily Insight - Only show when analytics data exists AND user has 50+ messages AND not analyzing */}
+                    {analyticsData.length > 0 && messageCount >= 50 && !analyzing && (
                         <View style={[styles.insightCard, { backgroundColor: theme.card }]}>
                             <LinearGradient
                                 colors={[`${theme.primary}20`, 'transparent']}

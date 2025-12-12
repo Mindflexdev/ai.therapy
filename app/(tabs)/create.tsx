@@ -227,7 +227,7 @@ export default function CreateCharacterScreen() {
                         </ThemedText>
                         <TextInput
                             style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
-                            placeholder="ai.therapist name..."
+                            placeholder="ai.therapist"
                             placeholderTextColor={theme.icon}
                             value={characterData.name}
                             onChangeText={(text) => setCharacterData({ ...characterData, name: text })}
