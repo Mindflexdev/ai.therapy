@@ -523,6 +523,7 @@ export default function CreateCharacterScreen() {
     const [isCreating, setIsCreating] = useState(false);
     const [isGeneratingImage, setIsGeneratingImage] = useState(false);
     const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
+    const [supabaseCharacterId, setSupabaseCharacterId] = useState<string | null>(null); // UUID from Supabase
 
     const params = useLocalSearchParams();
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -586,10 +587,19 @@ export default function CreateCharacterScreen() {
                     // Preload image before showing
                     await Image.prefetch(result.imageUrl);
                     setGeneratedImageUrl(result.imageUrl);
+                    // Store the Supabase character ID if returned
+                    if (result.characterId) {
+                        setSupabaseCharacterId(result.characterId);
+                    }
                     console.log('✅ Image URL set:', result.imageUrl);
+                    console.log('✅ Character ID:', result.characterId);
                 } else {
                     console.error('❌ Image generation failed:', result.error);
-                    Alert.alert('Generation Failed', result.error || 'Could not generate image. You can try again.');
+                    // Show the actual error message from the server
+                    Alert.alert(
+                        'Unable to Create Character',
+                        result.error || 'Could not generate image. Please try again.'
+                    );
                 }
             } catch (error) {
                 console.error('❌ Error generating image:', error);
@@ -660,8 +670,8 @@ export default function CreateCharacterScreen() {
 
         setIsCreating(true);
         try {
-            // Generate unique ID or use existing
-            const characterId = editingId || `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+            // Use Supabase character ID if available, otherwise generate local ID
+            const characterId = supabaseCharacterId || editingId || `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
             // Create character object
             const newCharacter: UserCharacter = {
