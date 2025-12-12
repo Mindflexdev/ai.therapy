@@ -72,10 +72,15 @@ export async function generateCharacterImage(
         console.log('✅ Response data:', data);
 
         // Handle various response formats:
-        // 1. Array with object: [{ image: "url" }]
-        // 2. Object with keys: { imageUrl: "url" } or { image: "url" }
+        // 1. Simple format: { imageUrl: "url" }
+        // 2. Array with object: [{ image: "url" }]
+        // 3. Object with keys: { imageUrl: "url" } or { image: "url" }
         let imageUrl = '';
-        if (Array.isArray(data) && data.length > 0) {
+
+        // Check if response has imageUrl directly
+        if (data.imageUrl) {
+            imageUrl = data.imageUrl;
+        } else if (Array.isArray(data) && data.length > 0) {
             imageUrl = data[0].image || data[0].imageUrl || data[0].image_url || data[0].url;
         } else if (typeof data === 'object' && data !== null) {
             imageUrl = data.image || data.imageUrl || data.image_url || data.url;
@@ -83,7 +88,7 @@ export async function generateCharacterImage(
 
         return {
             imageUrl: imageUrl || '',
-            success: true,
+            success: !!imageUrl,
         };
     } catch (error) {
         console.error('❌ Error generating character image:', error);
