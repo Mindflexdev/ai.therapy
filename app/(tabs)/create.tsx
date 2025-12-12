@@ -548,6 +548,13 @@ export default function CreateCharacterScreen() {
         }
     }, [params]);
 
+    // Preload image when entering review step
+    React.useEffect(() => {
+        if (currentStep === 'review' && generatedImageUrl) {
+            Image.prefetch(generatedImageUrl);
+        }
+    }, [currentStep, generatedImageUrl]);
+
     const handleNext = async () => {
         const steps: Step[] = ['goal', 'name', 'greeting', 'therapyStyle', 'characteristics', 'visibility', 'imageDescription', 'imageGeneration', 'review'];
         const currentIndex = steps.indexOf(currentStep);
@@ -649,25 +656,11 @@ export default function CreateCharacterScreen() {
                 greeting: characterData.greeting,
             };
 
-            // Save to storage
+            // Save to storage (includes Supabase sync)
             await saveCharacter(newCharacter);
 
-            // Show success message
-            if (Platform.OS === 'web') {
-                window.alert(`${characterData.name} has been ${editingId ? 'updated' : 'created'}${characterData.isPublic ? ' and is now public' : ''}!`);
-                router.navigate('/(tabs)');
-            } else {
-                Alert.alert(
-                    'Success!',
-                    `${characterData.name} has been ${editingId ? 'updated' : 'created'}${characterData.isPublic ? ' and is now public' : ''}!`,
-                    [
-                        {
-                            text: 'OK',
-                            onPress: () => router.navigate('/(tabs)'),
-                        },
-                    ]
-                );
-            }
+            // Navigate directly to chat with the new character
+            router.replace(`/conversation/${characterId}`);
         } catch (error) {
             console.error('Error creating character:', error);
             Alert.alert('Error', 'Failed to create character. Please try again.');

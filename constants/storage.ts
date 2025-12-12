@@ -23,14 +23,38 @@ export const saveCharacter = async (character: UserCharacter): Promise<void> => 
         const userChars = await getUserCharacters();
         const publicChars = await getPublicCharacters();
 
-        // Add to user's characters
+        // Add to user's characters (local storage)
         userChars.push(character);
         await AsyncStorage.setItem(STORAGE_KEYS.USER_CHARACTERS, JSON.stringify(userChars));
 
-        // If public, add to public pool
+        // If public, add to public pool locally
         if (character.isPublic) {
-            publicChars.push(character);
+            publicChars.push(character)
             await AsyncStorage.setItem(STORAGE_KEYS.PUBLIC_CHARACTERS, JSON.stringify(publicChars));
+        }
+
+        // Save to Supabase (for persistence and cross-device sync)
+        const { error: supabaseError } = await supabase
+            .from('characters')
+            .upsert({
+                id: character.id,
+                name: character.name,
+                description: character.description,
+                image: character.image,
+                greeting: character.greeting,
+                goal: character.goal,
+                therapy_styles: character.therapyStyles,
+                image_description: character.imageDescription,
+                is_public: character.isPublic,
+                created_at: character.createdAt,
+                topic: 'custom', // User-created characters go to 'custom' topic
+            }, { onConflict: 'id' });
+
+        if (supabaseError) {
+            console.error('Error saving to Supabase:', supabaseError);
+            // Don't throw - local save succeeded, Supabase is optional
+        } else {
+            console.log('✅ Character saved to Supabase');
         }
 
         // Invalidate grouped cache so next fetch gets fresh data
