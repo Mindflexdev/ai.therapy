@@ -509,7 +509,7 @@ export default function CreateCharacterScreen() {
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme ?? 'light'];
 
-    const [currentStep, setCurrentStep] = useState<Step>('name');
+    const [currentStep, setCurrentStep] = useState<Step>('goal');
     const [characterData, setCharacterData] = useState({
         goal: '',
         name: '',
@@ -549,7 +549,7 @@ export default function CreateCharacterScreen() {
     }, [params]);
 
     const handleNext = async () => {
-        const steps: Step[] = ['name', 'greeting', 'goal', 'characteristics', 'therapyStyle', 'visibility', 'imageDescription', 'imageGeneration', 'review'];
+        const steps: Step[] = ['goal', 'name', 'greeting', 'therapyStyle', 'characteristics', 'visibility', 'imageDescription', 'imageGeneration', 'review'];
         const currentIndex = steps.indexOf(currentStep);
 
         // Auto-generate image when moving from imageDescription to imageGeneration
@@ -564,6 +564,8 @@ export default function CreateCharacterScreen() {
                 });
                 console.log('🎨 Image generation result:', result);
                 if (result.success && result.imageUrl) {
+                    // Preload image before showing
+                    await Image.prefetch(result.imageUrl);
                     setGeneratedImageUrl(result.imageUrl);
                     console.log('✅ Image URL set:', result.imageUrl);
                 } else {
@@ -585,7 +587,7 @@ export default function CreateCharacterScreen() {
     };
 
     const handleBack = () => {
-        const steps: Step[] = ['name', 'greeting', 'goal', 'characteristics', 'therapyStyle', 'visibility', 'imageDescription', 'imageGeneration', 'review'];
+        const steps: Step[] = ['goal', 'name', 'greeting', 'therapyStyle', 'characteristics', 'visibility', 'imageDescription', 'imageGeneration', 'review'];
         const currentIndex = steps.indexOf(currentStep);
         if (currentIndex > 0) {
             setCurrentStep(steps[currentIndex - 1]);
@@ -602,6 +604,7 @@ export default function CreateCharacterScreen() {
         }
 
         setIsGeneratingImage(true);
+        setGeneratedImageUrl(''); // Clear previous image
         try {
             const result = await generateCharacterImage({
                 description: characterData.imageDescription,
@@ -609,8 +612,9 @@ export default function CreateCharacterScreen() {
             });
 
             if (result.success && result.imageUrl) {
+                // Preload image before showing
+                await Image.prefetch(result.imageUrl);
                 setGeneratedImageUrl(result.imageUrl);
-                Alert.alert('Success!', 'Your character image has been generated!');
             } else {
                 Alert.alert('Generation Failed', result.error || 'Could not generate image. Please try again.');
             }
@@ -889,10 +893,10 @@ export default function CreateCharacterScreen() {
 
                         {/* Regenerate button below image */}
                         <TouchableOpacity
-                            style={[styles.regenerateButton, { borderColor: theme.primary }]}
+                            style={[styles.regenerateButtonSmall, { borderColor: theme.primary }]}
                             onPress={handleGenerateImage}
                         >
-                            <ThemedText style={[styles.regenerateButtonText, { color: theme.primary }]}>🔄 Regenerate Image</ThemedText>
+                            <ThemedText style={[styles.regenerateButtonTextSmall, { color: theme.primary }]}>🔄 Regenerate</ThemedText>
                         </TouchableOpacity>
                     </View>
                 );
