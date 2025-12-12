@@ -450,6 +450,12 @@ async function fetchAndProcessCharacters() {
             .from('characters')
             .select('*');
 
+        console.log('Supabase response:', { dataCount: tableData?.length, error: tableError });
+
+        if (tableError) {
+            console.error('Supabase error:', tableError.message, tableError.details, tableError.hint);
+        }
+
         if (!tableError && tableData && tableData.length > 0) {
             console.log(`Found ${tableData.length} characters in database table`);
 
@@ -477,10 +483,13 @@ async function fetchAndProcessCharacters() {
             });
 
             characters.sort((a, b) => a.priority - b.priority);
+            console.log('Processed characters:', characters.length);
             return characters;
+        } else {
+            console.warn('No characters in table or error occurred, trying fallback...');
         }
     } catch (e) {
-        console.warn('Table fetch failed:', e);
+        console.error('Table fetch failed:', e.message, e);
     }
 
     // Fallback to storage bucket if table is empty
