@@ -2,8 +2,8 @@ import React, { useEffect } from 'react';
 import { View, StyleSheet, Animated } from 'react-native';
 
 export function LoadingDots() {
-    const dot1 = new Animated.Value(0);
-    const dot2 = new Animated.Value(0);
+    const dot1 = React.useRef(new Animated.Value(0)).current;
+    const dot2 = React.useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
         const animate = () => {
