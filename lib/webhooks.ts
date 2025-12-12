@@ -15,6 +15,7 @@ interface GenerateImageRequest {
 
 interface GenerateImageResponse {
     imageUrl: string;
+    characterId?: string; // UUID from Supabase
     success: boolean;
     error?: string;
 }
@@ -71,23 +72,37 @@ export async function generateCharacterImage(
         const data = await response.json();
         console.log('✅ Response data:', data);
 
+        // Check for error-only response (content policy violation)
+        if (data.error && !data.imageUrl) {
+            return {
+                imageUrl: '',
+                success: false,
+                error: data.error,
+            };
+        }
+
         // Handle various response formats:
-        // 1. Simple format: { imageUrl: "url" }
+        // 1. Simple format: { imageUrl: "url", characterId: "uuid" }
         // 2. Array with object: [{ image: "url" }]
         // 3. Object with keys: { imageUrl: "url" } or { image: "url" }
         let imageUrl = '';
+        let characterId = '';
 
         // Check if response has imageUrl directly
         if (data.imageUrl) {
             imageUrl = data.imageUrl;
+            characterId = data.characterId || data.id || '';
         } else if (Array.isArray(data) && data.length > 0) {
             imageUrl = data[0].image || data[0].imageUrl || data[0].image_url || data[0].url;
+            characterId = data[0].id || data[0].characterId || '';
         } else if (typeof data === 'object' && data !== null) {
             imageUrl = data.image || data.imageUrl || data.image_url || data.url;
+            characterId = data.id || data.characterId || '';
         }
 
         return {
             imageUrl: imageUrl || '',
+            characterId: characterId || undefined,
             success: !!imageUrl,
         };
     } catch (error) {
