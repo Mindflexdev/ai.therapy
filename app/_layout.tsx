@@ -4,7 +4,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { StyleSheet, View, Platform } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import 'react-native-reanimated';
 
 import { LoadingDots } from '@/components/loading-dots';
@@ -34,72 +34,75 @@ export default function RootLayout() {
   // Check initial session and listen for auth changes
   useEffect(() => {
     const initializeAuth = async () => {
-      // On web, hide the static splash immediately so we can show our animated loader
-      if (Platform.OS === 'web') {
-        try {
-          // Wrap in try-catch in case it's already hidden or fails
-          await SplashScreen.hideAsync();
-        } catch (e) {
-          // ignore
-        }
-      }
       try {
-        // Create a timeout promise that rejects after 5 seconds to prevent hanging
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Auth init timeout')), 5000)
-        );
+        // Create a timeout promise that resolves after 2500ms
+        const timeoutPromise = new Promise((resolve) => {
+          setTimeout(() => resolve('timeout'), 2500);
+        });
 
-        const [sessionResponse, skipLoginValue, cachedOnboarding] = await Promise.race([
+        // Race the actual initialization against the timeout
+        const result = await Promise.race([
           Promise.all([
             supabase.auth.getSession(),
             AsyncStorage.getItem('skipLogin'),
             AsyncStorage.getItem('onboarding_completed')
           ]),
           timeoutPromise
-        ]) as [any, string | null, string | null];
+        ]);
 
-        const currentSession = sessionResponse.data.session;
-        const currentSkipLogin = skipLoginValue === 'true';
+        if (result === 'timeout') {
+          console.warn('Auth initialization timed out, proceeding with defaults');
+          // If timeout, we default to no session to let the user in/login
+          setSession(null);
+          setSkipLogin(false);
+          setIsOnboardingCompleted(false);
+        } else {
+          // Type assertion since we know it's the array result if not timeout
+          const [sessionResponse, skipLoginValue, cachedOnboarding] = result as [any, string | null, string | null];
 
-        setSession(currentSession);
-        setSkipLogin(currentSkipLogin);
+          const currentSession = sessionResponse?.data?.session ?? null;
+          const currentSkipLogin = skipLoginValue === 'true';
 
-        // Optimistically set onboarding status from cache if available
-        if (cachedOnboarding !== null) {
-          setIsOnboardingCompleted(cachedOnboarding === 'true');
-        }
+          setSession(currentSession);
+          setSkipLogin(currentSkipLogin);
 
-        if (currentSession) {
-          // If we don't have a cached value, we must await the fetch
-          if (cachedOnboarding === null) {
-            const { data } = await supabase
-              .from('users')
-              .select('onboarding_completed')
-              .eq('id', currentSession.user.id)
-              .single();
-            const isCompleted = data?.onboarding_completed ?? false;
-            setIsOnboardingCompleted(isCompleted);
-            AsyncStorage.setItem('onboarding_completed', String(isCompleted));
-          } else {
-            // If we have a cached value, update in background
-            supabase
-              .from('users')
-              .select('onboarding_completed')
-              .eq('id', currentSession.user.id)
-              .single()
-              .then(({ data }) => {
-                if (data) {
-                  setIsOnboardingCompleted(data.onboarding_completed);
-                  AsyncStorage.setItem('onboarding_completed', String(data.onboarding_completed));
-                }
-              });
+          // Optimistically set onboarding status from cache if available
+          if (cachedOnboarding !== null) {
+            setIsOnboardingCompleted(cachedOnboarding === 'true');
+          }
+
+          if (currentSession) {
+            // If we don't have a cached value, we must await the fetch
+            if (cachedOnboarding === null) {
+              const { data } = await supabase
+                .from('users')
+                .select('onboarding_completed')
+                .eq('id', currentSession.user.id)
+                .single();
+              const isCompleted = data?.onboarding_completed ?? false;
+              setIsOnboardingCompleted(isCompleted);
+              AsyncStorage.setItem('onboarding_completed', String(isCompleted));
+            } else {
+              // Background update
+              supabase
+                .from('users')
+                .select('onboarding_completed')
+                .eq('id', currentSession.user.id)
+                .single()
+                .then(({ data }) => {
+                  if (data) {
+                    setIsOnboardingCompleted(data.onboarding_completed);
+                    AsyncStorage.setItem('onboarding_completed', String(data.onboarding_completed));
+                  }
+                });
+            }
           }
         }
       } catch (error) {
         console.error('Auth initialization error:', error);
       } finally {
         setShowLoading(false);
-        SplashScreen.hideAsync();
+        SplashScreen.hideAsync().catch(() => { }); // Catch error if hideAsync fails
         setIsReady(true);
       }
     };
