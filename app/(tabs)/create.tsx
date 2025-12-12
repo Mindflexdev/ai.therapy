@@ -568,6 +568,8 @@ export default function CreateCharacterScreen() {
                 const result = await generateCharacterImage({
                     description: characterData.imageDescription,
                     characterName: characterData.name,
+                    greeting: characterData.greeting,
+                    therapyStyles: characterData.therapyStyles,
                 });
                 console.log('🎨 Image generation result:', result);
                 if (result.success && result.imageUrl) {
@@ -616,6 +618,8 @@ export default function CreateCharacterScreen() {
             const result = await generateCharacterImage({
                 description: characterData.imageDescription,
                 characterName: characterData.name,
+                greeting: characterData.greeting,
+                therapyStyles: characterData.therapyStyles,
             });
 
             if (result.success && result.imageUrl) {

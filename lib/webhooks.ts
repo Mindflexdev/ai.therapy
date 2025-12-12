@@ -6,6 +6,8 @@ interface GenerateImageRequest {
     description: string;
     characterName?: string;
     userId?: string;
+    greeting?: string;
+    therapyStyles?: string[];
 }
 
 interface GenerateImageResponse {
@@ -34,6 +36,9 @@ export async function generateCharacterImage(
             description: request.description,
             appearance: request.description, // Explicit appearance field
             characterName: request.characterName,
+            userId: request.userId,
+            greeting: request.greeting,
+            therapyStyles: request.therapyStyles,
             timestamp: new Date().toISOString(),
         };
 
