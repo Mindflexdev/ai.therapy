@@ -50,7 +50,7 @@ export default function SignInScreen() {
         try {
             // Construct the redirect URL to always point to /app/
             const redirectTo = Platform.OS === 'web'
-                ? (typeof window !== 'undefined' ? window.location.origin : '')
+                ? (typeof window !== 'undefined' ? window.location.origin + '/app' : '/app')
                 : 'therapyai://login-callback'; // For mobile, use deep link
 
             const { data, error } = await supabase.auth.signInWithOAuth({
@@ -354,8 +354,8 @@ const styles = StyleSheet.create({
         color: '#2D3436',
     },
     waitlistSection: {
-        marginTop: 16,
-        padding: 14,
+        marginTop: 8,
+        padding: 10,
         backgroundColor: '#f9f9f9',
         borderRadius: 14,
         alignItems: 'center',
@@ -421,7 +421,7 @@ const styles = StyleSheet.create({
         lineHeight: 18,
     },
     footer: {
-        paddingVertical: 12,
+        paddingVertical: 6,
         alignItems: 'center',
     },
     footerText: {
