@@ -10,9 +10,10 @@ import { OnboardingModal } from '@/components/onboarding-modal';
 import { ThemedText } from '@/components/themed-text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Character, Topic, TOPICS } from '@/constants/data';
-import { getAllCharactersGroupedByTopic, UserCharacter } from '@/constants/storage';
+import { deleteCharacter, getAllCharactersGroupedByTopic, getUserCharacters, UserCharacter } from '@/constants/storage';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { supabase } from '@/lib/supabase';
 
 const { width } = Dimensions.get('window');
 // Calculate card width: ensure 2 per row, max 200px each
@@ -58,9 +59,9 @@ export default function HomeScreen() {
   // Check onboarding status
   useEffect(() => {
     const checkOnboarding = async () => {
-      const { data: { session } } = await (await import('@/lib/supabase')).supabase.auth.getSession();
+      const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        const { data } = await (await import('@/lib/supabase')).supabase
+        const { data } = await supabase
           .from('users')
           .select('onboarding_completed')
           .eq('id', session.user.id)
@@ -82,11 +83,11 @@ export default function HomeScreen() {
         setIsLoading(true);
         try {
           // 1. Load user goals and sort topics
-          const { data: { session } } = await (await import('@/lib/supabase')).supabase.auth.getSession();
+          const { data: { session } } = await supabase.auth.getSession();
           let finalSortedTopics = TOPICS;
 
           if (session) {
-            const { data } = await (await import('@/lib/supabase')).supabase
+            const { data } = await supabase
               .from('users')
               .select('user_goals')
               .eq('id', session.user.id)
@@ -114,10 +115,11 @@ export default function HomeScreen() {
           }
 
           // 2. Load characters using the sorted topics
+          console.log('📦 Fetching grouped characters...');
           const groupedData = await getAllCharactersGroupedByTopic();
+          console.log('📦 Got grouped data:', groupedData.length, 'topics');
 
           // Get user's created public characters
-          const { getUserCharacters } = await import('@/constants/storage');
           const userChars = await getUserCharacters();
           const publicUserChars = userChars.filter(c => c.isPublic);
 
@@ -246,13 +248,11 @@ export default function HomeScreen() {
     if (!deleteConfirmation) return;
 
     try {
-      const { deleteCharacter } = await import('@/constants/storage');
       await deleteCharacter(deleteConfirmation.id);
 
       // Reload data logic (duplicated for now, could be refactored)
       setIsLoading(true);
       const groupedData = await getAllCharactersGroupedByTopic();
-      const { getUserCharacters } = await import('@/constants/storage');
       const userChars = await getUserCharacters();
       const publicUserChars = userChars.filter(c => c.isPublic);
 
@@ -516,9 +516,9 @@ export default function HomeScreen() {
         onComplete={async () => {
           setShowOnboarding(false);
           // Reload data to show sorted topics
-          const { data: { session } } = await (await import('@/lib/supabase')).supabase.auth.getSession();
+          const { data: { session } } = await supabase.auth.getSession();
           if (session) {
-            const { data } = await (await import('@/lib/supabase')).supabase
+            const { data } = await supabase
               .from('users')
               .select('user_goals')
               .eq('id', session.user.id)
@@ -543,7 +543,6 @@ export default function HomeScreen() {
 
               // Force reload sections with new sorting
               const groupedData = await getAllCharactersGroupedByTopic();
-              const { getUserCharacters } = await import('@/constants/storage');
               const userChars = await getUserCharacters();
               const publicUserChars = userChars.filter(c => c.isPublic);
 
