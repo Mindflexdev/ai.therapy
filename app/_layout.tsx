@@ -44,11 +44,19 @@ export default function RootLayout() {
         }
       }
       try {
-        const [sessionResponse, skipLoginValue, cachedOnboarding] = await Promise.all([
-          supabase.auth.getSession(),
-          AsyncStorage.getItem('skipLogin'),
-          AsyncStorage.getItem('onboarding_completed')
-        ]);
+        // Create a timeout promise that rejects after 5 seconds to prevent hanging
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Auth init timeout')), 5000)
+        );
+
+        const [sessionResponse, skipLoginValue, cachedOnboarding] = await Promise.race([
+          Promise.all([
+            supabase.auth.getSession(),
+            AsyncStorage.getItem('skipLogin'),
+            AsyncStorage.getItem('onboarding_completed')
+          ]),
+          timeoutPromise
+        ]) as [any, string | null, string | null];
 
         const currentSession = sessionResponse.data.session;
         const currentSkipLogin = skipLoginValue === 'true';
