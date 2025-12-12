@@ -9,6 +9,8 @@ interface GenerateImageRequest {
     greeting?: string;
     therapyStyles?: string[];
     goal?: string;
+    characteristics?: string; // Character personality/description
+    isPublic?: boolean;
 }
 
 interface GenerateImageResponse {
@@ -34,13 +36,14 @@ export async function generateCharacterImage(
         console.log('🔑 JWT Token created');
 
         const requestBody = {
-            description: request.description,
-            appearance: request.description, // Explicit appearance field
+            description: request.characteristics || request.description, // Character description for n8n
+            appearance: request.description, // Visual appearance for image generation
             characterName: request.characterName,
             userId: request.userId,
             greeting: request.greeting,
             therapyStyles: request.therapyStyles,
             goal: request.goal,
+            isPublic: request.isPublic,
             timestamp: new Date().toISOString(),
         };
 

@@ -571,6 +571,8 @@ export default function CreateCharacterScreen() {
                     greeting: characterData.greeting,
                     therapyStyles: characterData.therapyStyles,
                     goal: characterData.goal,
+                    characteristics: characterData.characteristics,
+                    isPublic: characterData.isPublic,
                 });
                 console.log('🎨 Image generation result:', result);
                 if (result.success && result.imageUrl) {
@@ -622,6 +624,8 @@ export default function CreateCharacterScreen() {
                 greeting: characterData.greeting,
                 therapyStyles: characterData.therapyStyles,
                 goal: characterData.goal,
+                characteristics: characterData.characteristics,
+                isPublic: characterData.isPublic,
             });
 
             if (result.success && result.imageUrl) {
