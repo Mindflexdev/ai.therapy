@@ -470,7 +470,10 @@ export default function ConversationScreen() {
     // Memoized callbacks
     const handleStyleModalClose = useCallback(() => setIsStyleModalVisible(false), []);
     const handleStyleModalOpen = useCallback(() => setIsStyleModalVisible(true), []);
-    const handleBack = useCallback(() => router.back(), [router]);
+    const handleBack = useCallback(() => {
+        // Navigate to home tab instead of router.back() to handle cases where there's no history
+        router.push('/(tabs)');
+    }, [router]);
     const handleFeedback = useCallback(() => router.push('/feedback'), [router]);
 
     // Open the detail popup (this will show on top of style modal if both are open)
