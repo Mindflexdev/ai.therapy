@@ -1161,8 +1161,17 @@ export default function CreateCharacterScreen() {
 
                     {currentStep === 'review' ? (
                         <TouchableOpacity
-                            style={[styles.button, { backgroundColor: theme.primary }]}
-                            onPress={handleCreate}>
+                            style={[
+                                styles.button,
+                                {
+                                    backgroundColor: !isFormComplete() || isCreating
+                                        ? theme.icon + '40'
+                                        : theme.primary
+                                }
+                            ]}
+                            onPress={handleCreate}
+                            disabled={isCreating || !isFormComplete()}
+                        >
                             <ThemedText style={styles.buttonText}>{editingId ? 'Save Changes' : 'Create!'}</ThemedText>
                         </TouchableOpacity>
                     ) : currentStep === 'imageGeneration' && isGeneratingImage ? (
