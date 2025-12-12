@@ -556,7 +556,7 @@ export default function CreateCharacterScreen() {
     }, [currentStep, generatedImageUrl]);
 
     const handleNext = async () => {
-        const steps: Step[] = ['goal', 'name', 'greeting', 'therapyStyle', 'characteristics', 'visibility', 'imageDescription', 'imageGeneration', 'review'];
+        const steps: Step[] = ['goal', 'name', 'greeting', 'therapyStyle', 'visibility', 'characteristics', 'imageDescription', 'imageGeneration', 'review'];
         const currentIndex = steps.indexOf(currentStep);
 
         // Auto-generate image when moving from imageDescription to imageGeneration
@@ -594,7 +594,7 @@ export default function CreateCharacterScreen() {
     };
 
     const handleBack = () => {
-        const steps: Step[] = ['goal', 'name', 'greeting', 'therapyStyle', 'characteristics', 'visibility', 'imageDescription', 'imageGeneration', 'review'];
+        const steps: Step[] = ['goal', 'name', 'greeting', 'therapyStyle', 'visibility', 'characteristics', 'imageDescription', 'imageGeneration', 'review'];
         const currentIndex = steps.indexOf(currentStep);
         if (currentIndex > 0) {
             setCurrentStep(steps[currentIndex - 1]);
@@ -660,7 +660,7 @@ export default function CreateCharacterScreen() {
             await saveCharacter(newCharacter);
 
             // Navigate directly to chat with the new character
-            router.replace(`/conversation/${characterId}`);
+            router.push(`/conversation/${characterId}`);
         } catch (error) {
             console.error('Error creating character:', error);
             Alert.alert('Error', 'Failed to create character. Please try again.');
@@ -1414,12 +1414,13 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     regenerateButtonSmall: {
-        marginTop: 12,
-        paddingVertical: 8,
-        paddingHorizontal: 16,
+        marginTop: 16,
+        paddingVertical: 10,
+        paddingHorizontal: 20,
         borderRadius: 20,
         borderWidth: 1,
         backgroundColor: 'transparent',
+        alignSelf: 'center',
     },
     regenerateButtonTextSmall: {
         fontSize: 14,
