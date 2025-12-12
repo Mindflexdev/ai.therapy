@@ -1040,13 +1040,25 @@ export default function CreateCharacterScreen() {
                 );
 
             case 'review':
+                const formComplete = isFormComplete();
+                const missingFields = [];
+                if (!characterData.name.trim()) missingFields.push('Name');
+                if (!characterData.goal.trim()) missingFields.push('Goal');
+                if (!characterData.characteristics.trim()) missingFields.push('Description');
+                if (!characterData.greeting.trim()) missingFields.push('Greeting');
+                if (!characterData.therapyStyles.length) missingFields.push('Therapy Style');
+                if (!generatedImageUrl) missingFields.push('Image');
+
                 return (
                     <View style={styles.stepContainer}>
                         <ThemedText type="title" style={styles.stepTitle}>
                             Review your ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist
                         </ThemedText>
                         <ThemedText style={styles.stepDescription}>
-                            Make sure everything looks good before creating
+                            {formComplete
+                                ? 'Everything looks good! Ready to create your ai.therapist.'
+                                : `Please complete: ${missingFields.join(', ')}`
+                            }
                         </ThemedText>
 
                         <View style={styles.reviewImageContainer}>
@@ -1060,19 +1072,27 @@ export default function CreateCharacterScreen() {
                         <View style={[styles.reviewCard, { backgroundColor: theme.card }]}>
                             <View style={styles.reviewRow}>
                                 <ThemedText style={styles.reviewLabel}>Name:</ThemedText>
-                                <ThemedText type="defaultSemiBold">{characterData.name}</ThemedText>
+                                <ThemedText type="defaultSemiBold" style={{ opacity: characterData.name.trim() ? 1 : 0.4 }}>
+                                    {characterData.name.trim() || '(Not set)'}
+                                </ThemedText>
                             </View>
                             <View style={styles.reviewRow}>
                                 <ThemedText style={styles.reviewLabel}>Goal:</ThemedText>
-                                <ThemedText style={styles.reviewValue}>{characterData.goal}</ThemedText>
+                                <ThemedText style={[styles.reviewValue, { opacity: characterData.goal.trim() ? 1 : 0.4 }]}>
+                                    {characterData.goal.trim() || '(Not set)'}
+                                </ThemedText>
                             </View>
                             <View style={styles.reviewRow}>
                                 <ThemedText style={styles.reviewLabel}>Characteristics:</ThemedText>
-                                <ThemedText style={styles.reviewValue}>{characterData.characteristics}</ThemedText>
+                                <ThemedText style={[styles.reviewValue, { opacity: characterData.characteristics.trim() ? 1 : 0.4 }]}>
+                                    {characterData.characteristics.trim() || '(Not set)'}
+                                </ThemedText>
                             </View>
                             <View style={styles.reviewRow}>
                                 <ThemedText style={styles.reviewLabel}>Greeting:</ThemedText>
-                                <ThemedText style={styles.reviewValue}>{characterData.greeting}</ThemedText>
+                                <ThemedText style={[styles.reviewValue, { opacity: characterData.greeting.trim() ? 1 : 0.4 }]}>
+                                    {characterData.greeting.trim() || '(Not set)'}
+                                </ThemedText>
                             </View>
                             <View style={styles.reviewRow}>
                                 <ThemedText style={styles.reviewLabel}>Therapy Styles:</ThemedText>
@@ -1080,6 +1100,12 @@ export default function CreateCharacterScreen() {
                                     {characterData.therapyStyles.length > 0
                                         ? characterData.therapyStyles.map(s => STYLE_ABBREVIATIONS[s] || s).join(', ')
                                         : 'Integrative'}
+                                </ThemedText>
+                            </View>
+                            <View style={styles.reviewRow}>
+                                <ThemedText style={styles.reviewLabel}>Image:</ThemedText>
+                                <ThemedText type="defaultSemiBold" style={{ opacity: generatedImageUrl ? 1 : 0.4 }}>
+                                    {generatedImageUrl ? '✓ Generated' : '(Not generated)'}
                                 </ThemedText>
                             </View>
                             <View style={styles.reviewRow}>
