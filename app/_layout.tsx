@@ -3,7 +3,7 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import 'react-native-reanimated';
 
@@ -31,6 +31,9 @@ export default function RootLayout() {
   const router = useRouter();
   const segments = useSegments();
 
+  // Use a ref to track if onAuthStateChange has already set a session
+  const sessionSetByAuthChange = useRef(false);
+
   // Check initial session and listen for auth changes
   useEffect(() => {
     const initializeAuth = async () => {
@@ -52,10 +55,12 @@ export default function RootLayout() {
 
         if (result === 'timeout') {
           console.warn('Auth initialization timed out, proceeding with defaults');
-          // If timeout, we default to no session to let the user in/login
-          setSession(null);
-          setSkipLogin(false);
-          setIsOnboardingCompleted(false);
+          // IMPORTANT: Only set session to null if onAuthStateChange hasn't already set a valid session
+          if (!sessionSetByAuthChange.current) {
+            setSession(null);
+            setSkipLogin(false);
+            setIsOnboardingCompleted(false);
+          }
         } else {
           // Type assertion since we know it's the array result if not timeout
           const [sessionResponse, skipLoginValue, cachedOnboarding] = result as [any, string | null, string | null];
@@ -113,6 +118,11 @@ export default function RootLayout() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       console.log('Auth state changed:', _event, session ? 'Logged in' : 'Not logged in');
       setSession(session);
+
+      // Mark that onAuthStateChange has set a session (to prevent timeout from overwriting)
+      if (session) {
+        sessionSetByAuthChange.current = true;
+      }
 
       if (session) {
         AsyncStorage.removeItem('skipLogin');
