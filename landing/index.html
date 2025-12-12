@@ -108,10 +108,10 @@
 
         <!-- CTA Button -->
         <div class="section-cta">
-            <a href="/app" class="cta-button"
+            <button type="button" class="cta-button" onclick="showComingSoonModal()"
                 data-en="Start ai<span class='logo-dot'>.</span>therapy"
                 data-de="Starte ai<span class='logo-dot'>.</span>therapy">Start ai<span
-                    class="logo-dot">.</span>therapy</a>
+                    class="logo-dot">.</span>therapy</button>
         </div>
 
         <!-- Disclaimer 1 -->
@@ -234,10 +234,10 @@
 
         <!-- CTA Button -->
         <div class="section-cta">
-            <a href="/app" class="cta-button"
+            <button type="button" class="cta-button" onclick="showComingSoonModal()"
                 data-en="Discover ai<span class='logo-dot'>.</span>therapy"
                 data-de="Entdecke ai<span class='logo-dot'>.</span>therapy">Discover ai<span
-                    class="logo-dot">.</span>therapy</a>
+                    class="logo-dot">.</span>therapy</button>
         </div>
 
 
@@ -326,10 +326,10 @@
 
                 <div
                     style="display: flex; justify-content: center; margin-top: 2rem; position: relative; z-index: 100;">
-                    <a href="/app" class="cta-button"
+                    <button type="button" class="cta-button" onclick="showComingSoonModal()"
                         data-en="Create ai<span class='logo-dot'>.</span>therapist"
                         data-de="Erstelle ai<span class='logo-dot'>.</span>therapist">Create ai<span
-                            class="logo-dot">.</span>therapist</a>
+                            class="logo-dot">.</span>therapist</button>
                 </div>
             </div>
     </section>
@@ -417,7 +417,44 @@
         </div>
     </div>
 
+    <!-- Coming Soon Modal -->
+    <div class="coming-soon-modal" id="comingSoonModal">
+        <div class="coming-soon-overlay" onclick="hideComingSoonModal()"></div>
+        <div class="coming-soon-content">
+            <div class="coming-soon-icon">
+                <span>✨</span>
+            </div>
+            <h2 class="coming-soon-title">Coming Soon!</h2>
+            <p class="coming-soon-message">
+                We're putting the finishing touches on ai<span class="logo-dot">.</span>therapy to ensure you get the
+                best possible experience. The full platform will be available very soon.
+            </p>
+            <p class="coming-soon-submessage">
+                Thank you for your patience and enthusiasm! We can't wait to welcome you.
+            </p>
+            <button class="coming-soon-button" onclick="hideComingSoonModal()">Got it!</button>
+        </div>
+    </div>
+
     <script src="script.js"></script>
+    <script>
+        function showComingSoonModal() {
+            document.getElementById('comingSoonModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function hideComingSoonModal() {
+            document.getElementById('comingSoonModal').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        // Close on Escape key
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                hideComingSoonModal();
+            }
+        });
+    </script>
 </body>
 
 </html>

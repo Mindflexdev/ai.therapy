@@ -1,9 +1,11 @@
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     ActivityIndicator,
     Alert,
+    Animated,
+    Easing,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
@@ -25,13 +27,527 @@ type Step = 'goal' | 'name' | 'characteristics' | 'therapyStyle' | 'imageDescrip
 
 import { ALL_THERAPY_OPTIONS, STYLE_ABBREVIATIONS } from '@/constants/therapy';
 
+// Professional status messages for image generation
+const GENERATION_MESSAGES = [
+    { text: 'Crafting your ai.therapist...', icon: '✨' },
+    { text: 'Analyzing therapeutic approach...', icon: '🧠' },
+    { text: 'Assigning modalities...', icon: '📋' },
+    { text: 'Personalizing appearance...', icon: '🎨' },
+    { text: 'Almost there...', icon: '🌟' },
+];
+
+// Modern animated loading component for image generation
+const ImageGeneratingAnimation = ({ theme, characterName }: { theme: typeof Colors.light; characterName?: string }) => {
+    const rotateAnim = useRef(new Animated.Value(0)).current;
+    const pulseAnim = useRef(new Animated.Value(0.8)).current;
+    const fadeAnim = useRef(new Animated.Value(1)).current;
+    const progressAnim = useRef(new Animated.Value(0)).current;
+    const [messageIndex, setMessageIndex] = useState(0);
+
+    useEffect(() => {
+        // Rotation animation for outer ring
+        Animated.loop(
+            Animated.timing(rotateAnim, {
+                toValue: 1,
+                duration: 3000,
+                easing: Easing.linear,
+                useNativeDriver: true,
+            })
+        ).start();
+
+        // Pulse animation for inner circle
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(pulseAnim, {
+                    toValue: 1.1,
+                    duration: 800,
+                    easing: Easing.inOut(Easing.ease),
+                    useNativeDriver: true,
+                }),
+                Animated.timing(pulseAnim, {
+                    toValue: 0.9,
+                    duration: 800,
+                    easing: Easing.inOut(Easing.ease),
+                    useNativeDriver: true,
+                }),
+            ])
+        ).start();
+
+        // Progress bar animation
+        Animated.timing(progressAnim, {
+            toValue: 1,
+            duration: 15000, // 15 seconds total
+            easing: Easing.linear,
+            useNativeDriver: false,
+        }).start();
+
+        // Cycle through messages
+        const messageInterval = setInterval(() => {
+            // Fade out
+            Animated.timing(fadeAnim, {
+                toValue: 0,
+                duration: 200,
+                useNativeDriver: true,
+            }).start(() => {
+                setMessageIndex(prev => (prev + 1) % GENERATION_MESSAGES.length);
+                // Fade in
+                Animated.timing(fadeAnim, {
+                    toValue: 1,
+                    duration: 200,
+                    useNativeDriver: true,
+                }).start();
+            });
+        }, 2500);
+
+        return () => clearInterval(messageInterval);
+    }, []);
+
+    const rotation = rotateAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['0deg', '360deg'],
+    });
+
+    const progressWidth = progressAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['0%', '100%'],
+    });
+
+    const currentMessage = GENERATION_MESSAGES[messageIndex];
+
+    return (
+        <View style={animStyles.container}>
+            {/* Outer rotating ring */}
+            <Animated.View
+                style={[
+                    animStyles.outerRing,
+                    {
+                        borderColor: theme.primary,
+                        transform: [{ rotate: rotation }],
+                    },
+                ]}
+            />
+
+            {/* Secondary rotating ring (opposite direction) */}
+            <Animated.View
+                style={[
+                    animStyles.secondaryRing,
+                    {
+                        borderColor: theme.primary + '40',
+                        transform: [{ rotate: rotation }, { scaleX: -1 }],
+                    },
+                ]}
+            />
+
+            {/* Pulsing inner circle */}
+            <Animated.View
+                style={[
+                    animStyles.innerCircle,
+                    {
+                        backgroundColor: theme.primary + '20',
+                        transform: [{ scale: pulseAnim }],
+                    },
+                ]}
+            />
+
+            {/* Center icon with current message emoji */}
+            <Animated.View style={[animStyles.iconContainer, { opacity: fadeAnim }]}>
+                <ThemedText style={animStyles.centerEmoji}>{currentMessage.icon}</ThemedText>
+            </Animated.View>
+
+            {/* Status message */}
+            <View style={animStyles.messageContainer}>
+                <Animated.View style={{ opacity: fadeAnim }}>
+                    <ThemedText style={[animStyles.statusMessage, { color: theme.text }]}>
+                        {currentMessage.text}
+                    </ThemedText>
+                </Animated.View>
+
+                {/* Progress bar */}
+                <View style={[animStyles.progressBarContainer, { backgroundColor: theme.card }]}>
+                    <Animated.View
+                        style={[
+                            animStyles.progressBar,
+                            {
+                                backgroundColor: theme.primary,
+                                width: progressWidth,
+                            }
+                        ]}
+                    />
+                </View>
+
+                {characterName && (
+                    <ThemedText style={[animStyles.characterNameText, { color: theme.icon }]}>
+                        Creating {characterName}
+                    </ThemedText>
+                )}
+            </View>
+        </View>
+    );
+};
+
+// Styles for the animation component
+const animStyles = StyleSheet.create({
+    container: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '100%',
+        height: '100%',
+        paddingBottom: 60,
+    },
+    outerRing: {
+        position: 'absolute',
+        width: 90,
+        height: 90,
+        borderRadius: 45,
+        borderWidth: 3,
+        borderStyle: 'dashed',
+    },
+    secondaryRing: {
+        position: 'absolute',
+        width: 70,
+        height: 70,
+        borderRadius: 35,
+        borderWidth: 2,
+        borderStyle: 'dotted',
+    },
+    innerCircle: {
+        position: 'absolute',
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+    },
+    iconContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    centerEmoji: {
+        fontSize: 24,
+    },
+    messageContainer: {
+        position: 'absolute',
+        bottom: 0,
+        alignItems: 'center',
+        width: '100%',
+        gap: 8,
+    },
+    statusMessage: {
+        fontSize: 13,
+        fontWeight: '600',
+        textAlign: 'center',
+    },
+    progressBarContainer: {
+        width: '80%',
+        height: 4,
+        borderRadius: 2,
+        overflow: 'hidden',
+    },
+    progressBar: {
+        height: '100%',
+        borderRadius: 2,
+    },
+    characterNameText: {
+        fontSize: 11,
+        opacity: 0.7,
+    },
+});
+
+// Fullscreen crafting overlay component
+const FullscreenCraftingOverlay = ({ theme, characterName }: { theme: typeof Colors.light; characterName?: string }) => {
+    const rotateAnim = useRef(new Animated.Value(0)).current;
+    const pulseAnim = useRef(new Animated.Value(0.9)).current;
+    const fadeAnim = useRef(new Animated.Value(1)).current;
+    const progressAnim = useRef(new Animated.Value(0)).current;
+    const glowAnim = useRef(new Animated.Value(0.5)).current;
+    const [messageIndex, setMessageIndex] = useState(0);
+
+    useEffect(() => {
+        // Rotation animation
+        Animated.loop(
+            Animated.timing(rotateAnim, {
+                toValue: 1,
+                duration: 4000,
+                easing: Easing.linear,
+                useNativeDriver: true,
+            })
+        ).start();
+
+        // Pulse animation
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(pulseAnim, {
+                    toValue: 1.05,
+                    duration: 1200,
+                    easing: Easing.inOut(Easing.ease),
+                    useNativeDriver: true,
+                }),
+                Animated.timing(pulseAnim, {
+                    toValue: 0.95,
+                    duration: 1200,
+                    easing: Easing.inOut(Easing.ease),
+                    useNativeDriver: true,
+                }),
+            ])
+        ).start();
+
+        // Glow animation
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(glowAnim, {
+                    toValue: 1,
+                    duration: 1500,
+                    easing: Easing.inOut(Easing.ease),
+                    useNativeDriver: true,
+                }),
+                Animated.timing(glowAnim, {
+                    toValue: 0.5,
+                    duration: 1500,
+                    easing: Easing.inOut(Easing.ease),
+                    useNativeDriver: true,
+                }),
+            ])
+        ).start();
+
+        // Progress bar animation
+        Animated.timing(progressAnim, {
+            toValue: 1,
+            duration: 18000,
+            easing: Easing.linear,
+            useNativeDriver: false,
+        }).start();
+
+        // Cycle through messages
+        const messageInterval = setInterval(() => {
+            Animated.timing(fadeAnim, {
+                toValue: 0,
+                duration: 250,
+                useNativeDriver: true,
+            }).start(() => {
+                setMessageIndex(prev => (prev + 1) % GENERATION_MESSAGES.length);
+                Animated.timing(fadeAnim, {
+                    toValue: 1,
+                    duration: 250,
+                    useNativeDriver: true,
+                }).start();
+            });
+        }, 3000);
+
+        return () => clearInterval(messageInterval);
+    }, []);
+
+    const rotation = rotateAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['0deg', '360deg'],
+    });
+
+    const reverseRotation = rotateAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['360deg', '0deg'],
+    });
+
+    const progressWidth = progressAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['0%', '100%'],
+    });
+
+    const currentMessage = GENERATION_MESSAGES[messageIndex];
+
+    return (
+        <View style={craftingStyles.overlay}>
+            <View style={[craftingStyles.container, { backgroundColor: theme.background }]}>
+                {/* Large centered profile area */}
+                <View style={craftingStyles.profileSection}>
+                    {/* Outer glow ring */}
+                    <Animated.View
+                        style={[
+                            craftingStyles.glowRing,
+                            {
+                                borderColor: theme.primary,
+                                opacity: glowAnim,
+                                transform: [{ scale: pulseAnim }],
+                            },
+                        ]}
+                    />
+
+                    {/* Rotating outer ring */}
+                    <Animated.View
+                        style={[
+                            craftingStyles.outerRing,
+                            {
+                                borderColor: theme.primary,
+                                transform: [{ rotate: rotation }],
+                            },
+                        ]}
+                    />
+
+                    {/* Counter-rotating middle ring */}
+                    <Animated.View
+                        style={[
+                            craftingStyles.middleRing,
+                            {
+                                borderColor: theme.primary + '60',
+                                transform: [{ rotate: reverseRotation }],
+                            },
+                        ]}
+                    />
+
+                    {/* Inner pulsing circle */}
+                    <Animated.View
+                        style={[
+                            craftingStyles.innerCircle,
+                            {
+                                backgroundColor: theme.primary + '15',
+                                transform: [{ scale: pulseAnim }],
+                            },
+                        ]}
+                    />
+
+                    {/* Center emoji */}
+                    <Animated.View style={[craftingStyles.emojiContainer, { opacity: fadeAnim }]}>
+                        <ThemedText style={craftingStyles.centerEmoji}>{currentMessage.icon}</ThemedText>
+                    </Animated.View>
+                </View>
+
+                {/* Status section below */}
+                <View style={craftingStyles.statusSection}>
+                    {/* Character name */}
+                    {characterName && (
+                        <ThemedText style={[craftingStyles.characterName, { color: theme.text }]}>
+                            {characterName}
+                        </ThemedText>
+                    )}
+
+                    {/* Status message */}
+                    <Animated.View style={{ opacity: fadeAnim }}>
+                        <ThemedText style={[craftingStyles.statusMessage, { color: theme.text }]}>
+                            {currentMessage.text}
+                        </ThemedText>
+                    </Animated.View>
+
+                    {/* Progress bar */}
+                    <View style={craftingStyles.progressSection}>
+                        <View style={[craftingStyles.progressBarBg, { backgroundColor: theme.card }]}>
+                            <Animated.View
+                                style={[
+                                    craftingStyles.progressBarFill,
+                                    {
+                                        backgroundColor: theme.primary,
+                                        width: progressWidth,
+                                    }
+                                ]}
+                            />
+                        </View>
+                    </View>
+
+                    {/* Subtext */}
+                    <ThemedText style={[craftingStyles.subtext, { color: theme.icon }]}>
+                        This may take a moment...
+                    </ThemedText>
+                </View>
+            </View>
+        </View>
+    );
+};
+
+// Styles for fullscreen crafting overlay
+const craftingStyles = StyleSheet.create({
+    overlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 1000,
+    },
+    container: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 40,
+    },
+    profileSection: {
+        width: 200,
+        height: 200,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 60,
+    },
+    glowRing: {
+        position: 'absolute',
+        width: 200,
+        height: 200,
+        borderRadius: 100,
+        borderWidth: 2,
+    },
+    outerRing: {
+        position: 'absolute',
+        width: 160,
+        height: 160,
+        borderRadius: 80,
+        borderWidth: 3,
+        borderStyle: 'dashed',
+    },
+    middleRing: {
+        position: 'absolute',
+        width: 120,
+        height: 120,
+        borderRadius: 60,
+        borderWidth: 2,
+        borderStyle: 'dotted',
+    },
+    innerCircle: {
+        position: 'absolute',
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+    },
+    emojiContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    centerEmoji: {
+        fontSize: 40,
+    },
+    statusSection: {
+        alignItems: 'center',
+        gap: 16,
+        width: '100%',
+    },
+    characterName: {
+        fontSize: 28,
+        fontWeight: '700',
+        marginBottom: 8,
+    },
+    statusMessage: {
+        fontSize: 18,
+        fontWeight: '500',
+        textAlign: 'center',
+    },
+    progressSection: {
+        width: '100%',
+        marginTop: 8,
+    },
+    progressBarBg: {
+        width: '100%',
+        height: 6,
+        borderRadius: 3,
+        overflow: 'hidden',
+    },
+    progressBarFill: {
+        height: '100%',
+        borderRadius: 3,
+    },
+    subtext: {
+        fontSize: 14,
+        marginTop: 8,
+    },
+});
 
 export default function CreateCharacterScreen() {
     const router = useRouter();
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme ?? 'light'];
 
-    const [currentStep, setCurrentStep] = useState<Step>('goal');
+    const [currentStep, setCurrentStep] = useState<Step>('name');
     const [characterData, setCharacterData] = useState({
         goal: '',
         name: '',
@@ -71,14 +587,15 @@ export default function CreateCharacterScreen() {
     }, [params]);
 
     const handleNext = async () => {
-        const steps: Step[] = ['goal', 'name', 'characteristics', 'imageDescription', 'imageGeneration', 'therapyStyle', 'greeting', 'visibility', 'review'];
+        const steps: Step[] = ['name', 'goal', 'characteristics', 'greeting', 'therapyStyle', 'visibility', 'imageDescription', 'imageGeneration', 'review'];
         const currentIndex = steps.indexOf(currentStep);
 
         // Auto-generate image when moving from imageDescription to imageGeneration
         if (currentStep === 'imageDescription' && characterData.imageDescription.trim()) {
+            setCurrentStep('imageGeneration');
             setIsGeneratingImage(true);
             try {
-                console.log('🎨 Starting image generation from handleNext...');
+                console.log('🎨 Starting automatic image generation...');
                 const result = await generateCharacterImage({
                     description: characterData.imageDescription,
                     characterName: characterData.name,
@@ -89,12 +606,15 @@ export default function CreateCharacterScreen() {
                     console.log('✅ Image URL set:', result.imageUrl);
                 } else {
                     console.error('❌ Image generation failed:', result.error);
+                    Alert.alert('Generation Failed', result.error || 'Could not generate image. You can try again.');
                 }
             } catch (error) {
                 console.error('❌ Error generating image:', error);
+                Alert.alert('Error', 'Failed to generate image. Please try again.');
             } finally {
                 setIsGeneratingImage(false);
             }
+            return; // Don't proceed to next step automatically, we already moved to imageGeneration
         }
 
         if (currentIndex < steps.length - 1) {
@@ -103,7 +623,7 @@ export default function CreateCharacterScreen() {
     };
 
     const handleBack = () => {
-        const steps: Step[] = ['goal', 'name', 'characteristics', 'imageDescription', 'imageGeneration', 'therapyStyle', 'greeting', 'visibility', 'review'];
+        const steps: Step[] = ['name', 'goal', 'characteristics', 'greeting', 'therapyStyle', 'visibility', 'imageDescription', 'imageGeneration', 'review'];
         const currentIndex = steps.indexOf(currentStep);
         if (currentIndex > 0) {
             setCurrentStep(steps[currentIndex - 1]);
@@ -375,45 +895,43 @@ export default function CreateCharacterScreen() {
             case 'imageGeneration':
                 return (
                     <View style={styles.stepContainer}>
-                        {/* Image Preview */}
+                        {/* Image Preview - Result view only */}
                         <View style={styles.imagePreviewSection}>
-                            <View style={[styles.imagePreviewContainer, { backgroundColor: theme.card, borderColor: theme.icon }]}>
+                            <View style={[styles.imagePreviewContainer, { backgroundColor: theme.card, borderColor: theme.primary }]}>
                                 {generatedImageUrl ? (
                                     <Image
                                         source={{ uri: generatedImageUrl }}
                                         style={styles.imagePreview}
                                         contentFit="cover"
                                     />
-                                ) : isGeneratingImage ? (
-                                    <View style={styles.loadingContainer}>
-                                        <ActivityIndicator size="large" color={theme.primary} />
-                                        <ThemedText style={[styles.loadingText, { color: theme.icon }]}>Generating...</ThemedText>
-                                    </View>
                                 ) : (
-                                    <IconSymbol name="person" size={64} color={theme.icon} />
+                                    <View style={styles.emptyImageState}>
+                                        <IconSymbol name="sparkles" size={48} color={theme.primary} />
+                                        <ThemedText style={[styles.emptyImageText, { color: theme.icon }]}>No image yet</ThemedText>
+                                    </View>
                                 )}
                             </View>
                         </View>
 
                         <ThemedText type="title" style={styles.stepTitle}>
-                            {isGeneratingImage ? 'Generating your image...' : `Is this ${characterData.name || 'your ai.therapist'}?`}
+                            {generatedImageUrl
+                                ? `Meet ${characterData.name || 'your ai.therapist'}!`
+                                : 'Image generation failed'}
                         </ThemedText>
                         <ThemedText style={styles.stepDescription}>
-                            {isGeneratingImage
-                                ? 'Please wait while we create your character image...'
-                                : 'Your description on the previous page generated this image'
-                            }
+                            {generatedImageUrl
+                                ? 'Looking good! Continue to the next step, or regenerate if you\'d like a different look.'
+                                : 'Something went wrong. Please try again.'}
                         </ThemedText>
 
-                        {!isGeneratingImage && (
-                            <TouchableOpacity
-                                style={[styles.generateButton, { backgroundColor: theme.primary }]}
-                                onPress={handleGenerateImage}
-                                disabled={!characterData.imageDescription.trim()}
-                            >
-                                <ThemedText style={styles.generateButtonText}>� Regenerate Image</ThemedText>
-                            </TouchableOpacity>
-                        )}
+                        <TouchableOpacity
+                            style={[styles.regenerateButton, { borderColor: theme.primary }]}
+                            onPress={handleGenerateImage}
+                        >
+                            <View style={styles.generateButtonContent}>
+                                <ThemedText style={[styles.regenerateButtonText, { color: theme.primary }]}>🔄 Regenerate Image</ThemedText>
+                            </View>
+                        </TouchableOpacity>
                     </View>
                 );
 
@@ -502,20 +1020,25 @@ export default function CreateCharacterScreen() {
                         <View style={styles.reviewImageContainer}>
                             <Image
                                 source={{ uri: generatedImageUrl || '/characters/athena.jpg' }}
-                                style={[styles.reviewImage, { borderColor: theme.card }]}
+                                style={[styles.reviewImage, { borderColor: theme.primary }]}
                                 contentFit="cover"
                             />
-                            {characterData.imageDescription && (
-                                <ThemedText style={styles.imageDescriptionText}>
-                                    ≡ƒô¥ {characterData.imageDescription}
-                                </ThemedText>
-                            )}
+                            <TouchableOpacity
+                                style={[styles.regenerateButtonSmall, { borderColor: theme.primary }]}
+                                onPress={handleGenerateImage}
+                            >
+                                <ThemedText style={[styles.regenerateButtonTextSmall, { color: theme.primary }]}>🔄 Regenerate</ThemedText>
+                            </TouchableOpacity>
                         </View>
 
                         <View style={[styles.reviewCard, { backgroundColor: theme.card }]}>
                             <View style={styles.reviewRow}>
                                 <ThemedText style={styles.reviewLabel}>Name:</ThemedText>
                                 <ThemedText type="defaultSemiBold">{characterData.name}</ThemedText>
+                            </View>
+                            <View style={styles.reviewRow}>
+                                <ThemedText style={styles.reviewLabel}>Goal:</ThemedText>
+                                <ThemedText style={styles.reviewValue}>{characterData.goal}</ThemedText>
                             </View>
                             <View style={styles.reviewRow}>
                                 <ThemedText style={styles.reviewLabel}>Characteristics:</ThemedText>
@@ -550,6 +1073,11 @@ export default function CreateCharacterScreen() {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
+            {/* Fullscreen crafting overlay */}
+            {isGeneratingImage && (
+                <FullscreenCraftingOverlay theme={theme} characterName={characterData.name} />
+            )}
+
             <View style={[styles.header, { borderBottomColor: theme.icon }]}>
                 <TouchableOpacity onPress={handleBack} style={styles.backButton}>
                     <IconSymbol name="chevron.right" size={24} color={theme.text} style={{ transform: [{ rotate: '180deg' }] }} />
@@ -585,6 +1113,10 @@ export default function CreateCharacterScreen() {
                             onPress={handleCreate}>
                             <ThemedText style={styles.buttonText}>{editingId ? 'Save Changes' : 'Create!'}</ThemedText>
                         </TouchableOpacity>
+                    ) : currentStep === 'imageGeneration' && isGeneratingImage ? (
+                        <View style={[styles.button, { backgroundColor: theme.card }]}>
+                            <ThemedText style={[styles.buttonText, { color: theme.icon }]}>Please wait...</ThemedText>
+                        </View>
                     ) : (
                         <TouchableOpacity
                             style={[styles.button, { backgroundColor: theme.primary }]}
@@ -722,9 +1254,9 @@ const styles = StyleSheet.create({
         marginBottom: 24,
     },
     reviewImage: {
-        width: 120,
-        height: 120,
-        borderRadius: 60,
+        width: 180,
+        height: 180,
+        borderRadius: 90,
         borderWidth: 4,
     },
     imageDescriptionText: {
@@ -881,5 +1413,46 @@ const styles = StyleSheet.create({
     loadingText: {
         fontSize: 14,
         opacity: 0.7,
+    },
+    emptyImageState: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 12,
+    },
+    emptyImageText: {
+        fontSize: 12,
+        textAlign: 'center',
+        paddingHorizontal: 8,
+    },
+    generateButtonContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    regenerateButton: {
+        marginTop: 16,
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 2,
+        backgroundColor: 'transparent',
+    },
+    regenerateButtonText: {
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    regenerateButtonSmall: {
+        marginTop: 12,
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 20,
+        borderWidth: 1,
+        backgroundColor: 'transparent',
+    },
+    regenerateButtonTextSmall: {
+        fontSize: 14,
+        fontWeight: '500',
     },
 });
