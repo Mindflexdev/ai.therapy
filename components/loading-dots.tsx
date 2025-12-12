@@ -12,24 +12,24 @@ export function LoadingDots() {
                     Animated.parallel([
                         Animated.timing(dot1, {
                             toValue: 1,
-                            duration: 600,
+                            duration: 400,
                             useNativeDriver: true,
                         }),
                         Animated.timing(dot2, {
                             toValue: 0,
-                            duration: 600,
+                            duration: 400,
                             useNativeDriver: true,
                         }),
                     ]),
                     Animated.parallel([
                         Animated.timing(dot1, {
                             toValue: 0,
-                            duration: 600,
+                            duration: 400,
                             useNativeDriver: true,
                         }),
                         Animated.timing(dot2, {
                             toValue: 1,
-                            duration: 600,
+                            duration: 400,
                             useNativeDriver: true,
                         }),
                     ]),

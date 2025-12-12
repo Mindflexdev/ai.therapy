@@ -4,7 +4,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, Platform } from 'react-native';
 import 'react-native-reanimated';
 
 import { LoadingDots } from '@/components/loading-dots';
@@ -34,6 +34,15 @@ export default function RootLayout() {
   // Check initial session and listen for auth changes
   useEffect(() => {
     const initializeAuth = async () => {
+      // On web, hide the static splash immediately so we can show our animated loader
+      if (Platform.OS === 'web') {
+        try {
+          // Wrap in try-catch in case it's already hidden or fails
+          await SplashScreen.hideAsync();
+        } catch (e) {
+          // ignore
+        }
+      }
       try {
         const [sessionResponse, skipLoginValue, cachedOnboarding] = await Promise.all([
           supabase.auth.getSession(),
