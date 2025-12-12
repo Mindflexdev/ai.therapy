@@ -655,7 +655,10 @@ export default function CreateCharacterScreen() {
                 await Image.prefetch(result.imageUrl);
                 setGeneratedImageUrl(result.imageUrl);
             } else {
-                Alert.alert('Generation Failed', result.error || 'Could not generate image. Please try again.');
+                Alert.alert(
+                    'Unable to Create Character',
+                    result.error || 'Could not generate image. Please try again.'
+                );
             }
         } catch (error) {
             console.error('Error generating image:', error);
