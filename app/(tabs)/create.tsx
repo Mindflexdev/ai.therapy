@@ -668,6 +668,18 @@ export default function CreateCharacterScreen() {
         }
     };
 
+    // Helper function to check if all required fields are filled
+    const isFormComplete = () => {
+        return (
+            characterData.name.trim() !== '' &&
+            characterData.goal.trim() !== '' &&
+            characterData.characteristics.trim() !== '' &&
+            characterData.greeting.trim() !== '' &&
+            characterData.therapyStyles.length > 0 &&
+            generatedImageUrl !== null && generatedImageUrl !== ''
+        );
+    };
+
     const handleCreate = async () => {
         if (isCreating) return;
 
