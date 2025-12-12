@@ -13,7 +13,7 @@ export default function FeedbackScreen() {
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme ?? 'light'];
 
-    const email = 'hello@ai.therapy';
+    const email = 'hello@ai.therapy.free';
     const whatsappUrl = 'https://api.whatsapp.com/send?phone=4915223885561&text=Hey!%20I%E2%80%99m%20using%20ai.therapy%20and%20I%E2%80%99ve%20got%20a%20question%20or%20some%20feedback%20%F0%9F%92%AC';
 
     const handleCopyEmail = async () => {

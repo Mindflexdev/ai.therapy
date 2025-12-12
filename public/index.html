@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="ai.therapy - Your personal AI therapy companion. Experience transformative mental wellness with our cinematic, immersive platform featuring personalized AI therapists.">
+    <title>ai.therapy - Integrative Psychology</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+    <!-- Ambient Background Elements -->
+    <div class="ambient-bg">
+        <div class="gradient-layer"></div>
+        <!-- floating-balls-container removed -->
+        <div class="orbs-container" id="orbsContainer"></div>
+        <div class="particles-container" id="particlesContainer"></div>
+        <div class="feathers-container" id="feathersContainer"></div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="nav-glass">
+        <div class="nav-container">
+            <a href="#" class="nav-logo">
+                <span>ai<span class="logo-dot">.</span>therapy</span>
+            </a>
+            <div class="nav-right">
+                <ul class="nav-links">
+                    <li><a href="blog.html">Blog</a></li>
+                    <li><a href="#about">About</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero" id="hero">
+        <div class="hero-header">
+
+            <h1 class="hero-title">
+                <span class="title-line" data-en="Try ai.therapy" data-de="Probiere ai.therapy">Try ai<span
+                        class="logo-dot">.</span>therapy</span>
+                <span class="title-line gradient-text" data-en="It's free!" data-de="Es ist kostenlos!">It's
+                    free!</span>
+            </h1>
+
+        </div>
+
+
+        <div class="mobile-split-layout">
+
+            <!-- Character Grid (3 characters) -->
+            <div class="character-grid-section">
+                <!-- More Characters Message -->
+                <p class="more-characters-msg" data-en="More ai.therapists inside the app!"
+                    data-de="Mehr ai.therapists in der App!">More ai<span class="logo-dot">.</span>therapists inside the
+                    app!</p>
+
+                <div class="character-cards-grid">
+                    <div class="guide-card">
+                        <div class="guide-image">
+                            <img src="midnight-cat.png" alt="Midnight Cat">
+                        </div>
+                        <div class="guide-info">
+                            <h3 class="guide-name">Midnight Cat</h3>
+                            <p class="guide-desc">Wise feline who teaches the art of perfect napping.</p>
+                        </div>
+                    </div>
+
+                    <div class="guide-card">
+                        <div class="guide-image">
+                            <img src="dr-nightingale.png" alt="Dr. Nightingale">
+                        </div>
+                        <div class="guide-info">
+                            <h3 class="guide-name">Dr. Nightingale</h3>
+                            <p class="guide-desc">Compassionate sleep medicine specialist with 20 years experience.</p>
+                        </div>
+                    </div>
+
+                    <div class="guide-card">
+                        <div class="guide-image">
+                            <img src="sleepy-bear.png" alt="Sleepy Bear">
+                        </div>
+                        <div class="guide-info">
+                            <h3 class="guide-name">Sleepy Bear</h3>
+                            <p class="guide-desc">Cozy hibernation expert who knows all about deep, restful sleep.</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Carousel Navigation for Mobile -->
+                <div class="carousel-nav">
+                    <button class="carousel-arrow prev" id="prevChar">←</button>
+                    <button class="carousel-arrow next" id="nextChar">→</button>
+                </div>
+                <!-- Pagination Dots for Mobile Carousel -->
+                <div class="carousel-dots" id="carouselDots">
+                </div>
+            </div>
+        </div>
+
+        <!-- CTA Button -->
+        <div class="section-cta">
+            <a href="/app" class="cta-button"
+                data-en="Start ai<span class='logo-dot'>.</span>therapy"
+                data-de="Starte ai<span class='logo-dot'>.</span>therapy">Start ai<span
+                    class="logo-dot">.</span>therapy</a>
+        </div>
+
+        <!-- Disclaimer 1 -->
+        <p class="section-disclaimer"
+            data-en="Disclaimer: ai<span class='logo-dot'>.</span>therapy is a creative mental-wellness platform and not a therapeutic service. All ai<span class='logo-dot'>.</span>therapists are fictional AI characters. Their role titles (“Therapist,” “Psychologist,” “Dr.,” “Coach,” etc.) are used solely for imaginative portrayal and have no professional, clinical, or medical meaning. The therapeutic approaches and modalities mentioned on the platform (e.g., CBT, ACT, DBT, Psychodynamic, Schema, Gestalt, MBCT, etc.) are used exclusively for inspired, model-like purposes and do not constitute real therapeutic application. Neither the ai<span class='logo-dot'>.</span>therapy platform nor its AI characters hold qualifications or licenses to practice medicine or psychotherapy. No promise of healing is made. Everything they say is intended for inspiration, reflection, and everyday support—not for diagnosis, treatment, or therapy."
+            data-de="Hinweis: ai<span class='logo-dot'>.</span>therapy ist eine kreative Mental-Wellness-Plattform und kein therapeutischer Dienst. Alle ai<span class='logo-dot'>.</span>therapists sind frei erfundene KI-Charaktere. Ihre Rollenbezeichnungen („Therapist“, „Psychologist“, „Dr.“, „Coach“ usw.) dienen ausschließlich der fantasievollen Darstellung und haben keinen berufsrechtlichen oder medizinischen Hintergrund. Die auf der Plattform genannten therapeutischen Ansätze und Modalitäten (z. B. CBT, ACT, DBT, Psychodynamic, Schema, Gestalt, MBCT usw.) werden ausschließlich zu inspirierten, modellhaften Zwecken genutzt und stellen keine echte therapeutische Anwendung dar. Weder die Plattform ai<span class='logo-dot'>.</span>therapy noch ihre KI-Charaktere besitzen Qualifikationen oder Zulassungen zur Ausübung von Heilkunde. Es wird kein Heilversprechen abgegeben. Alles Gesagte dient ausschließlich der Inspiration, Reflexion und Unterstützung im Alltag – nicht der Diagnose, Behandlung oder Therapie.">
+            Disclaimer: ai<span class="logo-dot">.</span>therapy is a creative mental-wellness platform and not a
+            therapeutic service.
+            All ai<span class="logo-dot">.</span>therapists are fictional AI characters. Their role titles (“Therapist,”
+            “Psychologist,” “Dr.,” “Coach,” etc.)
+            are used solely for imaginative portrayal and have no professional, clinical, or medical meaning. The
+            therapeutic approaches and modalities mentioned on the platform (e.g., CBT, ACT, DBT, Psychodynamic, Schema,
+            Gestalt, MBCT, etc.) are used exclusively for inspired, model-like purposes and do not constitute real
+            therapeutic application. Neither the ai<span class="logo-dot">.</span>therapy platform nor its AI characters
+            hold qualifications or licenses to practice
+            medicine or psychotherapy. No promise of healing is made. Everything they say is intended for inspiration,
+            reflection, and everyday support—not for diagnosis, treatment, or therapy.
+        </p>
+    </section>
+
+    <!-- Integrative Engine Section -->
+    <section class="integrative-engine" id="engine">
+        <div class="engine-container">
+            <!-- Header (Sibling 1) -->
+            <div class="engine-header">
+                <!-- <span class="section-tag">Core Architecture</span> -->
+                <h2 class="section-title"><span data-en="Integrative" data-de="Integrative">Integrative</span> <span
+                        class="gradient-text" data-en="Psychology" data-de="Psychologie">Psychology</span></h2>
+                <p class="section-subtitle"
+                    data-en="Our LLM has been trained on the full spectrum of therapeutic modalities. Enable specific modules to customize your AI's reasoning architecture."
+                    data-de="Unser LLM wurde auf dem gesamten Spektrum therapeutischer Modalitäten trainiert. Aktiviere spezifische Module, um die Denkarchitektur deiner KI anzupassen.">
+                    Our LLM has been trained on the full spectrum of therapeutic modalities.
+                    Enable specific modules to customize your AI's reasoning architecture.
+                </p>
+            </div>
+
+            <!-- Modules Grid (Sibling 2) -->
+            <div class="engine-modules">
+                <div class="modules-grid-wrapper">
+                    <div class="modules-grid">
+                        <!-- 1. Third Wave -->
+                        <div class="module-card interaction-trigger" data-module="thirdwave">
+                            <div class="module-icon">🌊</div>
+                            <div class="module-info">
+                                <h3>Third Wave</h3>
+                                <p>ACT, DBT, Schema, CFT, MBCT</p>
+                            </div>
+                        </div>
+
+                        <!-- 2. CBT -->
+                        <div class="module-card interaction-trigger" data-module="cbt">
+                            <div class="module-icon">🧠</div>
+                            <div class="module-info">
+                                <h3>CBT</h3>
+                                <p>Cognitive Behavioral</p>
+                            </div>
+                        </div>
+
+                        <!-- 3. Psychodynamic -->
+                        <div class="module-card interaction-trigger" data-module="psychodynamic">
+                            <div class="module-icon">🔮</div>
+                            <div class="module-info">
+                                <h3>Psychodynamic</h3>
+                                <p>Depth & Unconscious</p>
+                            </div>
+                        </div>
+
+                        <!-- 4. Systemic -->
+                        <div class="module-card interaction-trigger" data-module="systemic">
+                            <div class="module-icon">🔄</div>
+                            <div class="module-info">
+                                <h3>Systemic</h3>
+                                <p>Family Systems</p>
+                            </div>
+                        </div>
+
+                        <!-- 5. Humanistic -->
+                        <div class="module-card interaction-trigger" data-module="humanistic">
+                            <div class="module-icon">🌱</div>
+                            <div class="module-info">
+                                <h3>Humanistic</h3>
+                                <p>Person-Centered</p>
+                            </div>
+                        </div>
+
+                        <!-- 6. Gestalt -->
+                        <div class="module-card interaction-trigger" data-module="gestalt">
+                            <div class="module-icon">👁️</div>
+                            <div class="module-info">
+                                <h3>Gestalt</h3>
+                                <p>Holistic Awareness</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visual Core (Sibling 3) -->
+            <div class="engine-visualization">
+                <div class="core-container">
+                    <div class="core-outer-ring"></div>
+                    <div class="core-inner-ring"></div>
+                    <div id="orbitsLayer" class="orbits-layer"></div>
+                    <div class="core-main">
+                        <div class="core-brain"></div>
+                        <div class="core-pulses"></div>
+                    </div>
+                    <div class="active-modules-display">
+                        <span id="activeModuleName">Select Architecture</span>
+                    </div>
+                </div>
+                <div class="core-labels">
+                    <div class="core-label top">Neuro-Linguistic Parsing</div>
+                    <div class="core-label right">Affective Computing</div>
+                    <div class="core-label bottom">Ethical Guardrails</div>
+                    <div class="core-label left">Contextual Memory</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CTA Button -->
+        <div class="section-cta">
+            <a href="/app" class="cta-button"
+                data-en="Discover ai<span class='logo-dot'>.</span>therapy"
+                data-de="Entdecke ai<span class='logo-dot'>.</span>therapy">Discover ai<span
+                    class="logo-dot">.</span>therapy</a>
+        </div>
+
+
+    </section>
+
+    <!-- Character Creation Section -->
+    <section class="character-creation" id="create-guide">
+        <div class="section-header">
+            <h2 class="section-title"><span class="gradient-text">Create your</span> ai<span
+                    class="logo-dot">.</span>therapist</h2>
+        </div>
+
+        <div class="creation-form">
+            <div class="form-group">
+                <label for="guideName" data-en="Name your ai<span class='logo-dot'>.</span>therapist"
+                    data-de="Benenne deinen ai<span class='logo-dot'>.</span>therapist">Name your ai<span
+                        class="logo-dot">.</span>therapist</label>
+                <input type="text" id="guideName" class="form-input" placeholder="Enter a name...">
+            </div>
+
+            <div class="form-group">
+                <div class="form-group">
+                    <label data-en="Therapeutic Inspiration" data-de="Therapeutische Inspiration">Therapeutic
+                        Inspiration</label>
+                    <div class="approaches-grid">
+                        <!-- 12 Approaches -->
+                        <button class="approach-btn" data-type="cbt">
+                            <span class="btn-icon">🧠</span>
+                            <span class="btn-label">CBT</span>
+                        </button>
+                        <button class="approach-btn" data-type="act">
+                            <span class="btn-icon">🎯</span>
+                            <span class="btn-label">ACT</span>
+                        </button>
+                        <button class="approach-btn" data-type="dbt">
+                            <span class="btn-icon">⚖️</span>
+                            <span class="btn-label">DBT</span>
+                        </button>
+                        <button class="approach-btn" data-type="psychodynamic">
+                            <span class="btn-icon">🔮</span>
+                            <span class="btn-label">Psychodynamic</span>
+                        </button>
+                        <button class="approach-btn" data-type="humanistic">
+                            <span class="btn-icon">🌱</span>
+                            <span class="btn-label">Humanistic</span>
+                        </button>
+                        <button class="approach-btn" data-type="schema">
+                            <span class="btn-icon">🗝️</span>
+                            <span class="btn-label">Schema</span>
+                        </button>
+                        <button class="approach-btn" data-type="gestalt">
+                            <span class="btn-icon">👁️</span>
+                            <span class="btn-label">Gestalt</span>
+                        </button>
+                        <button class="approach-btn" data-type="somatic">
+                            <span class="btn-icon">✨</span>
+                            <span class="btn-label">Somatic</span>
+                        </button>
+                        <button class="approach-btn" data-type="systemic">
+                            <span class="btn-icon">🔄</span>
+                            <span class="btn-label">Systemic</span>
+                        </button>
+                        <button class="approach-btn" data-type="mbct">
+                            <span class="btn-icon">🧘</span>
+                            <span class="btn-label">MBCT</span>
+                        </button>
+                        <button class="approach-btn" data-type="psychoanalysis">
+                            <span class="btn-icon">🛋️</span>
+                            <span class="btn-label">Psychoanalysis</span>
+                        </button>
+                        <button class="approach-btn" data-type="eft">
+                            <span class="btn-icon">💖</span>
+                            <span class="btn-label">EFT</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="guideDescription" data-en="Describe Your Character"
+                        data-de="Beschreibe deinen Charakter">Describe Your Character</label>
+                    <textarea id="guideDescription" class="form-input textarea"
+                        data-placeholder-en="Describe your ideal therapeutic guide... What qualities do they have? How do they speak? What makes them special to you?"
+                        data-placeholder-de="Beschreibe deinen idealen therapeutischen Begleiter... Welche Eigenschaften hat er? Wie spricht er? Was macht ihn für dich besonders?"
+                        placeholder="Describe your ideal therapeutic guide... What qualities do they have? How do they speak? What makes them special to you?"></textarea>
+                </div>
+
+                <div
+                    style="display: flex; justify-content: center; margin-top: 2rem; position: relative; z-index: 100;">
+                    <a href="/app" class="cta-button"
+                        data-en="Create ai<span class='logo-dot'>.</span>therapist"
+                        data-de="Erstelle ai<span class='logo-dot'>.</span>therapist">Create ai<span
+                            class="logo-dot">.</span>therapist</a>
+                </div>
+            </div>
+    </section>
+
+
+    <footer class="footer">
+        <div class="footer-glow"></div>
+        <div class="footer-content">
+            <div class="footer-brand">
+                <div class="logo-orb"></div>
+                <span>ai<span class="logo-dot">.</span>therapy</span>
+            </div>
+        </div>
+
+        <!-- Footer Disclaimer -->
+        <p class="footer-disclaimer"
+            data-en="Disclaimer: ai<span class='logo-dot'>.</span>therapy is a creative mental-wellness platform and not a therapeutic service. All ai<span class='logo-dot'>.</span>therapists are fictional AI characters. Their role titles (“Therapist,” “Psychologist,” “Dr.,” “Coach,” etc.) are used solely for imaginative portrayal and have no professional, clinical, or medical meaning. The therapeutic approaches and modalities mentioned on the platform (e.g., CBT, ACT, DBT, Psychodynamic, Schema, Gestalt, MBCT, etc.) are used exclusively for inspired, model-like purposes and do not constitute real therapeutic application. Neither the ai<span class='logo-dot'>.</span>therapy platform nor its AI characters hold qualifications or licenses to practice medicine or psychotherapy. No promise of healing is made. Everything they say is intended for inspiration, reflection, and everyday support—not for diagnosis, treatment, or therapy."
+            data-de="Hinweis: ai<span class='logo-dot'>.</span>therapy ist eine kreative Mental-Wellness-Plattform und kein therapeutischer Dienst. Alle ai<span class='logo-dot'>.</span>therapists sind frei erfundene KI-Charaktere. Ihre Rollenbezeichnungen („Therapist“, „Psychologist“, „Dr.“, „Coach“ usw.) dienen ausschließlich der fantasievollen Darstellung und haben keinen berufsrechtlichen oder medizinischen Hintergrund. Die auf der Plattform genannten therapeutischen Ansätze und Modalitäten (z. B. CBT, ACT, DBT, Psychodynamic, Schema, Gestalt, MBCT usw.) werden ausschließlich zu inspirierten, modellhaften Zwecken genutzt und stellen keine echte therapeutische Anwendung dar. Weder die Plattform ai<span class='logo-dot'>.</span>therapy noch ihre KI-Charaktere besitzen Qualifikationen oder Zulassungen zur Ausübung von Heilkunde. Es wird kein Heilversprechen abgegeben. Alles Gesagte dient ausschließlich der Inspiration, Reflexion und Unterstützung im Alltag – nicht der Diagnose, Behandlung oder Therapie.">
+            Disclaimer: ai<span class="logo-dot">.</span>therapy is a creative mental-wellness platform and not a
+            therapeutic service.
+            All ai<span class="logo-dot">.</span>therapists are fictional AI characters. Their role titles (“Therapist,”
+            “Psychologist,” “Dr.,” “Coach,” etc.)
+            are used solely for imaginative portrayal and have no professional, clinical, or medical meaning. The
+            therapeutic approaches and modalities mentioned on the platform (e.g., CBT, ACT, DBT, Psychodynamic, Schema,
+            Gestalt, MBCT, etc.) are used exclusively for inspired, model-like purposes and do not constitute real
+            therapeutic application. Neither the ai<span class="logo-dot">.</span>therapy platform nor its AI characters
+            hold qualifications or licenses to practice
+            medicine or psychotherapy. No promise of healing is made. Everything they say is intended for inspiration,
+            reflection, and everyday support—not for diagnosis, treatment, or therapy.
+        </p>
+
+        <div class="footer-bottom">
+            <p class="footer-credit">
+                Crafted with ❤️ and <a href="https://antigravity.google" target="_blank" rel="noopener">Google
+                    Antigravity</a></p>
+        </div>
+    </footer>
+
+    <!-- Therapy Detail Modal -->
+    <div class="therapy-modal" id="therapyModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <button class="modal-close" id="modalClose">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+            <div class="modal-header">
+                <span class="modal-label">Learn More</span>
+                <h2 class="modal-title" id="modalTitle">Cognitive Behavioral Therapy (CBT)</h2>
+                <p class="modal-tagline" id="modalTagline">"Change your thoughts, change your life."</p>
+            </div>
+            <div class="modal-body">
+                <div class="modal-section">
+                    <h4><span class="section-icon">💡</span> What is it?</h4>
+                    <p id="modalWhatIsIt">Our thoughts, feelings, and behaviors are interconnected. By changing negative
+                        thought patterns, we can change how we feel and act.</p>
+                </div>
+                <div class="modal-section">
+                    <h4><span class="section-icon">🕐</span> Origins</h4>
+                    <p><strong>Inventor:</strong> <span id="modalInventor">Aaron Beck</span></p>
+                    <p><strong>Era:</strong> <span id="modalEra">1960s</span></p>
+                    <p id="modalOriginDesc">Beck noticed his depressed patients had automatic negative thoughts. He
+                        realized identifying and challenging these thoughts could alleviate symptoms.</p>
+                </div>
+                <div class="modal-section">
+                    <h4><span class="section-icon">❤️</span> Best For</h4>
+                    <div class="modal-tags" id="modalBestFor">
+                        <span class="modal-tag">Anxiety & Depression</span>
+                        <span class="modal-tag">Phobias</span>
+                        <span class="modal-tag">OCD</span>
+                        <span class="modal-tag">Sleep disorders</span>
+                    </div>
+                </div>
+                <div class="modal-section">
+                    <h4><span class="section-icon">📋</span> Key Techniques</h4>
+                    <ul class="modal-techniques" id="modalTechniques">
+                        <li>Cognitive restructuring</li>
+                        <li>Exposure therapy</li>
+                        <li>Behavioral experiments</li>
+                        <li>Thought records</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
