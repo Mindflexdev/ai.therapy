@@ -48,6 +48,13 @@ const MAPPING = {
   'mic.fill': 'mic',
   'arrow.up.circle.fill': 'arrow-circle-up',
   'xmark.circle.fill': 'cancel',
+  // Subscription page icons
+  'moon.fill': 'nightlight-round',
+  'sparkles': 'auto-awesome',
+  'book.closed.fill': 'menu-book',
+  'ticket.fill': 'confirmation-number',
+  'bolt.fill': 'bolt',
+  'timer.fill': 'timer',
 } as IconMapping;
 
 /**
