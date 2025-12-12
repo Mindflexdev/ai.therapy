@@ -732,8 +732,8 @@ export default function CreateCharacterScreen() {
             // Save to storage (includes Supabase sync)
             await saveCharacter(newCharacter);
 
-            // Navigate directly to chat with the new character
-            router.push(`/conversation/${characterId}`);
+            // Replace navigation (not push) so back button goes to home, not Create tab
+            router.replace(`/conversation/${characterId}`);
         } catch (error) {
             console.error('Error creating character:', error);
             Alert.alert('Error', 'Failed to create character. Please try again.');
