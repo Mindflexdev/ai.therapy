@@ -493,7 +493,7 @@ export default function CreateCharacterScreen() {
                 return (
                     <View style={styles.stepContainer}>
                         <ThemedText type="title" style={styles.stepTitle}>
-                            Review your character
+                            Review your ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist
                         </ThemedText>
                         <ThemedText style={styles.stepDescription}>
                             Make sure everything looks good before creating
