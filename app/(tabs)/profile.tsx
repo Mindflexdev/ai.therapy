@@ -344,28 +344,6 @@ export default function ProfileScreen() {
                         <ThemedText type="title" style={styles.name}>{userName}</ThemedText>
                     </View>
 
-                    {/* Language Toggle */}
-                    <View style={styles.languageToggleContainer}>
-                        <TouchableOpacity
-                            style={[
-                                styles.langButton,
-                                selectedLanguage === 'en' && { backgroundColor: theme.primary, borderColor: theme.primary }
-                            ]}
-                            onPress={() => handleLanguageToggle('en')}
-                        >
-                            <ThemedText style={[styles.langText, selectedLanguage === 'en' && { color: '#fff', fontWeight: 'bold' }]}>EN</ThemedText>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={[
-                                styles.langButton,
-                                selectedLanguage === 'de' && { backgroundColor: theme.primary, borderColor: theme.primary }
-                            ]}
-                            onPress={() => handleLanguageToggle('de')}
-                        >
-                            <ThemedText style={[styles.langText, selectedLanguage === 'de' && { color: '#fff', fontWeight: 'bold' }]}>DE</ThemedText>
-                        </TouchableOpacity>
-                    </View>
-
                     <View style={[styles.messagesCard, { backgroundColor: theme.card }]}>
                         <View style={styles.messagesRow}>
                             <View>
