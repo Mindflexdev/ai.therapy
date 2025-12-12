@@ -33,102 +33,32 @@ export default function RootLayout() {
 
   // Use a ref to track if onAuthStateChange has already set a session
   const sessionSetByAuthChange = useRef(false);
+  const hasInitialized = useRef(false);
 
-  // Check initial session and listen for auth changes
+  // Listen for auth changes - this is the PRIMARY auth detection mechanism
   useEffect(() => {
-    const initializeAuth = async () => {
-      try {
-        // Create a timeout promise that resolves after 8000ms (increased for slow networks)
-        const timeoutPromise = new Promise((resolve) => {
-          setTimeout(() => resolve('timeout'), 8000);
-        });
+    // Set up auth listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event, session ? 'Logged in' : 'Not logged in');
 
-        // Race the actual initialization against the timeout
-        const result = await Promise.race([
-          Promise.all([
-            supabase.auth.getSession(),
-            AsyncStorage.getItem('skipLogin'),
-            AsyncStorage.getItem('onboarding_completed')
-          ]),
-          timeoutPromise
-        ]);
-
-        if (result === 'timeout') {
-          console.warn('Auth initialization timed out, proceeding with defaults');
-          // IMPORTANT: Only set session to null if onAuthStateChange hasn't already set a valid session
-          if (!sessionSetByAuthChange.current) {
-            setSession(null);
-            setSkipLogin(false);
-            setIsOnboardingCompleted(false);
-          }
-        } else {
-          // Type assertion since we know it's the array result if not timeout
-          const [sessionResponse, skipLoginValue, cachedOnboarding] = result as [any, string | null, string | null];
-
-          const currentSession = sessionResponse?.data?.session ?? null;
-          const currentSkipLogin = skipLoginValue === 'true';
-
-          setSession(currentSession);
-          setSkipLogin(currentSkipLogin);
-
-          // Optimistically set onboarding status from cache if available
-          if (cachedOnboarding !== null) {
-            setIsOnboardingCompleted(cachedOnboarding === 'true');
-          }
-
-          if (currentSession) {
-            // If we don't have a cached value, we must await the fetch
-            if (cachedOnboarding === null) {
-              const { data } = await supabase
-                .from('users')
-                .select('onboarding_completed')
-                .eq('id', currentSession.user.id)
-                .single();
-              const isCompleted = data?.onboarding_completed ?? false;
-              setIsOnboardingCompleted(isCompleted);
-              AsyncStorage.setItem('onboarding_completed', String(isCompleted));
-            } else {
-              // Background update
-              supabase
-                .from('users')
-                .select('onboarding_completed')
-                .eq('id', currentSession.user.id)
-                .single()
-                .then(({ data }) => {
-                  if (data) {
-                    setIsOnboardingCompleted(data.onboarding_completed);
-                    AsyncStorage.setItem('onboarding_completed', String(data.onboarding_completed));
-                  }
-                });
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Auth initialization error:', error);
-      } finally {
-        setShowLoading(false);
-        SplashScreen.hideAsync().catch(() => { }); // Catch error if hideAsync fails
-        setIsReady(true);
-      }
-    };
-
-    initializeAuth();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      console.log('Auth state changed:', _event, session ? 'Logged in' : 'Not logged in');
+      // Always update session state
       setSession(session);
 
-      // Mark that onAuthStateChange has set a session (to prevent timeout from overwriting)
-      if (session) {
-        sessionSetByAuthChange.current = true;
+      // Mark that we've received an auth event
+      if (!hasInitialized.current) {
+        hasInitialized.current = true;
+        setShowLoading(false);
+        SplashScreen.hideAsync().catch(() => { });
+        setIsReady(true);
       }
 
+      // Mark that onAuthStateChange has set a session
       if (session) {
+        sessionSetByAuthChange.current = true;
         AsyncStorage.removeItem('skipLogin');
         setSkipLogin(false);
 
-        // Fetch onboarding status on auth change
+        // Fetch onboarding status
         const { data } = await supabase
           .from('users')
           .select('onboarding_completed')
@@ -142,7 +72,42 @@ export default function RootLayout() {
       }
     });
 
-    return () => subscription.unsubscribe();
+    // Also do a fallback check for skipLogin and cached onboarding status
+    const loadCachedState = async () => {
+      try {
+        const [skipLoginValue, cachedOnboarding] = await Promise.all([
+          AsyncStorage.getItem('skipLogin'),
+          AsyncStorage.getItem('onboarding_completed')
+        ]);
+
+        if (skipLoginValue === 'true') {
+          setSkipLogin(true);
+        }
+        if (cachedOnboarding !== null) {
+          setIsOnboardingCompleted(cachedOnboarding === 'true');
+        }
+      } catch (e) {
+        console.error('Error loading cached state:', e);
+      }
+    };
+
+    loadCachedState();
+
+    // Fallback timeout - if no auth event received within 10 seconds, proceed anyway
+    const fallbackTimeout = setTimeout(() => {
+      if (!hasInitialized.current) {
+        console.warn('Auth fallback timeout reached - proceeding with no session');
+        hasInitialized.current = true;
+        setShowLoading(false);
+        SplashScreen.hideAsync().catch(() => { });
+        setIsReady(true);
+      }
+    }, 10000);
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(fallbackTimeout);
+    };
   }, []);
 
   // Navigate based on auth state
