@@ -1,9 +1,11 @@
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     ActivityIndicator,
     Alert,
+    Animated,
+    Easing,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
@@ -25,6 +27,225 @@ type Step = 'goal' | 'name' | 'characteristics' | 'therapyStyle' | 'imageDescrip
 
 import { ALL_THERAPY_OPTIONS, STYLE_ABBREVIATIONS } from '@/constants/therapy';
 
+// Modern animated loading component for image generation
+const ImageGeneratingAnimation = ({ theme }: { theme: typeof Colors.light }) => {
+    const rotateAnim = useRef(new Animated.Value(0)).current;
+    const pulseAnim = useRef(new Animated.Value(0.8)).current;
+    const shimmerAnim = useRef(new Animated.Value(0)).current;
+    const dotAnim1 = useRef(new Animated.Value(0)).current;
+    const dotAnim2 = useRef(new Animated.Value(0)).current;
+    const dotAnim3 = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        // Rotation animation
+        Animated.loop(
+            Animated.timing(rotateAnim, {
+                toValue: 1,
+                duration: 3000,
+                easing: Easing.linear,
+                useNativeDriver: true,
+            })
+        ).start();
+
+        // Pulse animation
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(pulseAnim, {
+                    toValue: 1,
+                    duration: 1000,
+                    easing: Easing.inOut(Easing.ease),
+                    useNativeDriver: true,
+                }),
+                Animated.timing(pulseAnim, {
+                    toValue: 0.8,
+                    duration: 1000,
+                    easing: Easing.inOut(Easing.ease),
+                    useNativeDriver: true,
+                }),
+            ])
+        ).start();
+
+        // Shimmer animation
+        Animated.loop(
+            Animated.timing(shimmerAnim, {
+                toValue: 1,
+                duration: 1500,
+                easing: Easing.linear,
+                useNativeDriver: true,
+            })
+        ).start();
+
+        // Staggered dot animations
+        const animateDot = (anim: Animated.Value, delay: number) => {
+            Animated.loop(
+                Animated.sequence([
+                    Animated.delay(delay),
+                    Animated.timing(anim, {
+                        toValue: 1,
+                        duration: 400,
+                        easing: Easing.inOut(Easing.ease),
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(anim, {
+                        toValue: 0,
+                        duration: 400,
+                        easing: Easing.inOut(Easing.ease),
+                        useNativeDriver: true,
+                    }),
+                    Animated.delay(600 - delay),
+                ])
+            ).start();
+        };
+
+        animateDot(dotAnim1, 0);
+        animateDot(dotAnim2, 200);
+        animateDot(dotAnim3, 400);
+    }, []);
+
+    const rotation = rotateAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['0deg', '360deg'],
+    });
+
+    const shimmerTranslate = shimmerAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [-100, 100],
+    });
+
+    return (
+        <View style={animStyles.container}>
+            {/* Outer rotating ring */}
+            <Animated.View
+                style={[
+                    animStyles.outerRing,
+                    {
+                        borderColor: theme.primary,
+                        transform: [{ rotate: rotation }],
+                    },
+                ]}
+            />
+
+            {/* Pulsing inner circle */}
+            <Animated.View
+                style={[
+                    animStyles.innerCircle,
+                    {
+                        backgroundColor: theme.primary + '20',
+                        transform: [{ scale: pulseAnim }],
+                    },
+                ]}
+            >
+                {/* Shimmer effect */}
+                <Animated.View
+                    style={[
+                        animStyles.shimmer,
+                        {
+                            backgroundColor: theme.primary + '30',
+                            transform: [{ translateX: shimmerTranslate }],
+                        },
+                    ]}
+                />
+            </Animated.View>
+
+            {/* Center icon */}
+            <View style={animStyles.iconContainer}>
+                <IconSymbol name="sparkles" size={32} color={theme.primary} />
+            </View>
+
+            {/* Animated dots */}
+            <View style={animStyles.dotsContainer}>
+                <Animated.View
+                    style={[
+                        animStyles.dot,
+                        {
+                            backgroundColor: theme.primary,
+                            transform: [{ scale: dotAnim1.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }) }],
+                            opacity: dotAnim1.interpolate({ inputRange: [0, 1], outputRange: [0.4, 1] }),
+                        },
+                    ]}
+                />
+                <Animated.View
+                    style={[
+                        animStyles.dot,
+                        {
+                            backgroundColor: theme.primary,
+                            transform: [{ scale: dotAnim2.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }) }],
+                            opacity: dotAnim2.interpolate({ inputRange: [0, 1], outputRange: [0.4, 1] }),
+                        },
+                    ]}
+                />
+                <Animated.View
+                    style={[
+                        animStyles.dot,
+                        {
+                            backgroundColor: theme.primary,
+                            transform: [{ scale: dotAnim3.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }) }],
+                            opacity: dotAnim3.interpolate({ inputRange: [0, 1], outputRange: [0.4, 1] }),
+                        },
+                    ]}
+                />
+            </View>
+
+            {/* Text label */}
+            <ThemedText style={[animStyles.loadingLabel, { color: theme.text }]}>
+                Creating magic...
+            </ThemedText>
+        </View>
+    );
+};
+
+// Styles for the animation component
+const animStyles = StyleSheet.create({
+    container: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '100%',
+        height: '100%',
+    },
+    outerRing: {
+        position: 'absolute',
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        borderWidth: 3,
+        borderStyle: 'dashed',
+    },
+    innerCircle: {
+        position: 'absolute',
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        overflow: 'hidden',
+    },
+    shimmer: {
+        position: 'absolute',
+        width: 60,
+        height: '100%',
+        transform: [{ skewX: '-20deg' }],
+    },
+    iconContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    dotsContainer: {
+        flexDirection: 'row',
+        position: 'absolute',
+        bottom: 20,
+        gap: 8,
+    },
+    dot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+    },
+    loadingLabel: {
+        position: 'absolute',
+        bottom: 0,
+        fontSize: 12,
+        fontWeight: '500',
+        opacity: 0.7,
+    },
+});
 
 export default function CreateCharacterScreen() {
     const router = useRouter();
@@ -74,28 +295,7 @@ export default function CreateCharacterScreen() {
         const steps: Step[] = ['goal', 'name', 'characteristics', 'imageDescription', 'imageGeneration', 'therapyStyle', 'greeting', 'visibility', 'review'];
         const currentIndex = steps.indexOf(currentStep);
 
-        // Auto-generate image when moving from imageDescription to imageGeneration
-        if (currentStep === 'imageDescription' && characterData.imageDescription.trim()) {
-            setIsGeneratingImage(true);
-            try {
-                console.log('🎨 Starting image generation from handleNext...');
-                const result = await generateCharacterImage({
-                    description: characterData.imageDescription,
-                    characterName: characterData.name,
-                });
-                console.log('🎨 Image generation result:', result);
-                if (result.success && result.imageUrl) {
-                    setGeneratedImageUrl(result.imageUrl);
-                    console.log('✅ Image URL set:', result.imageUrl);
-                } else {
-                    console.error('❌ Image generation failed:', result.error);
-                }
-            } catch (error) {
-                console.error('❌ Error generating image:', error);
-            } finally {
-                setIsGeneratingImage(false);
-            }
-        }
+        // No automatic image generation - user must click the Generate button
 
         if (currentIndex < steps.length - 1) {
             setCurrentStep(steps[currentIndex + 1]);
@@ -377,41 +577,49 @@ export default function CreateCharacterScreen() {
                     <View style={styles.stepContainer}>
                         {/* Image Preview */}
                         <View style={styles.imagePreviewSection}>
-                            <View style={[styles.imagePreviewContainer, { backgroundColor: theme.card, borderColor: theme.icon }]}>
-                                {generatedImageUrl ? (
+                            <View style={[styles.imagePreviewContainer, { backgroundColor: theme.card, borderColor: isGeneratingImage ? theme.primary : theme.icon }]}>
+                                {generatedImageUrl && !isGeneratingImage ? (
                                     <Image
                                         source={{ uri: generatedImageUrl }}
                                         style={styles.imagePreview}
                                         contentFit="cover"
                                     />
                                 ) : isGeneratingImage ? (
-                                    <View style={styles.loadingContainer}>
-                                        <ActivityIndicator size="large" color={theme.primary} />
-                                        <ThemedText style={[styles.loadingText, { color: theme.icon }]}>Generating...</ThemedText>
-                                    </View>
+                                    <ImageGeneratingAnimation theme={theme} />
                                 ) : (
-                                    <IconSymbol name="person" size={64} color={theme.icon} />
+                                    <View style={styles.emptyImageState}>
+                                        <IconSymbol name="sparkles" size={48} color={theme.primary} />
+                                        <ThemedText style={[styles.emptyImageText, { color: theme.icon }]}>Tap Generate to create</ThemedText>
+                                    </View>
                                 )}
                             </View>
                         </View>
 
                         <ThemedText type="title" style={styles.stepTitle}>
-                            {isGeneratingImage ? 'Generating your image...' : `Is this ${characterData.name || 'your ai.therapist'}?`}
+                            {isGeneratingImage
+                                ? 'Creating your ai.therapist...'
+                                : generatedImageUrl
+                                    ? `Meet ${characterData.name || 'your ai.therapist'}!`
+                                    : `Bring ${characterData.name || 'your ai.therapist'} to life`}
                         </ThemedText>
                         <ThemedText style={styles.stepDescription}>
                             {isGeneratingImage
-                                ? 'Please wait while we create your character image...'
-                                : 'Your description on the previous page generated this image'
+                                ? 'AI is crafting a unique image based on your description...'
+                                : generatedImageUrl
+                                    ? 'Looking good! Continue to the next step or generate a new image.'
+                                    : 'Click the button below to generate an AI image based on your description'
                             }
                         </ThemedText>
 
                         {!isGeneratingImage && (
                             <TouchableOpacity
-                                style={[styles.generateButton, { backgroundColor: theme.primary }]}
+                                style={[styles.generateButton, { backgroundColor: theme.primary, opacity: characterData.imageDescription.trim() ? 1 : 0.5 }]}
                                 onPress={handleGenerateImage}
                                 disabled={!characterData.imageDescription.trim()}
                             >
-                                <ThemedText style={styles.generateButtonText}>� Regenerate Image</ThemedText>
+                                <View style={styles.generateButtonContent}>
+                                    <ThemedText style={styles.generateButtonText}>✨ Generate Image</ThemedText>
+                                </View>
                             </TouchableOpacity>
                         )}
                     </View>
@@ -881,5 +1089,20 @@ const styles = StyleSheet.create({
     loadingText: {
         fontSize: 14,
         opacity: 0.7,
+    },
+    emptyImageState: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 12,
+    },
+    emptyImageText: {
+        fontSize: 12,
+        textAlign: 'center',
+        paddingHorizontal: 8,
+    },
+    generateButtonContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
     },
 });
