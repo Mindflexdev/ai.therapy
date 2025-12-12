@@ -422,26 +422,6 @@ const FullscreenCraftingOverlay = ({ theme, characterName }: { theme: typeof Col
                             {currentMessage.text}
                         </ThemedText>
                     </Animated.View>
-
-                    {/* Progress bar */}
-                    <View style={craftingStyles.progressSection}>
-                        <View style={[craftingStyles.progressBarBg, { backgroundColor: theme.card }]}>
-                            <Animated.View
-                                style={[
-                                    craftingStyles.progressBarFill,
-                                    {
-                                        backgroundColor: theme.primary,
-                                        width: progressWidth,
-                                    }
-                                ]}
-                            />
-                        </View>
-                    </View>
-
-                    {/* Subtext */}
-                    <ThemedText style={[craftingStyles.subtext, { color: theme.icon }]}>
-                        This may take a moment...
-                    </ThemedText>
                 </View>
             </View>
         </View>
@@ -521,24 +501,6 @@ const craftingStyles = StyleSheet.create({
         fontSize: 18,
         fontWeight: '500',
         textAlign: 'center',
-    },
-    progressSection: {
-        width: '100%',
-        marginTop: 8,
-    },
-    progressBarBg: {
-        width: '100%',
-        height: 6,
-        borderRadius: 3,
-        overflow: 'hidden',
-    },
-    progressBarFill: {
-        height: '100%',
-        borderRadius: 3,
-    },
-    subtext: {
-        fontSize: 14,
-        marginTop: 8,
     },
 });
 
@@ -895,9 +857,30 @@ export default function CreateCharacterScreen() {
             case 'imageGeneration':
                 return (
                     <View style={styles.stepContainer}>
-                        {/* Image Preview - Result view only */}
-                        <View style={styles.imagePreviewSection}>
-                            <View style={[styles.imagePreviewContainer, { backgroundColor: theme.card, borderColor: theme.primary }]}>
+                        {/* Title and description */}
+                        <ThemedText type="title" style={styles.stepTitle}>
+                            {generatedImageUrl
+                                ? `Meet ${characterData.name || 'your ai.therapist'}!`
+                                : 'Image generation failed'}
+                        </ThemedText>
+                        <ThemedText style={styles.stepDescription}>
+                            {generatedImageUrl
+                                ? 'Looking good! Continue to the next step, or '
+                                : 'Something went wrong. Please try again.'}
+                            {generatedImageUrl && (
+                                <ThemedText
+                                    style={{ color: theme.primary, fontWeight: '600' }}
+                                    onPress={handleGenerateImage}
+                                >
+                                    regenerate
+                                </ThemedText>
+                            )}
+                            {generatedImageUrl && ' if you\'d like a different look.'}
+                        </ThemedText>
+
+                        {/* Large character image showcase */}
+                        <View style={styles.characterShowcase}>
+                            <View style={[styles.characterShowcaseImage, { backgroundColor: theme.card, borderColor: theme.primary }]}>
                                 {generatedImageUrl ? (
                                     <Image
                                         source={{ uri: generatedImageUrl }}
@@ -906,32 +889,12 @@ export default function CreateCharacterScreen() {
                                     />
                                 ) : (
                                     <View style={styles.emptyImageState}>
-                                        <IconSymbol name="sparkles" size={48} color={theme.primary} />
+                                        <IconSymbol name="sparkles" size={64} color={theme.primary} />
                                         <ThemedText style={[styles.emptyImageText, { color: theme.icon }]}>No image yet</ThemedText>
                                     </View>
                                 )}
                             </View>
                         </View>
-
-                        <ThemedText type="title" style={styles.stepTitle}>
-                            {generatedImageUrl
-                                ? `Meet ${characterData.name || 'your ai.therapist'}!`
-                                : 'Image generation failed'}
-                        </ThemedText>
-                        <ThemedText style={styles.stepDescription}>
-                            {generatedImageUrl
-                                ? 'Looking good! Continue to the next step, or regenerate if you\'d like a different look.'
-                                : 'Something went wrong. Please try again.'}
-                        </ThemedText>
-
-                        <TouchableOpacity
-                            style={[styles.regenerateButton, { borderColor: theme.primary }]}
-                            onPress={handleGenerateImage}
-                        >
-                            <View style={styles.generateButtonContent}>
-                                <ThemedText style={[styles.regenerateButtonText, { color: theme.primary }]}>🔄 Regenerate Image</ThemedText>
-                            </View>
-                        </TouchableOpacity>
                     </View>
                 );
 
@@ -1023,12 +986,6 @@ export default function CreateCharacterScreen() {
                                 style={[styles.reviewImage, { borderColor: theme.primary }]}
                                 contentFit="cover"
                             />
-                            <TouchableOpacity
-                                style={[styles.regenerateButtonSmall, { borderColor: theme.primary }]}
-                                onPress={handleGenerateImage}
-                            >
-                                <ThemedText style={[styles.regenerateButtonTextSmall, { color: theme.primary }]}>🔄 Regenerate</ThemedText>
-                            </TouchableOpacity>
                         </View>
 
                         <View style={[styles.reviewCard, { backgroundColor: theme.card }]}>
@@ -1326,6 +1283,23 @@ const styles = StyleSheet.create({
     imagePreviewSection: {
         alignItems: 'center',
         marginBottom: 32,
+    },
+    centeredText: {
+        textAlign: 'center',
+    },
+    characterShowcase: {
+        alignItems: 'center',
+        marginTop: 24,
+        marginBottom: 16,
+    },
+    characterShowcaseImage: {
+        width: 220,
+        height: 220,
+        borderRadius: 110,
+        borderWidth: 4,
+        justifyContent: 'center',
+        alignItems: 'center',
+        overflow: 'hidden',
     },
     imagePreviewContainer: {
         width: 140,
