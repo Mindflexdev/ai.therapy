@@ -11,6 +11,7 @@ if (typeof window === 'undefined') {
             href: '',
             origin: '',
             search: '',
+            hash: '', // CRITICAL: Needed for OAuth token parsing
         },
         navigator: {
             userAgent: 'node',
