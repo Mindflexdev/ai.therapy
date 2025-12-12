@@ -22,6 +22,7 @@ import { saveCharacter, UserCharacter } from '@/constants/storage';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { generateCharacterImage } from '@/lib/webhooks';
+import { supabase } from '@/lib/supabase';
 
 type Step = 'goal' | 'name' | 'characteristics' | 'therapyStyle' | 'imageDescription' | 'imageGeneration' | 'greeting' | 'visibility' | 'review';
 
@@ -565,6 +566,11 @@ export default function CreateCharacterScreen() {
             setIsGeneratingImage(true);
             try {
                 console.log('🎨 Starting automatic image generation...');
+
+                // Get authenticated user ID
+                const { data: { user } } = await supabase.auth.getUser();
+                const userId = user?.id;
+
                 const result = await generateCharacterImage({
                     description: characterData.imageDescription,
                     characterName: characterData.name,
@@ -573,6 +579,7 @@ export default function CreateCharacterScreen() {
                     goal: characterData.goal,
                     characteristics: characterData.characteristics,
                     isPublic: characterData.isPublic,
+                    userId: userId,
                 });
                 console.log('🎨 Image generation result:', result);
                 if (result.success && result.imageUrl) {
@@ -618,6 +625,10 @@ export default function CreateCharacterScreen() {
         setIsGeneratingImage(true);
         setGeneratedImageUrl(''); // Clear previous image
         try {
+            // Get authenticated user ID
+            const { data: { user } } = await supabase.auth.getUser();
+            const userId = user?.id;
+
             const result = await generateCharacterImage({
                 description: characterData.imageDescription,
                 characterName: characterData.name,
@@ -626,6 +637,7 @@ export default function CreateCharacterScreen() {
                 goal: characterData.goal,
                 characteristics: characterData.characteristics,
                 isPublic: characterData.isPublic,
+                userId: userId,
             });
 
             if (result.success && result.imageUrl) {
