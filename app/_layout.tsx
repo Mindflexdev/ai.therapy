@@ -28,6 +28,7 @@ export default function RootLayout() {
   const [skipLogin, setSkipLogin] = useState(false);
   const [isOnboardingCompleted, setIsOnboardingCompleted] = useState(false);
   const [showLoading, setShowLoading] = useState(true); // Start with loading
+  const [authError, setAuthError] = useState<string | null>(null);
   const router = useRouter();
   const segments = useSegments();
 
@@ -39,7 +40,7 @@ export default function RootLayout() {
   useEffect(() => {
     // Set up auth listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event, session ? 'Logged in' : 'Not logged in');
+      console.log('🔐 Auth event:', event, 'Session:', session?.user?.email || 'none', 'Time:', new Date().toISOString());
 
       // Always update session state
       setSession(session);
@@ -56,6 +57,7 @@ export default function RootLayout() {
       if (session) {
         sessionSetByAuthChange.current = true;
         AsyncStorage.removeItem('skipLogin');
+        setAuthError(null); // Clear any previous errors
         setSkipLogin(false);
 
         // Fetch onboarding status
@@ -67,7 +69,12 @@ export default function RootLayout() {
         const isCompleted = data?.onboarding_completed ?? false;
         setIsOnboardingCompleted(isCompleted);
         AsyncStorage.setItem('onboarding_completed', String(isCompleted));
+        console.log('👤 User onboarding status:', isCompleted);
       } else {
+        // Track sign-out events
+        if (event === 'SIGNED_OUT') {
+          console.log('👋 User signed out');
+        }
         setIsOnboardingCompleted(false);
       }
     });
@@ -82,6 +89,7 @@ export default function RootLayout() {
 
         if (skipLoginValue === 'true') {
           setSkipLogin(true);
+          console.log('⏭️ Skip login enabled from cache');
         }
         if (cachedOnboarding !== null) {
           setIsOnboardingCompleted(cachedOnboarding === 'true');
@@ -126,12 +134,21 @@ export default function RootLayout() {
       const inOnboardingGroup = segments[0] === 'onboarding';
       const inTabsGroup = segments[0] === '(tabs)';
 
-      console.log('Navigation check:', { session: !!session, isOnboardingCompleted, skipLogin, inAuthGroup, inTabsGroup, segments });
+      console.log('🧭 Navigation check:', {
+        session: !!session,
+        email: session?.user?.email,
+        isOnboardingCompleted,
+        skipLogin,
+        inAuthGroup,
+        inTabsGroup,
+        segments: segments.join('/') || 'root'
+      });
 
       if (session) {
         // User is signed in
         if (inAuthGroup) {
           // Just logged in from sign-in page
+          console.log('✈️ Redirecting authenticated user from sign-in to app');
           if (isOnboardingCompleted) {
             router.replace('/(tabs)');
           } else {
@@ -140,6 +157,7 @@ export default function RootLayout() {
         } else if (inOnboardingGroup) {
           // In onboarding, only redirect out if completed
           if (isOnboardingCompleted) {
+            console.log('✈️ Redirecting from onboarding (completed) to app');
             router.replace('/(tabs)');
           }
         }
@@ -147,13 +165,14 @@ export default function RootLayout() {
       } else if (skipLogin) {
         // Skipped login
         if (inAuthGroup) {
+          console.log('✈️ Redirecting skip-login user to app');
           router.replace('/(tabs)');
         }
       } else {
         // Not signed in and not skipped
         if (!inAuthGroup && inTabsGroup) {
           // Trying to access tabs without auth
-          console.log('Redirecting to sign-in');
+          console.log('🚫 Redirecting to sign-in (no auth)');
           router.replace('/sign-in');
         }
       }
