@@ -23,30 +23,31 @@ const supabaseUrl = 'https://cxzzakslsiynhjeyhejo.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4enpha3Nsc2l5bmhqZXloZWpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4Mzk3ODcsImV4cCI6MjA4MDQxNTc4N30.ve5Vijc954mg-OVHwj3HCF1cfE3Lkm2zMECWUlJWE7Y';
 
 // Custom storage adapter - handles SSR, web (localStorage), and native (AsyncStorage)
+// CRITICAL: All methods must return Promises for Supabase to work correctly
 const storageAdapter = {
-    getItem: (key: string) => {
+    getItem: async (key: string): Promise<string | null> => {
         // SSR: return null
         if (typeof window === 'undefined') return null;
-        // Web: use localStorage
+        // Web: use localStorage (wrap in Promise)
         if (typeof localStorage !== 'undefined') {
-            return localStorage.getItem(key);
+            return Promise.resolve(localStorage.getItem(key));
         }
-        // Native: use AsyncStorage
+        // Native: use AsyncStorage (already returns Promise)
         return AsyncStorage.getItem(key);
     },
-    setItem: (key: string, value: string) => {
+    setItem: async (key: string, value: string): Promise<void> => {
         if (typeof window === 'undefined') return;
         if (typeof localStorage !== 'undefined') {
             localStorage.setItem(key, value);
-            return;
+            return Promise.resolve();
         }
         return AsyncStorage.setItem(key, value);
     },
-    removeItem: (key: string) => {
+    removeItem: async (key: string): Promise<void> => {
         if (typeof window === 'undefined') return;
         if (typeof localStorage !== 'undefined') {
             localStorage.removeItem(key);
-            return;
+            return Promise.resolve();
         }
         return AsyncStorage.removeItem(key);
     },
