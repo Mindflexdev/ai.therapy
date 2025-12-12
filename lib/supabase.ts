@@ -21,20 +21,35 @@ if (typeof window === 'undefined') {
 const supabaseUrl = 'https://cxzzakslsiynhjeyhejo.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4enpha3Nsc2l5bmhqZXloZWpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4Mzk3ODcsImV4cCI6MjA4MDQxNTc4N30.ve5Vijc954mg-OVHwj3HCF1cfE3Lkm2zMECWUlJWE7Y';
 
-// Custom storage adapter - use localStorage on web, AsyncStorage on native
-const isWeb = typeof window !== 'undefined' && typeof document !== 'undefined';
-
-const storageAdapter = isWeb
-    ? {
-        getItem: (key: string) => localStorage.getItem(key),
-        setItem: (key: string, value: string) => localStorage.setItem(key, value),
-        removeItem: (key: string) => localStorage.removeItem(key),
-    }
-    : {
-        getItem: (key: string) => AsyncStorage.getItem(key),
-        setItem: (key: string, value: string) => AsyncStorage.setItem(key, value),
-        removeItem: (key: string) => AsyncStorage.removeItem(key),
-    };
+// Custom storage adapter - handles SSR, web (localStorage), and native (AsyncStorage)
+const storageAdapter = {
+    getItem: (key: string) => {
+        // SSR: return null
+        if (typeof window === 'undefined') return null;
+        // Web: use localStorage
+        if (typeof localStorage !== 'undefined') {
+            return localStorage.getItem(key);
+        }
+        // Native: use AsyncStorage
+        return AsyncStorage.getItem(key);
+    },
+    setItem: (key: string, value: string) => {
+        if (typeof window === 'undefined') return;
+        if (typeof localStorage !== 'undefined') {
+            localStorage.setItem(key, value);
+            return;
+        }
+        return AsyncStorage.setItem(key, value);
+    },
+    removeItem: (key: string) => {
+        if (typeof window === 'undefined') return;
+        if (typeof localStorage !== 'undefined') {
+            localStorage.removeItem(key);
+            return;
+        }
+        return AsyncStorage.removeItem(key);
+    },
+};
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
