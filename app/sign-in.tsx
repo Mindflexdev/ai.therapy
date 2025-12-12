@@ -146,47 +146,6 @@ export default function SignInScreen() {
                         <ThemedText style={styles.authButtonText}>Sign in with Google</ThemedText>
                     </TouchableOpacity>
 
-                    {/* Waitlist Section */}
-                    <View style={styles.waitlistSection}>
-                        <ThemedText style={styles.announcementText}>
-                            Soon available on iOS and Android.
-                        </ThemedText>
-                        <ThemedText style={styles.waitlistPrompt}>
-                            Join our waitlist here:
-                        </ThemedText>
-
-                        {!emailSubmitted ? (
-                            <View style={styles.emailInputContainer}>
-                                <TextInput
-                                    style={styles.emailInput}
-                                    placeholder="Enter your email"
-                                    placeholderTextColor="#999"
-                                    value={email}
-                                    onChangeText={setEmail}
-                                    keyboardType="email-address"
-                                    autoCapitalize="none"
-                                    editable={!emailSubmitted}
-                                />
-                                <TouchableOpacity
-                                    style={styles.submitButton}
-                                    onPress={handleEmailSubmit}
-                                    disabled={!email.trim()}
-                                >
-                                    <FontAwesome name="arrow-right" size={16} color="#fff" />
-                                </TouchableOpacity>
-                            </View>
-                        ) : (
-                            <View style={styles.successContainer}>
-                                <View style={styles.checkmarkCircle}>
-                                    <FontAwesome name="check" size={20} color="#4CAF50" />
-                                </View>
-                                <ThemedText style={styles.successText}>
-                                    Make sure to confirm the email we send you!
-                                </ThemedText>
-                            </View>
-                        )}
-                    </View>
-
                     {/* Hidden - Set to true to reactivate */}
                     {false && (
                         <TouchableOpacity
