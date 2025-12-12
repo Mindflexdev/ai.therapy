@@ -2786,53 +2786,6 @@ body.light-mode .carousel-arrow:hover {
         width: auto;
         /* Reset width */
     }
-
-    /* Right Column: Character Image */
-    .character-cards-grid {
-        display: block;
-        flex: 0 0 65%;
-        /* Remainder width */
-        width: 65%;
-        max-width: 65%;
-        padding: 0;
-        margin: 0;
-        overflow: visible;
-        scroll-snap-type: none;
-        /* Remove scroll-snap */
-        scrollbar-width: none;
-        /* Hide scrollbar */
-    }
-
-    .character-cards-grid::-webkit-scrollbar {
-        display: none;
-    }
-
-    .guide-card {
-        min-width: 0;
-        width: 100%;
-        margin: 0;
-        background: transparent;
-        /* Clean look */
-        border: none;
-        padding: 0;
-        scroll-snap-align: none;
-        /* Remove scroll-snap */
-    }
-
-    .guide-image {
-        height: auto;
-        max-height: 250px;
-        /* Cap height */
-        width: 100%;
-        border-radius: 12px;
-        object-fit: cover;
-    }
-
-    .guide-card h3,
-    .guide-card p {
-        display: none;
-        /* Hide text on mobile split view to fit image */
-    }
 }
 
 @media (max-width: 768px) {
@@ -2868,10 +2821,6 @@ body.light-mode .carousel-arrow:hover {
 
 @media (max-width: 480px) {
     .therapy-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .character-cards-grid {
         grid-template-columns: 1fr;
     }
 
@@ -4006,86 +3955,6 @@ body.light-mode .modal-techniques li {
         filter: blur(40px);
         pointer-events: none;
         z-index: 0;
-    }
-
-    .character-cards-grid {
-        display: flex !important;
-        flex-wrap: nowrap !important;
-        overflow-x: auto !important;
-        scroll-snap-type: x mandatory;
-        gap: 2%;
-        padding: 1.5rem 0;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
-        position: relative;
-        z-index: 1;
-        margin: 0;
-        max-width: 100%;
-        width: 100%;
-    }
-
-    .guide-card {
-        flex: 0 0 auto;
-        width: 45%;
-        /* 1/2 width as requested */
-        min-width: 150px;
-        max-width: 300px;
-        scroll-snap-align: start;
-        margin: 0;
-        display: flex;
-        flex-direction: column;
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 20px;
-        overflow: hidden;
-        position: relative;
-    }
-
-    .guide-image {
-        height: 480px;
-        width: 100%;
-        object-fit: cover;
-    }
-
-    .guide-info {
-        padding: 1rem 0.5rem;
-        background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
-
-    .guide-name {
-        display: block !important;
-        font-size: 1rem;
-        margin-bottom: 0.4rem;
-        font-weight: 600;
-        color: var(--text-primary);
-        letter-spacing: 0.01em;
-        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-        white-space: nowrap;
-    }
-
-    .guide-desc {
-        display: block !important;
-        font-size: 0.9rem;
-        color: var(--text-secondary);
-        line-height: 1.55;
-        -webkit-line-clamp: unset;
-        overflow: visible;
-        text-align: center;
-        padding: 0;
-        max-width: 280px;
-        margin: 0 auto;
-    }
-
-    /* Carousel Navigation Arrows - HIDDEN */
-    .carousel-nav {
-        display: none;
     }
 
     /* Reimagined Carousel Indicator - Elegant pill style */
