@@ -681,15 +681,52 @@ async function initGoalTabs() {
             const cards = grid.querySelectorAll('.guide-card');
             const CLONE_COUNT = 2;
             if (cards.length > CLONE_COUNT) {
-                // Find index of Lazy Sloth or Dr. Sunshine to center on them
+                // Find "Lazy Sloth" and "Dr. Sunshine" to center the view between them
                 // Note: cards includes clones at start, so we need to map back to logical index or just look at all cards
-
-                let targetIndex = CLONE_COUNT; // Default to first real character
 
                 // We want to find "Lazy Sloth" or "Dr. Sunshine" in the *real* list to get the logical index
                 const slothIndex = characters.findIndex(c => c.name.toLowerCase().includes('lazy sloth'));
                 const sunshineIndex = characters.findIndex(c => c.name.toLowerCase().includes('dr. sunshine'));
 
+                // If both exist, we target the midpoint
+                const CLONE_COUNT = 2;
+
+                if (slothIndex !== -1 && sunshineIndex !== -1 && grid) {
+                    // Get visual indices
+                    const visualSlothIndex = slothIndex + CLONE_COUNT;
+                    const visualSunshineIndex = sunshineIndex + CLONE_COUNT;
+
+                    const card1 = cards[visualSlothIndex];
+                    const card2 = cards[visualSunshineIndex];
+
+                    if (card1 && card2) {
+                        // Calculate midpoint scroll
+                        // Center point of pair = (center of card1 + center of card2) / 2
+                        // We want that point to be at center of grid
+
+                        const center1 = card1.offsetLeft + (card1.offsetWidth / 2);
+                        const center2 = card2.offsetLeft + (card2.offsetWidth / 2);
+                        const midpoint = (center1 + center2) / 2;
+
+                        const targetScrollLeft = midpoint - (grid.clientWidth / 2);
+
+                        // Update dots (highlight the first one of the pair, e.g. Sloth)
+                        currentCharIndex = slothIndex;
+                        const dots = document.querySelectorAll('#carouselDots .dot');
+                        if (dots && dots.length > slothIndex) {
+                            dots.forEach(d => d.classList.remove('active'));
+                            dots[slothIndex].classList.add('active');
+                        }
+
+                        grid.scrollTo({
+                            left: targetScrollLeft,
+                            behavior: 'auto'
+                        });
+                        return; // Done
+                    }
+                }
+
+                // Fallback: Single character centering (code below)
                 // Prefer Sloth, then Sunshine, then default
                 let logicalIndex = 0;
                 if (slothIndex !== -1) {
