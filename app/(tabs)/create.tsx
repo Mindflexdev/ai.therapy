@@ -956,14 +956,6 @@ export default function CreateCharacterScreen() {
                                 )}
                             </View>
                         </View>
-
-                        {/* Regenerate button below image */}
-                        <TouchableOpacity
-                            style={[styles.regenerateButtonSmall, { borderColor: theme.primary }]}
-                            onPress={handleGenerateImage}
-                        >
-                            <ThemedText style={[styles.regenerateButtonTextSmall, { color: theme.primary }]}>🔄 Regenerate</ThemedText>
-                        </TouchableOpacity>
                     </View>
                 );
 
@@ -1397,9 +1389,9 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     characterShowcaseImage: {
-        width: 220,
-        height: 220,
-        borderRadius: 110,
+        width: 300,
+        height: 300,
+        borderRadius: 150,
         borderWidth: 4,
         justifyContent: 'center',
         alignItems: 'center',
