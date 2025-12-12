@@ -19,7 +19,7 @@ if (typeof window === 'undefined') {
 }
 
 const supabaseUrl = 'https://cxzzakslsiynhjeyhejo.supabase.co';
-const supabaseAnonKey = 'sb_publishable_dP9BlbD4aEVpphAwKqJUtg_wyZusslT';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4enpha3Nsc2l5bmhqZXloZWpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4Mzk3ODcsImV4cCI6MjA4MDQxNTc4N30.ve5Vijc954mg-OVHwj3HCF1cfE3Lkm2zMECWUlJWE7Y';
 
 // Custom storage adapter to handle SSR/Node environments
 const storageAdapter = {
