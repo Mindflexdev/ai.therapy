@@ -547,7 +547,7 @@ export default function CreateCharacterScreen() {
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme ?? 'light'];
 
-    const [currentStep, setCurrentStep] = useState<Step>('goal');
+    const [currentStep, setCurrentStep] = useState<Step>('name');
     const [characterData, setCharacterData] = useState({
         goal: '',
         name: '',
@@ -587,7 +587,7 @@ export default function CreateCharacterScreen() {
     }, [params]);
 
     const handleNext = async () => {
-        const steps: Step[] = ['goal', 'name', 'characteristics', 'imageDescription', 'imageGeneration', 'therapyStyle', 'greeting', 'visibility', 'review'];
+        const steps: Step[] = ['name', 'goal', 'characteristics', 'greeting', 'therapyStyle', 'visibility', 'imageDescription', 'imageGeneration', 'review'];
         const currentIndex = steps.indexOf(currentStep);
 
         // Auto-generate image when moving from imageDescription to imageGeneration
@@ -623,7 +623,7 @@ export default function CreateCharacterScreen() {
     };
 
     const handleBack = () => {
-        const steps: Step[] = ['goal', 'name', 'characteristics', 'imageDescription', 'imageGeneration', 'therapyStyle', 'greeting', 'visibility', 'review'];
+        const steps: Step[] = ['name', 'goal', 'characteristics', 'greeting', 'therapyStyle', 'visibility', 'imageDescription', 'imageGeneration', 'review'];
         const currentIndex = steps.indexOf(currentStep);
         if (currentIndex > 0) {
             setCurrentStep(steps[currentIndex - 1]);
@@ -1020,20 +1020,25 @@ export default function CreateCharacterScreen() {
                         <View style={styles.reviewImageContainer}>
                             <Image
                                 source={{ uri: generatedImageUrl || '/characters/athena.jpg' }}
-                                style={[styles.reviewImage, { borderColor: theme.card }]}
+                                style={[styles.reviewImage, { borderColor: theme.primary }]}
                                 contentFit="cover"
                             />
-                            {characterData.imageDescription && (
-                                <ThemedText style={styles.imageDescriptionText}>
-                                    ≡ƒô¥ {characterData.imageDescription}
-                                </ThemedText>
-                            )}
+                            <TouchableOpacity
+                                style={[styles.regenerateButtonSmall, { borderColor: theme.primary }]}
+                                onPress={handleGenerateImage}
+                            >
+                                <ThemedText style={[styles.regenerateButtonTextSmall, { color: theme.primary }]}>🔄 Regenerate</ThemedText>
+                            </TouchableOpacity>
                         </View>
 
                         <View style={[styles.reviewCard, { backgroundColor: theme.card }]}>
                             <View style={styles.reviewRow}>
                                 <ThemedText style={styles.reviewLabel}>Name:</ThemedText>
                                 <ThemedText type="defaultSemiBold">{characterData.name}</ThemedText>
+                            </View>
+                            <View style={styles.reviewRow}>
+                                <ThemedText style={styles.reviewLabel}>Goal:</ThemedText>
+                                <ThemedText style={styles.reviewValue}>{characterData.goal}</ThemedText>
                             </View>
                             <View style={styles.reviewRow}>
                                 <ThemedText style={styles.reviewLabel}>Characteristics:</ThemedText>
@@ -1249,9 +1254,9 @@ const styles = StyleSheet.create({
         marginBottom: 24,
     },
     reviewImage: {
-        width: 120,
-        height: 120,
-        borderRadius: 60,
+        width: 180,
+        height: 180,
+        borderRadius: 90,
         borderWidth: 4,
     },
     imageDescriptionText: {
@@ -1437,5 +1442,17 @@ const styles = StyleSheet.create({
     regenerateButtonText: {
         fontSize: 16,
         fontWeight: '600',
+    },
+    regenerateButtonSmall: {
+        marginTop: 12,
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 20,
+        borderWidth: 1,
+        backgroundColor: 'transparent',
+    },
+    regenerateButtonTextSmall: {
+        fontSize: 14,
+        fontWeight: '500',
     },
 });
