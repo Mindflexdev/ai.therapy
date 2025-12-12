@@ -895,9 +895,21 @@ export default function CreateCharacterScreen() {
             case 'imageGeneration':
                 return (
                     <View style={styles.stepContainer}>
-                        {/* Image Preview - Result view only */}
-                        <View style={styles.imagePreviewSection}>
-                            <View style={[styles.imagePreviewContainer, { backgroundColor: theme.card, borderColor: theme.primary }]}>
+                        {/* Title and description ABOVE the image */}
+                        <ThemedText type="title" style={[styles.stepTitle, styles.centeredText]}>
+                            {generatedImageUrl
+                                ? `Meet ${characterData.name || 'your ai.therapist'}!`
+                                : 'Image generation failed'}
+                        </ThemedText>
+                        <ThemedText style={[styles.stepDescription, styles.centeredText]}>
+                            {generatedImageUrl
+                                ? 'Looking good! Continue to the next step, or regenerate if you\'d like a different look.'
+                                : 'Something went wrong. Please try again.'}
+                        </ThemedText>
+
+                        {/* Large character image showcase */}
+                        <View style={styles.characterShowcase}>
+                            <View style={[styles.characterShowcaseImage, { backgroundColor: theme.card, borderColor: theme.primary }]}>
                                 {generatedImageUrl ? (
                                     <Image
                                         source={{ uri: generatedImageUrl }}
@@ -906,23 +918,12 @@ export default function CreateCharacterScreen() {
                                     />
                                 ) : (
                                     <View style={styles.emptyImageState}>
-                                        <IconSymbol name="sparkles" size={48} color={theme.primary} />
+                                        <IconSymbol name="sparkles" size={64} color={theme.primary} />
                                         <ThemedText style={[styles.emptyImageText, { color: theme.icon }]}>No image yet</ThemedText>
                                     </View>
                                 )}
                             </View>
                         </View>
-
-                        <ThemedText type="title" style={styles.stepTitle}>
-                            {generatedImageUrl
-                                ? `Meet ${characterData.name || 'your ai.therapist'}!`
-                                : 'Image generation failed'}
-                        </ThemedText>
-                        <ThemedText style={styles.stepDescription}>
-                            {generatedImageUrl
-                                ? 'Looking good! Continue to the next step, or regenerate if you\'d like a different look.'
-                                : 'Something went wrong. Please try again.'}
-                        </ThemedText>
 
                         <TouchableOpacity
                             style={[styles.regenerateButton, { borderColor: theme.primary }]}
@@ -1023,12 +1024,6 @@ export default function CreateCharacterScreen() {
                                 style={[styles.reviewImage, { borderColor: theme.primary }]}
                                 contentFit="cover"
                             />
-                            <TouchableOpacity
-                                style={[styles.regenerateButtonSmall, { borderColor: theme.primary }]}
-                                onPress={handleGenerateImage}
-                            >
-                                <ThemedText style={[styles.regenerateButtonTextSmall, { color: theme.primary }]}>🔄 Regenerate</ThemedText>
-                            </TouchableOpacity>
                         </View>
 
                         <View style={[styles.reviewCard, { backgroundColor: theme.card }]}>
@@ -1326,6 +1321,23 @@ const styles = StyleSheet.create({
     imagePreviewSection: {
         alignItems: 'center',
         marginBottom: 32,
+    },
+    centeredText: {
+        textAlign: 'center',
+    },
+    characterShowcase: {
+        alignItems: 'center',
+        marginTop: 24,
+        marginBottom: 16,
+    },
+    characterShowcaseImage: {
+        width: 220,
+        height: 220,
+        borderRadius: 110,
+        borderWidth: 4,
+        justifyContent: 'center',
+        alignItems: 'center',
+        overflow: 'hidden',
     },
     imagePreviewContainer: {
         width: 140,
