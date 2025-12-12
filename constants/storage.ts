@@ -123,76 +123,24 @@ export const getCharactersByTopic = async (topicId: string): Promise<UserCharact
 };
 
 // Get all characters grouped by topic from Supabase
+// Get all characters grouped by topic from Supabase
 export const getAllCharactersGroupedByTopic = async (): Promise<{ topicId: string, characters: UserCharacter[] }[]> => {
+    const CACHE_KEY = '@therapy_ai_grouped_characters';
+
     try {
-        // 1. Try to get from cache first for immediate display
-        const CACHE_KEY = '@therapy_ai_grouped_characters';
-        const cachedData = await AsyncStorage.getItem(CACHE_KEY);
-
-        // If we have cached data, we can choosing to return it immediately
-        // But we also want to refresh it.
-        // For the UI to feel "fast always", we should return cached data if available
-        // The calling component might not support a stream/subscription, so let's stick to returning a Promise.
-        // However, if we return cached data, the UI won't update with fresh data until next reload.
-        // A better approach for "fast always" is:
-        // Return cache immediately if valid.
-        // But since this function returns a Promise, we can't easily do "value then update".
-        // Let's rely on the caller validation or just return cache if present and trigger a background refresh?
-        // OR: We just do what we did for auth: Race network vs timeout, if timeout use cache?
-        // actually, standard pattern:
-        // If cache exists, return it.
-        // Background: Fetch new data -> Update Cache.
-        // Next app launch gets new data.
-        // This makes it extremely fast.
-
-        let initialResult = null;
-        if (cachedData) {
-            initialResult = JSON.parse(cachedData);
-        }
-
-        // 2. Fetch fresh data from Supabase (Optimized Select)
-        const fetchPromise = supabase
+        console.log('Fetching characters from Supabase...');
+        // 1. Fetch fresh data from Supabase (Select ALL fields to be safe)
+        const { data, error } = await supabase
             .from('characters')
-            .select('id, name, image, description, topic, is_public') // Select only needed fields
+            .select('*') // Select all fields to ensure we have greeting, etc.
             .eq('is_public', true)
             .order('topic');
 
-        // If we have cache, we might want to just return it and let the background update happen?
-        // But if the cache is empty/old, we want the fresh data.
-
-        // Let's try to fetch. If it takes too long (> 1.5s) and we have cache, return cache.
-        // If it's fast, return fresh.
-
-        if (initialResult) {
-            // We have cache. Kick off background update and return cache immediately.
-            fetchPromise.then(({ data, error }) => {
-                if (!error && data) {
-                    // Group and save to cache
-                    const grouped: Record<string, UserCharacter[]> = {};
-                    data.forEach((char: any) => {
-                        const topic = char.topic || 'other';
-                        if (!grouped[topic]) grouped[topic] = [];
-                        grouped[topic].push(char);
-                    });
-                    const result = Object.keys(grouped).map(topicId => ({
-                        topicId,
-                        characters: grouped[topicId]
-                    }));
-                    AsyncStorage.setItem(CACHE_KEY, JSON.stringify(result));
-                }
-            });
-            return initialResult;
-        }
-
-        // No cache: Must wait for network
-        const { data, error } = await fetchPromise;
-
         if (error) {
-            console.error('Error fetching all characters:', error);
-            return [];
+            throw error;
         }
 
-        // Group by topic
+        // 2. Group by topic
         const grouped: Record<string, UserCharacter[]> = {};
         data?.forEach((char: any) => {
             const topic = char.topic || 'other'; // Default to 'other' if no topic
@@ -202,18 +150,32 @@ export const getAllCharactersGroupedByTopic = async (): Promise<{ topicId: strin
             grouped[topic].push(char);
         });
 
-        // Convert to array format
+        // 3. Convert to array format
         const result = Object.keys(grouped).map(topicId => ({
             topicId,
             characters: grouped[topicId]
         }));
 
-        // Save to cache
-        AsyncStorage.setItem(CACHE_KEY, JSON.stringify(result));
+        // 4. Update cache
+        await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(result));
+        console.log('Characters fetched and cached successfully');
 
         return result;
+
     } catch (error) {
-        console.error('Error in getAllCharactersGroupedByTopic:', error);
+        console.error('Error fetching characters from Supabase, falling back to cache:', error);
+
+        // Fallback to cache
+        try {
+            const cachedData = await AsyncStorage.getItem(CACHE_KEY);
+            if (cachedData) {
+                console.log('Returning cached characters');
+                return JSON.parse(cachedData);
+            }
+        } catch (cacheError) {
+            console.error('Error reading character cache:', cacheError);
+        }
+
         return [];
     }
 };
