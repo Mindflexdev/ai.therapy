@@ -353,7 +353,11 @@ export default function MindGymScreen() {
             {/* Coming Soon Overlay */}
             <View style={[styles.overlay, { backgroundColor: 'rgba(0,0,0,0.6)' }]}>
                 <View style={styles.overlayContent}>
-                    <IconSymbol name="building.2.fill" size={64} color={theme.primary} />
+                    <Image
+                        source={require('../../assets/images/lotus.png')}
+                        style={{ width: 100, height: 100, marginBottom: 16 }}
+                        contentFit="contain"
+                    />
                     <ThemedText type="title" style={styles.overlayTitle}>Coming Soon</ThemedText>
                     <ThemedText style={styles.overlayText}>
                         Create any guided meditation you want, read out loud by any ai.therapy character.

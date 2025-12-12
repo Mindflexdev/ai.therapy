@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useRef, useState } from 'react';
-import { Animated, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Animated, Linking, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AnalysisLoading } from '@/components/analysis-loading';
@@ -319,14 +319,7 @@ export default function ProfileScreen() {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
-            <View style={styles.feedbackButtonContainer}>
-                <TouchableOpacity
-                    style={[styles.feedbackButton, { backgroundColor: theme.primary }]}
-                    onPress={() => router.push('/feedback')}
-                >
-                    <ThemedText style={styles.feedbackButtonText}>Feedback?</ThemedText>
-                </TouchableOpacity>
-            </View>
+
 
             <ScrollView showsVerticalScrollIndicator={false}>
                 {/* Profile Header */}
@@ -381,9 +374,12 @@ export default function ProfileScreen() {
                                     {Math.max(0, 100 - messageCount)}
                                 </ThemedText>
                             </View>
-                            <TouchableOpacity style={[styles.premiumButton, { backgroundColor: theme.primary }]}>
-                                <IconSymbol name="plus" size={16} color="#fff" />
+                            <TouchableOpacity
+                                style={[styles.premiumButton, { backgroundColor: theme.primary }]}
+                                onPress={() => Linking.openURL('https://ai.therapy')}
+                            >
                                 <ThemedText style={styles.premiumButtonText}>Get ai.therapy</ThemedText>
+                                <IconSymbol name="plus" size={16} color="#fff" />
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -504,6 +500,15 @@ export default function ProfileScreen() {
                     </TouchableOpacity>
                 </View>
             </ScrollView>
+
+            <View style={styles.feedbackButtonContainer}>
+                <TouchableOpacity
+                    style={[styles.feedbackButton, { backgroundColor: theme.primary }]}
+                    onPress={() => router.push('/feedback')}
+                >
+                    <ThemedText style={styles.feedbackButtonText}>Feedback?</ThemedText>
+                </TouchableOpacity>
+            </View>
         </SafeAreaView>
     );
 }

@@ -2,7 +2,7 @@
 
 document.addEventListener('DOMContentLoaded', () => {
     initThemeToggle();
-    initLangToggle();
+    // initLangToggle(); - REMOVED
     initGoalTabs();
     initFloatingElements();
     initTherapyCards();
@@ -56,179 +56,12 @@ function initThemeToggle() {
     });
 }
 
-// ===== Language Toggle =====
-function initLangToggle() {
-    const toggleContainer = document.getElementById('langToggle');
-    if (!toggleContainer) return;
 
-    const flags = toggleContainer.querySelectorAll('.lang-flag');
 
-    // Check for saved language - default to English
-    let currentLang = localStorage.getItem('lang') || 'en';
 
-    // Set initial active state
-    flags.forEach(flag => {
-        flag.classList.toggle('active', flag.dataset.lang === currentLang);
-    });
-    applyLanguage(currentLang);
 
-    // Add click handlers to each flag
-    flags.forEach(flag => {
-        flag.addEventListener('click', () => {
-            const newLang = flag.dataset.lang;
-            if (newLang === currentLang) return; // Already active
-
-            currentLang = newLang;
-
-            // Update active states
-            flags.forEach(f => f.classList.toggle('active', f.dataset.lang === currentLang));
-
-            localStorage.setItem('lang', currentLang);
-            applyLanguage(currentLang);
-        });
-    });
-}
-
-function applyLanguage(lang) {
-    // Update all elements with data-en and data-de attributes
-    document.querySelectorAll('[data-en][data-de]').forEach(el => {
-        el.innerHTML = el.dataset[lang];
-    });
-
-    // Update placeholders
-    document.querySelectorAll(`[data-placeholder-${lang}]`).forEach(el => {
-        el.placeholder = el.dataset[`placeholder${lang.charAt(0).toUpperCase() + lang.slice(1)}`];
-    });
-
-    // Update goal tabs
-    const goalTranslations = {
-        'Sleep better': { de: 'Besser schlafen' },
-        'Enhance performance': { de: 'Leistung steigern' },
-        'Develop self-worth': { de: 'Selbstwert entwickeln' },
-        'Lose fears': { de: 'Ängste überwinden' },
-        'Reduce stress': { de: 'Stress reduzieren' },
-        'Be happier': { de: 'Glücklicher sein' },
-        'Be more grateful': { de: 'Dankbarer sein' }
-    };
-
-    document.querySelectorAll('.goal-tab').forEach(tab => {
-        const enText = tab.dataset.goalEn || tab.textContent.trim();
-        if (!tab.dataset.goalEn) tab.dataset.goalEn = enText;
-
-        if (lang === 'de' && goalTranslations[enText]) {
-            tab.textContent = goalTranslations[enText].de;
-        } else if (lang === 'en' && tab.dataset.goalEn) {
-            tab.textContent = tab.dataset.goalEn;
-        }
-    });
-
-    // Update character descriptions
-    updateCharacterDescriptions(lang);
-}
-
-// Complete character description translations (English -> German)
-const characterDescTranslations = {
-    // ... (keep existing translations object, assuming it's populating correctly)
-    'ethereal guide who illuminates your path to restful sleep': 'Ätherische Führerin, die deinen Weg zu erholsamem Schlaf erhellt',
-    'ancient dream wizard specializing in sleep hypnosis': 'Uralter Traumzauberer, spezialisiert auf Schlaf-Hypnose',
-    'mystical being who brings peaceful dreams to troubled minds': 'Mystisches Wesen, das friedliche Träume in unruhige Gedanken bringt',
-    'mysterious feline who prowls the realm of peaceful slumber': 'Mysteriöse Katze, die durch das Reich des friedlichen Schlummers streift',
-    'compassionate sleep medicine specialist with decades of experience': 'Mitfühlende Schlafmedizin-Spezialistin mit jahrzehntelanger Erfahrung',
-    'cozy hibernation expert who knows all about deep, restful sleep': 'Gemütlicher Winterschlaf-Experte, der alles über tiefen, erholsamen Schlaf weiß',
-
-    // Performance Characters
-    'dynamic coach who ignites your inner fire for peak performance': 'Dynamischer Coach, der dein inneres Feuer für Höchstleistungen entfacht',
-    'sharp-eyed mentor who helps you see opportunities others miss': 'Scharfäugiger Mentor, der dir hilft, Chancen zu sehen, die andere übersehen',
-    'goddess of wisdom and strategic thinking': 'Göttin der Weisheit und des strategischen Denkens',
-    'peak performance psychologist specializing in achieving flow states': 'Spitzenleistungs-Psychologe, spezialisiert auf das Erreichen von Flow-Zuständen',
-    'speed and efficiency expert who teaches laser-sharp focus': 'Geschwindigkeits- und Effizienz-Experte, der messerscharfen Fokus lehrt',
-    'resilient spirit rising from challenges stronger than before': 'Widerstandsfähiger Geist, der stärker aus Herausforderungen hervorgeht',
-
-    // Self-Worth Characters
-    'colorful bird who teaches healthy pride and self-expression': 'Bunter Vogel, der gesunden Stolz und Selbstausdruck lehrt',
-    'graceful therapist who helps you embrace your authentic self': 'Anmutige Therapeutin, die dir hilft, dein authentisches Selbst anzunehmen',
-    'majestic lion who teaches you to recognize your inner strength': 'Majestätischer Löwe, der dir beibringt, deine innere Stärke zu erkennen',
-    'wise sage who helps you see your true reflection': 'Weiser Mentor, der dir hilft, dein wahres Spiegelbild zu sehen',
-    'radiant being who helps you discover your inner light': 'Strahlendes Wesen, das dir hilft, dein inneres Licht zu entdecken',
-    'warm presence who helps you shine with confidence': 'Warme Präsenz, die dir hilft, mit Selbstvertrauen zu strahlen',
-
-    // Lose Fears Characters
-    'courageous warrior who helps you face your deepest fears': 'Mutiger Krieger, der dir hilft, deine tiefsten Ängste zu überwinden',
-    'mysterious guide who helps you befriend your shadow': 'Mysteriöser Führer, der dir hilft, deinen Schatten anzufreunden',
-    'ancient wisdom keeper who sees beyond surface fears': 'Uralter Weisheitshüter, der hinter oberflächliche Ängste blickt',
-    'gentle therapist specializing in phobias and anxiety disorders': 'Einfühlsame Therapeutin, spezialisiert auf Phobien und Angststörungen',
-    'pack leader who shows you strength in vulnerability': 'Rudelführer, der dir Stärke in der Verletzlichkeit zeigt',
-    'bold healer who helps you transform fear into power': 'Mutiger Heiler, der dir hilft, Angst in Kraft zu verwandeln',
-
-    // Reduce Stress Characters
-    'floating spirit who teaches the art of letting go': 'Schwebender Geist, der die Kunst des Loslassens lehrt',
-    'slow-living expert who teaches the art of relaxation': 'Slow-Living-Experte, der die Kunst der Entspannung lehrt',
-    'grounded presence who teaches stability in chaos': 'Geerdete Präsenz, die Stabilität im Chaos lehrt',
-    'peaceful ocean dweller who teaches emotional regulation': 'Friedlicher Meeresbewohner, der emotionale Regulation lehrt',
-    'tranquil healer specializing in stress and burnout': 'Ruhige Heilerin, spezialisiert auf Stress und Burnout',
-    'ancient monk who teaches mindfulness and present-moment awareness': 'Uralter Mönch, der Achtsamkeit und Gegenwartsbewusstsein lehrt',
-
-    // Be Happier Characters
-    'colorful wizard who creates joy wherever he goes': 'Bunter Zauberer, der überall Freude verbreitet',
-    'positive psychology expert who teaches the science of happiness': 'Experte für positive Psychologie, der die Wissenschaft des Glücks lehrt',
-    'joyful dog who shows you how to find delight in simple moments': 'Fröhlicher Hund, der dir zeigt, wie du Freude in einfachen Momenten findest',
-    'gentle flower spirit who helps happiness bloom within you': 'Sanfter Blumengeist, der dir hilft, Glück in dir erblühen zu lassen',
-    'melodic guide who teaches you to find your song of joy': 'Melodischer Führer, der dir hilft, dein Lied der Freude zu finden',
-    'radiant spark who ignites lasting joy in your heart': 'Strahlender Funke, der dauerhafte Freude in deinem Herzen entzündet',
-
-    // Be More Grateful Characters
-    'magical being who reveals abundance all around you': 'Magisches Wesen, das den Reichtum um dich herum enthüllt',
-    'patient turtle who teaches slow appreciation of life': 'Geduldige Schildkröte, die langsame Wertschätzung des Lebens lehrt',
-    'serene guide who helps you recognize life\'s blessings': 'Ruhige Führerin, die dir hilft, die Segnungen des Lebens zu erkennen',
-    'divine messenger who helps you see gifts in every moment': 'Göttlicher Bote, der dir hilft, Geschenke in jedem Moment zu sehen',
-    'gratitude researcher who teaches appreciation practices': 'Dankbarkeits-Forscher, der Wertschätzungspraktiken lehrt',
-    'nurturing spirit who teaches gratitude for life\'s harvest': 'Nährender Geist, der Dankbarkeit für die Ernte des Lebens lehrt',
-
-    // Generic fallback patterns
-    'personalized ai therapy companion': 'Persönlicher KI-Therapie-Begleiter',
-    'your personal ai guide': 'Dein persönlicher KI-Begleiter'
-};
-
-function updateCharacterDescriptions(lang) {
-    if (lang === 'en') {
-        // Revert to English (stored in data-en or default text)
-        document.querySelectorAll('.guide-desc').forEach(desc => {
-            if (desc.dataset.en) {
-                desc.textContent = desc.dataset.en;
-            }
-        });
-        return;
-    }
-
-    if (lang === 'de') {
-        document.querySelectorAll('.guide-desc').forEach(desc => {
-            const originalText = (desc.dataset.en || desc.textContent).trim().toLowerCase().replace(/[.,!]+$/, '');
-
-            // Store original English text if not present
-            if (!desc.dataset.en) {
-                desc.dataset.en = desc.textContent;
-            }
-
-            // Try exact match first
-            let translated = characterDescTranslations[originalText];
-
-            // If no exact match, try fuzzy matching or fallbacks
-            if (!translated) {
-                // Check for partial matches or key phrases
-                for (const [key, value] of Object.entries(characterDescTranslations)) {
-                    if (originalText.includes(key)) {
-                        translated = value;
-                        break;
-                    }
-                }
-            }
-
-            if (translated) {
-                desc.textContent = translated;
-            }
-        });
-    }
-}
+// Character descriptions
+const characterDescTranslations = {};
 
 
 
@@ -1578,37 +1411,54 @@ function initSmoothScroll() {
     });
 }
 
-// ===== Mobile Carousel Scroll Spy =====
+// ===== Mobile Carousel Scroll Spy & Desktop Nav =====
 function initCarouselScroll() {
     const grid = document.querySelector('.character-cards-grid');
     const dots = document.querySelectorAll('.carousel-dots .dot');
+    const prevBtn = document.getElementById('prevChar');
+    const nextBtn = document.getElementById('nextChar');
 
-    if (!grid || !dots.length) return;
+    if (!grid) return;
 
-    // Update dots on scroll
-    grid.addEventListener('scroll', () => {
-        const itemWidth = grid.clientWidth;
-        const activeIndex = Math.round(grid.scrollLeft / itemWidth);
-
-        dots.forEach((dot, index) => {
-            if (index === activeIndex) {
-                dot.classList.add('active');
-            } else {
-                dot.classList.remove('active');
-            }
-        });
-    });
-
-    // Click on dots to scroll
-    dots.forEach((dot, index) => {
-        dot.addEventListener('click', () => {
+    // Update dots on scroll (if dots exist)
+    if (dots.length > 0) {
+        grid.addEventListener('scroll', () => {
             const itemWidth = grid.clientWidth;
-            grid.scrollTo({
-                left: itemWidth * index,
-                behavior: 'smooth'
+            const activeIndex = Math.round(grid.scrollLeft / itemWidth);
+
+            dots.forEach((dot, index) => {
+                if (index === activeIndex) {
+                    dot.classList.add('active');
+                } else {
+                    dot.classList.remove('active');
+                }
             });
         });
-    });
+
+        // Click on dots to scroll
+        dots.forEach((dot, index) => {
+            dot.addEventListener('click', () => {
+                const itemWidth = grid.clientWidth;
+                grid.scrollTo({
+                    left: itemWidth * index,
+                    behavior: 'smooth'
+                });
+            });
+        });
+    }
+
+    // Arrow Navigation (Desktop/All)
+    if (prevBtn && nextBtn) {
+        prevBtn.addEventListener('click', () => {
+            const itemWidth = 300; // Approx card width + gap
+            grid.scrollBy({ left: -itemWidth, behavior: 'smooth' });
+        });
+
+        nextBtn.addEventListener('click', () => {
+            const itemWidth = 300; // Approx card width + gap
+            grid.scrollBy({ left: itemWidth, behavior: 'smooth' });
+        });
+    }
 }
 
 

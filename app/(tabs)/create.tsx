@@ -199,7 +199,7 @@ export default function CreateCharacterScreen() {
                             What's your goal?
                         </ThemedText>
                         <ThemedText style={styles.stepDescription}>
-                            Tell us what you'd like to work on or achieve with your AI therapist
+                            Tell us what you'd like to work on or achieve with your ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist
                         </ThemedText>
                         <TextInput
                             style={[styles.textArea, { backgroundColor: theme.card, color: theme.text }]}
