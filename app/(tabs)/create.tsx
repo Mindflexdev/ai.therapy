@@ -549,7 +549,7 @@ export default function CreateCharacterScreen() {
     }, [params]);
 
     const handleNext = async () => {
-        const steps: Step[] = ['name', 'goal', 'characteristics', 'greeting', 'therapyStyle', 'visibility', 'imageDescription', 'imageGeneration', 'review'];
+        const steps: Step[] = ['name', 'greeting', 'goal', 'characteristics', 'therapyStyle', 'visibility', 'imageDescription', 'imageGeneration', 'review'];
         const currentIndex = steps.indexOf(currentStep);
 
         // Auto-generate image when moving from imageDescription to imageGeneration
@@ -585,7 +585,7 @@ export default function CreateCharacterScreen() {
     };
 
     const handleBack = () => {
-        const steps: Step[] = ['name', 'goal', 'characteristics', 'greeting', 'therapyStyle', 'visibility', 'imageDescription', 'imageGeneration', 'review'];
+        const steps: Step[] = ['name', 'greeting', 'goal', 'characteristics', 'therapyStyle', 'visibility', 'imageDescription', 'imageGeneration', 'review'];
         const currentIndex = steps.indexOf(currentStep);
         if (currentIndex > 0) {
             setCurrentStep(steps[currentIndex - 1]);
@@ -865,17 +865,8 @@ export default function CreateCharacterScreen() {
                         </ThemedText>
                         <ThemedText style={styles.stepDescription}>
                             {generatedImageUrl
-                                ? 'Looking good! Continue to the next step, or '
+                                ? 'Looking good! Continue to the next step, or regenerate if you\'d like a different look.'
                                 : 'Something went wrong. Please try again.'}
-                            {generatedImageUrl && (
-                                <ThemedText
-                                    style={{ color: theme.primary, fontWeight: '600' }}
-                                    onPress={handleGenerateImage}
-                                >
-                                    regenerate
-                                </ThemedText>
-                            )}
-                            {generatedImageUrl && ' if you\'d like a different look.'}
                         </ThemedText>
 
                         {/* Large character image showcase */}
@@ -895,6 +886,14 @@ export default function CreateCharacterScreen() {
                                 )}
                             </View>
                         </View>
+
+                        {/* Regenerate button below image */}
+                        <TouchableOpacity
+                            style={[styles.regenerateButton, { borderColor: theme.primary }]}
+                            onPress={handleGenerateImage}
+                        >
+                            <ThemedText style={[styles.regenerateButtonText, { color: theme.primary }]}>🔄 Regenerate Image</ThemedText>
+                        </TouchableOpacity>
                     </View>
                 );
 
