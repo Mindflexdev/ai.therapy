@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initCreationControls();
     initSmoothScroll();
     initCarouselScroll();
+    initParallaxScroll();
 });
 
 // ===== Theme Toggle =====
@@ -677,22 +678,24 @@ async function initGoalTabs() {
         currentCharIndex = 0;
 
         // Wait for layout and images to potentially load layout headers
+        // Increased timeout to ensure mobile layout is settled
         setTimeout(() => {
             const cards = grid.querySelectorAll('.guide-card');
+            // We expect at least CLONE_COUNT * 2 (clones) + 1 real character
             const CLONE_COUNT = 2;
-            if (cards.length > CLONE_COUNT) {
-                // Find "Lazy Sloth" and "Dr. Sunshine" to center the view between them
-                // Note: cards includes clones at start, so we need to map back to logical index or just look at all cards
 
-                // We want to find "Lazy Sloth" or "Dr. Sunshine" in the *real* list to get the logical index
+            if (cards.length > 3) {
+                // Find "Lazy Sloth" and "Dr. Sunshine" logical indices in the data array
+                // Note: characters array is the source of truth for order
                 const slothIndex = characters.findIndex(c => c.name.toLowerCase().includes('lazy sloth'));
                 const sunshineIndex = characters.findIndex(c => c.name.toLowerCase().includes('dr. sunshine'));
 
-                // If both exist, we target the midpoint
-                const CLONE_COUNT = 2;
+                let targetScrollLeft = 0;
+                let foundTarget = false;
+                let targetLogicalIndex = 0;
 
-                if (slothIndex !== -1 && sunshineIndex !== -1 && grid) {
-                    // Get visual indices
+                // STRATEGY 1: Center the PAIR (Sloth + Sunshine)
+                if (slothIndex !== -1 && sunshineIndex !== -1) {
                     const visualSlothIndex = slothIndex + CLONE_COUNT;
                     const visualSunshineIndex = sunshineIndex + CLONE_COUNT;
 
@@ -700,64 +703,62 @@ async function initGoalTabs() {
                     const card2 = cards[visualSunshineIndex];
 
                     if (card1 && card2) {
-                        // Calculate midpoint scroll
-                        // Center point of pair = (center of card1 + center of card2) / 2
-                        // We want that point to be at center of grid
-
                         const center1 = card1.offsetLeft + (card1.offsetWidth / 2);
                         const center2 = card2.offsetLeft + (card2.offsetWidth / 2);
                         const midpoint = (center1 + center2) / 2;
 
-                        const targetScrollLeft = midpoint - (grid.clientWidth / 2);
-
-                        // Update dots (highlight the first one of the pair, e.g. Sloth)
-                        currentCharIndex = slothIndex;
-                        const dots = document.querySelectorAll('#carouselDots .dot');
-                        if (dots && dots.length > slothIndex) {
-                            dots.forEach(d => d.classList.remove('active'));
-                            dots[slothIndex].classList.add('active');
-                        }
-
-                        grid.scrollTo({
-                            left: targetScrollLeft,
-                            behavior: 'auto'
-                        });
-                        return; // Done
+                        targetScrollLeft = midpoint - (grid.clientWidth / 2);
+                        targetLogicalIndex = slothIndex;
+                        foundTarget = true;
                     }
                 }
 
-                // Fallback: Single character centering (code below)
-                // Prefer Sloth, then Sunshine, then default
-                let logicalIndex = 0;
-                if (slothIndex !== -1) {
-                    logicalIndex = slothIndex;
-                } else if (sunshineIndex !== -1) {
-                    logicalIndex = sunshineIndex;
+                // STRATEGY 2: Center just SLOTH if pair fails
+                if (!foundTarget && slothIndex !== -1) {
+                    const visualIndex = slothIndex + CLONE_COUNT;
+                    const card = cards[visualIndex];
+                    if (card) {
+                        const center = card.offsetLeft + (card.offsetWidth / 2);
+                        targetScrollLeft = center - (grid.clientWidth / 2);
+                        targetLogicalIndex = slothIndex;
+                        foundTarget = true;
+                    }
                 }
 
-                // Convert logical index to visual index (add clones)
-                const visualIndex = logicalIndex + CLONE_COUNT;
+                // STRATEGY 3: Center just SUNSHINE
+                if (!foundTarget && sunshineIndex !== -1) {
+                    const visualIndex = sunshineIndex + CLONE_COUNT;
+                    const card = cards[visualIndex];
+                    if (card) {
+                        const center = card.offsetLeft + (card.offsetWidth / 2);
+                        targetScrollLeft = center - (grid.clientWidth / 2);
+                        targetLogicalIndex = sunshineIndex;
+                        foundTarget = true;
+                    }
+                }
 
-                // Verify bounds
-                if (visualIndex < cards.length) {
-                    // Update current char index state
-                    currentCharIndex = logicalIndex;
-
+                if (foundTarget) {
                     // Update dots
+                    currentCharIndex = targetLogicalIndex;
                     const dots = document.querySelectorAll('#carouselDots .dot');
-                    if (dots && dots.length > logicalIndex) {
+                    if (dots && dots.length > targetLogicalIndex) {
                         dots.forEach(d => d.classList.remove('active'));
-                        dots[logicalIndex].classList.add('active');
+                        dots[targetLogicalIndex].classList.add('active');
                     }
 
-                    // Scroll!
-                    horizontalScrollTo(cards[visualIndex], false);
+                    // Perform Scroll
+                    grid.scrollTo({
+                        left: targetScrollLeft,
+                        behavior: 'auto'
+                    });
                 } else {
-                    // Fallback
+                    // Fallback to first character (usually Luna)
+                    // But maybe user wants Sloth? If we couldn't find Sloth, we can't do much.
                     horizontalScrollTo(cards[CLONE_COUNT], false);
                 }
             }
-        }, 400); // Increased delay to ensure rendering is complete
+        }, 800); // 800ms delay to allow better loading
+
 
         // Infinite Scroll Handler
         let scrollTimeout;
@@ -1521,6 +1522,7 @@ function initCarouselScroll() {
     }
 
     // Arrow Navigation (Desktop/All)
+    // Arrow Navigation (Desktop/All)
     if (prevBtn && nextBtn) {
         prevBtn.addEventListener('click', () => {
             const itemWidth = 300; // Approx card width + gap
@@ -1532,6 +1534,34 @@ function initCarouselScroll() {
             grid.scrollBy({ left: itemWidth, behavior: 'smooth' });
         });
     }
+}
+
+// ===== Parallax Scroll =====
+function initParallaxScroll() {
+    const grid = document.querySelector('.character-cards-grid');
+    if (!grid) return;
+
+    let lastScrollY = window.scrollY;
+    let ticking = false;
+    const RATE = 0.5; // adjust speed here
+
+    window.addEventListener('scroll', () => {
+        if (!ticking) {
+            window.requestAnimationFrame(() => {
+                const currentScrollY = window.scrollY;
+                const delta = currentScrollY - lastScrollY;
+
+                // Move sideways based on vertical scroll
+                if (Math.abs(delta) > 0) {
+                    grid.scrollLeft += delta * RATE;
+                }
+
+                lastScrollY = currentScrollY;
+                ticking = false;
+            });
+            ticking = true;
+        }
+    });
 }
 
 
