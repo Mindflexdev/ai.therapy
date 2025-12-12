@@ -681,8 +681,44 @@ async function initGoalTabs() {
             const cards = grid.querySelectorAll('.guide-card');
             const CLONE_COUNT = 2;
             if (cards.length > CLONE_COUNT) {
-                // Scroll to the first real character (Luna Starlight)
-                horizontalScrollTo(cards[CLONE_COUNT], false);
+                // Find index of Lazy Sloth or Dr. Sunshine to center on them
+                // Note: cards includes clones at start, so we need to map back to logical index or just look at all cards
+
+                let targetIndex = CLONE_COUNT; // Default to first real character
+
+                // We want to find "Lazy Sloth" or "Dr. Sunshine" in the *real* list to get the logical index
+                const slothIndex = characters.findIndex(c => c.name.toLowerCase().includes('lazy sloth'));
+                const sunshineIndex = characters.findIndex(c => c.name.toLowerCase().includes('dr. sunshine'));
+
+                // Prefer Sloth, then Sunshine, then default
+                let logicalIndex = 0;
+                if (slothIndex !== -1) {
+                    logicalIndex = slothIndex;
+                } else if (sunshineIndex !== -1) {
+                    logicalIndex = sunshineIndex;
+                }
+
+                // Convert logical index to visual index (add clones)
+                const visualIndex = logicalIndex + CLONE_COUNT;
+
+                // Verify bounds
+                if (visualIndex < cards.length) {
+                    // Update current char index state
+                    currentCharIndex = logicalIndex;
+
+                    // Update dots
+                    const dots = document.querySelectorAll('#carouselDots .dot');
+                    if (dots && dots.length > logicalIndex) {
+                        dots.forEach(d => d.classList.remove('active'));
+                        dots[logicalIndex].classList.add('active');
+                    }
+
+                    // Scroll!
+                    horizontalScrollTo(cards[visualIndex], false);
+                } else {
+                    // Fallback
+                    horizontalScrollTo(cards[CLONE_COUNT], false);
+                }
             }
         }, 400); // Increased delay to ensure rendering is complete
 
