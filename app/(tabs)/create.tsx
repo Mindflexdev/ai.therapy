@@ -422,26 +422,6 @@ const FullscreenCraftingOverlay = ({ theme, characterName }: { theme: typeof Col
                             {currentMessage.text}
                         </ThemedText>
                     </Animated.View>
-
-                    {/* Progress bar */}
-                    <View style={craftingStyles.progressSection}>
-                        <View style={[craftingStyles.progressBarBg, { backgroundColor: theme.card }]}>
-                            <Animated.View
-                                style={[
-                                    craftingStyles.progressBarFill,
-                                    {
-                                        backgroundColor: theme.primary,
-                                        width: progressWidth,
-                                    }
-                                ]}
-                            />
-                        </View>
-                    </View>
-
-                    {/* Subtext */}
-                    <ThemedText style={[craftingStyles.subtext, { color: theme.icon }]}>
-                        This may take a moment...
-                    </ThemedText>
                 </View>
             </View>
         </View>
@@ -521,24 +501,6 @@ const craftingStyles = StyleSheet.create({
         fontSize: 18,
         fontWeight: '500',
         textAlign: 'center',
-    },
-    progressSection: {
-        width: '100%',
-        marginTop: 8,
-    },
-    progressBarBg: {
-        width: '100%',
-        height: 6,
-        borderRadius: 3,
-        overflow: 'hidden',
-    },
-    progressBarFill: {
-        height: '100%',
-        borderRadius: 3,
-    },
-    subtext: {
-        fontSize: 14,
-        marginTop: 8,
     },
 });
 
@@ -895,16 +857,25 @@ export default function CreateCharacterScreen() {
             case 'imageGeneration':
                 return (
                     <View style={styles.stepContainer}>
-                        {/* Title and description ABOVE the image */}
-                        <ThemedText type="title" style={[styles.stepTitle, styles.centeredText]}>
+                        {/* Title and description */}
+                        <ThemedText type="title" style={styles.stepTitle}>
                             {generatedImageUrl
                                 ? `Meet ${characterData.name || 'your ai.therapist'}!`
                                 : 'Image generation failed'}
                         </ThemedText>
-                        <ThemedText style={[styles.stepDescription, styles.centeredText]}>
+                        <ThemedText style={styles.stepDescription}>
                             {generatedImageUrl
-                                ? 'Looking good! Continue to the next step, or regenerate if you\'d like a different look.'
+                                ? 'Looking good! Continue to the next step, or '
                                 : 'Something went wrong. Please try again.'}
+                            {generatedImageUrl && (
+                                <ThemedText
+                                    style={{ color: theme.primary, fontWeight: '600' }}
+                                    onPress={handleGenerateImage}
+                                >
+                                    regenerate
+                                </ThemedText>
+                            )}
+                            {generatedImageUrl && ' if you\'d like a different look.'}
                         </ThemedText>
 
                         {/* Large character image showcase */}
@@ -924,15 +895,6 @@ export default function CreateCharacterScreen() {
                                 )}
                             </View>
                         </View>
-
-                        <TouchableOpacity
-                            style={[styles.regenerateButton, { borderColor: theme.primary }]}
-                            onPress={handleGenerateImage}
-                        >
-                            <View style={styles.generateButtonContent}>
-                                <ThemedText style={[styles.regenerateButtonText, { color: theme.primary }]}>🔄 Regenerate Image</ThemedText>
-                            </View>
-                        </TouchableOpacity>
                     </View>
                 );
 
