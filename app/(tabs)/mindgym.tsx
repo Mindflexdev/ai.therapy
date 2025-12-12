@@ -353,7 +353,7 @@ export default function MindGymScreen() {
             </ScrollView>
 
             {/* Coming Soon Overlay */}
-            <View style={[styles.overlay, { backgroundColor: 'rgba(0,0,0,0.85)' }]}>
+            <View style={[styles.overlay, { backgroundColor: 'rgba(0,0,0,0.4)' }]}>
                 <View style={styles.overlayContent}>
                     <Image
                         source={require('@/assets/images/lotus.png')}
