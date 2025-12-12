@@ -35,54 +35,74 @@ export default function RootLayout() {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        const [sessionResponse, skipLoginValue, cachedOnboarding] = await Promise.all([
-          supabase.auth.getSession(),
-          AsyncStorage.getItem('skipLogin'),
-          AsyncStorage.getItem('onboarding_completed')
+        // Create a timeout promise that resolves after 2500ms
+        const timeoutPromise = new Promise((resolve) => {
+          setTimeout(() => resolve('timeout'), 2500);
+        });
+
+        // Race the actual initialization against the timeout
+        const result = await Promise.race([
+          Promise.all([
+            supabase.auth.getSession(),
+            AsyncStorage.getItem('skipLogin'),
+            AsyncStorage.getItem('onboarding_completed')
+          ]),
+          timeoutPromise
         ]);
 
-        const currentSession = sessionResponse.data.session;
-        const currentSkipLogin = skipLoginValue === 'true';
+        if (result === 'timeout') {
+          console.warn('Auth initialization timed out, proceeding with defaults');
+          // If timeout, we default to no session to let the user in/login
+          setSession(null);
+          setSkipLogin(false);
+          setIsOnboardingCompleted(false);
+        } else {
+          // Type assertion since we know it's the array result if not timeout
+          const [sessionResponse, skipLoginValue, cachedOnboarding] = result as [any, string | null, string | null];
 
-        setSession(currentSession);
-        setSkipLogin(currentSkipLogin);
+          const currentSession = sessionResponse?.data?.session ?? null;
+          const currentSkipLogin = skipLoginValue === 'true';
 
-        // Optimistically set onboarding status from cache if available
-        if (cachedOnboarding !== null) {
-          setIsOnboardingCompleted(cachedOnboarding === 'true');
-        }
+          setSession(currentSession);
+          setSkipLogin(currentSkipLogin);
 
-        if (currentSession) {
-          // If we don't have a cached value, we must await the fetch
-          if (cachedOnboarding === null) {
-            const { data } = await supabase
-              .from('users')
-              .select('onboarding_completed')
-              .eq('id', currentSession.user.id)
-              .single();
-            const isCompleted = data?.onboarding_completed ?? false;
-            setIsOnboardingCompleted(isCompleted);
-            AsyncStorage.setItem('onboarding_completed', String(isCompleted));
-          } else {
-            // If we have a cached value, update in background
-            supabase
-              .from('users')
-              .select('onboarding_completed')
-              .eq('id', currentSession.user.id)
-              .single()
-              .then(({ data }) => {
-                if (data) {
-                  setIsOnboardingCompleted(data.onboarding_completed);
-                  AsyncStorage.setItem('onboarding_completed', String(data.onboarding_completed));
-                }
-              });
+          // Optimistically set onboarding status from cache if available
+          if (cachedOnboarding !== null) {
+            setIsOnboardingCompleted(cachedOnboarding === 'true');
+          }
+
+          if (currentSession) {
+            // If we don't have a cached value, we must await the fetch
+            if (cachedOnboarding === null) {
+              const { data } = await supabase
+                .from('users')
+                .select('onboarding_completed')
+                .eq('id', currentSession.user.id)
+                .single();
+              const isCompleted = data?.onboarding_completed ?? false;
+              setIsOnboardingCompleted(isCompleted);
+              AsyncStorage.setItem('onboarding_completed', String(isCompleted));
+            } else {
+              // Background update
+              supabase
+                .from('users')
+                .select('onboarding_completed')
+                .eq('id', currentSession.user.id)
+                .single()
+                .then(({ data }) => {
+                  if (data) {
+                    setIsOnboardingCompleted(data.onboarding_completed);
+                    AsyncStorage.setItem('onboarding_completed', String(data.onboarding_completed));
+                  }
+                });
+            }
           }
         }
       } catch (error) {
         console.error('Auth initialization error:', error);
       } finally {
         setShowLoading(false);
-        SplashScreen.hideAsync();
+        SplashScreen.hideAsync().catch(() => { }); // Catch error if hideAsync fails
         setIsReady(true);
       }
     };
