@@ -671,6 +671,32 @@ export default function CreateCharacterScreen() {
     const handleCreate = async () => {
         if (isCreating) return;
 
+        // Validate all required fields
+        if (!characterData.name.trim()) {
+            Alert.alert('Missing Name', 'Please give your ai.therapist a name.');
+            return;
+        }
+        if (!characterData.characteristics.trim()) {
+            Alert.alert('Missing Description', 'Please describe who your ai.therapist is.');
+            return;
+        }
+        if (!characterData.greeting.trim()) {
+            Alert.alert('Missing Greeting', 'Please add a greeting message.');
+            return;
+        }
+        if (!characterData.goal.trim()) {
+            Alert.alert('Missing Goal', 'Please describe your goal for this ai.therapist.');
+            return;
+        }
+        if (!characterData.therapyStyles || characterData.therapyStyles.length === 0) {
+            Alert.alert('Missing Therapy Style', 'Please select at least one therapy style.');
+            return;
+        }
+        if (!generatedImageUrl) {
+            Alert.alert('Missing Image', 'Please generate an image for your ai.therapist first.');
+            return;
+        }
+
         setIsCreating(true);
         try {
             // Use Supabase character ID if available, otherwise generate local ID
