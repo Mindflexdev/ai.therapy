@@ -129,12 +129,19 @@ export const getAllCharactersGroupedByTopic = async (): Promise<{ topicId: strin
 
     try {
         console.log('Fetching characters from Supabase...');
-        // 1. Fetch fresh data from Supabase (Select ALL fields to be safe)
-        const { data, error } = await supabase
+
+        // 1. Fetch fresh data from Supabase with 3s timeout
+        const fetchPromise = supabase
             .from('characters')
             .select('*') // Select all fields to ensure we have greeting, etc.
             .eq('is_public', true)
             .order('topic');
+
+        const timeoutPromise = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('Supabase fetch timeout (3s)')), 3000)
+        );
+
+        const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as any;
 
         if (error) {
             throw error;

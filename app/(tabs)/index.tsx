@@ -1,3 +1,4 @@
+import { useFocusEffect } from '@react-navigation/native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -73,83 +74,86 @@ export default function HomeScreen() {
     checkOnboarding();
   }, []);
 
-  // Load user goals, sort topics, and load characters - all in one effect
-  useEffect(() => {
-    const loadEverything = async () => {
-      setIsLoading(true);
-      try {
-        // 1. Load user goals and sort topics
-        const { data: { session } } = await (await import('@/lib/supabase')).supabase.auth.getSession();
-        let finalSortedTopics = TOPICS;
+  // Load user goals, sort topics, and load characters - reload when tab becomes active
+  useFocusEffect(
+    useCallback(() => {
+      const loadEverything = async () => {
+        console.log('🏠 Home tab focused - loading data...');
+        setIsLoading(true);
+        try {
+          // 1. Load user goals and sort topics
+          const { data: { session } } = await (await import('@/lib/supabase')).supabase.auth.getSession();
+          let finalSortedTopics = TOPICS;
 
-        if (session) {
-          const { data } = await (await import('@/lib/supabase')).supabase
-            .from('users')
-            .select('user_goals')
-            .eq('id', session.user.id)
-            .single();
+          if (session) {
+            const { data } = await (await import('@/lib/supabase')).supabase
+              .from('users')
+              .select('user_goals')
+              .eq('id', session.user.id)
+              .single();
 
-          if (data?.user_goals && data.user_goals.length > 0) {
-            setUserGoals(data.user_goals);
+            if (data?.user_goals && data.user_goals.length > 0) {
+              setUserGoals(data.user_goals);
 
-            // Sort topics: user's goals first, then others
-            const userGoalTopics = TOPICS.filter(topic =>
-              data.user_goals.some((goal: string) =>
-                topic.id.toLowerCase() === goal.toLowerCase() ||
-                topic.title.toLowerCase() === goal.toLowerCase()
-              )
-            );
-            const otherTopics = TOPICS.filter(topic =>
-              !data.user_goals.some((goal: string) =>
-                topic.id.toLowerCase() === goal.toLowerCase() ||
-                topic.title.toLowerCase() === goal.toLowerCase()
-              )
-            );
-            finalSortedTopics = [...userGoalTopics, ...otherTopics];
-            setSortedTopics(finalSortedTopics);
+              // Sort topics: user's goals first, then others
+              const userGoalTopics = TOPICS.filter(topic =>
+                data.user_goals.some((goal: string) =>
+                  topic.id.toLowerCase() === goal.toLowerCase() ||
+                  topic.title.toLowerCase() === goal.toLowerCase()
+                )
+              );
+              const otherTopics = TOPICS.filter(topic =>
+                !data.user_goals.some((goal: string) =>
+                  topic.id.toLowerCase() === goal.toLowerCase() ||
+                  topic.title.toLowerCase() === goal.toLowerCase()
+                )
+              );
+              finalSortedTopics = [...userGoalTopics, ...otherTopics];
+              setSortedTopics(finalSortedTopics);
+            }
           }
+
+          // 2. Load characters using the sorted topics
+          const groupedData = await getAllCharactersGroupedByTopic();
+
+          // Get user's created public characters
+          const { getUserCharacters } = await import('@/constants/storage');
+          const userChars = await getUserCharacters();
+          const publicUserChars = userChars.filter(c => c.isPublic);
+
+          const allSections: TopicSection[] = [];
+
+          // Add "Created" section if user has public characters
+          if (publicUserChars.length > 0) {
+            setHasCreatedCharacters(true);
+            allSections.push({
+              id: 'created',
+              title: 'Created',
+              characters: publicUserChars
+            });
+          }
+
+          // Map the Supabase data to our Topic structure, using sorted topics
+          const mappedSections: TopicSection[] = finalSortedTopics.map(topic => {
+            const foundGroup = groupedData.find(g => g.topicId === topic.id);
+            return {
+              id: topic.id,
+              title: topic.title,
+              characters: foundGroup ? foundGroup.characters : []
+            };
+          }).filter(section => section.characters.length > 0); // Only show topics with characters
+
+          setSections([...allSections, ...mappedSections]);
+        } catch (error) {
+          console.error('❌ Error loading characters:', error);
+        } finally {
+          setIsLoading(false);
         }
+      };
 
-        // 2. Load characters using the sorted topics
-        const groupedData = await getAllCharactersGroupedByTopic();
-
-        // Get user's created public characters
-        const { getUserCharacters } = await import('@/constants/storage');
-        const userChars = await getUserCharacters();
-        const publicUserChars = userChars.filter(c => c.isPublic);
-
-        const allSections: TopicSection[] = [];
-
-        // Add "Created" section if user has public characters
-        if (publicUserChars.length > 0) {
-          setHasCreatedCharacters(true);
-          allSections.push({
-            id: 'created',
-            title: 'Created',
-            characters: publicUserChars
-          });
-        }
-
-        // Map the Supabase data to our Topic structure, using sorted topics
-        const mappedSections: TopicSection[] = finalSortedTopics.map(topic => {
-          const foundGroup = groupedData.find(g => g.topicId === topic.id);
-          return {
-            id: topic.id,
-            title: topic.title,
-            characters: foundGroup ? foundGroup.characters : []
-          };
-        }).filter(section => section.characters.length > 0); // Only show topics with characters
-
-        setSections([...allSections, ...mappedSections]);
-      } catch (error) {
-        console.error('Failed to load data:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadEverything();
-  }, []); // Only run once on mount
+      loadEverything();
+    }, [])
+  );
 
   // Filter sections based on search query
   useEffect(() => {
@@ -519,7 +523,7 @@ export default function HomeScreen() {
               .select('user_goals')
               .eq('id', session.user.id)
               .single();
-            
+
             if (data?.user_goals && data.user_goals.length > 0) {
               console.log('Reloading with user goals:', data.user_goals);
               setUserGoals(data.user_goals);
@@ -536,7 +540,7 @@ export default function HomeScreen() {
               const newSortedTopics = [...userGoalTopics, ...otherTopics];
               console.log('New sorted topics:', newSortedTopics.map(t => t.id));
               setSortedTopics(newSortedTopics);
-              
+
               // Force reload sections with new sorting
               const groupedData = await getAllCharactersGroupedByTopic();
               const { getUserCharacters } = await import('@/constants/storage');
