@@ -252,6 +252,297 @@ const animStyles = StyleSheet.create({
     },
 });
 
+// Fullscreen crafting overlay component
+const FullscreenCraftingOverlay = ({ theme, characterName }: { theme: typeof Colors.light; characterName?: string }) => {
+    const rotateAnim = useRef(new Animated.Value(0)).current;
+    const pulseAnim = useRef(new Animated.Value(0.9)).current;
+    const fadeAnim = useRef(new Animated.Value(1)).current;
+    const progressAnim = useRef(new Animated.Value(0)).current;
+    const glowAnim = useRef(new Animated.Value(0.5)).current;
+    const [messageIndex, setMessageIndex] = useState(0);
+
+    useEffect(() => {
+        // Rotation animation
+        Animated.loop(
+            Animated.timing(rotateAnim, {
+                toValue: 1,
+                duration: 4000,
+                easing: Easing.linear,
+                useNativeDriver: true,
+            })
+        ).start();
+
+        // Pulse animation
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(pulseAnim, {
+                    toValue: 1.05,
+                    duration: 1200,
+                    easing: Easing.inOut(Easing.ease),
+                    useNativeDriver: true,
+                }),
+                Animated.timing(pulseAnim, {
+                    toValue: 0.95,
+                    duration: 1200,
+                    easing: Easing.inOut(Easing.ease),
+                    useNativeDriver: true,
+                }),
+            ])
+        ).start();
+
+        // Glow animation
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(glowAnim, {
+                    toValue: 1,
+                    duration: 1500,
+                    easing: Easing.inOut(Easing.ease),
+                    useNativeDriver: true,
+                }),
+                Animated.timing(glowAnim, {
+                    toValue: 0.5,
+                    duration: 1500,
+                    easing: Easing.inOut(Easing.ease),
+                    useNativeDriver: true,
+                }),
+            ])
+        ).start();
+
+        // Progress bar animation
+        Animated.timing(progressAnim, {
+            toValue: 1,
+            duration: 18000,
+            easing: Easing.linear,
+            useNativeDriver: false,
+        }).start();
+
+        // Cycle through messages
+        const messageInterval = setInterval(() => {
+            Animated.timing(fadeAnim, {
+                toValue: 0,
+                duration: 250,
+                useNativeDriver: true,
+            }).start(() => {
+                setMessageIndex(prev => (prev + 1) % GENERATION_MESSAGES.length);
+                Animated.timing(fadeAnim, {
+                    toValue: 1,
+                    duration: 250,
+                    useNativeDriver: true,
+                }).start();
+            });
+        }, 3000);
+
+        return () => clearInterval(messageInterval);
+    }, []);
+
+    const rotation = rotateAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['0deg', '360deg'],
+    });
+
+    const reverseRotation = rotateAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['360deg', '0deg'],
+    });
+
+    const progressWidth = progressAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['0%', '100%'],
+    });
+
+    const currentMessage = GENERATION_MESSAGES[messageIndex];
+
+    return (
+        <View style={craftingStyles.overlay}>
+            <View style={[craftingStyles.container, { backgroundColor: theme.background }]}>
+                {/* Large centered profile area */}
+                <View style={craftingStyles.profileSection}>
+                    {/* Outer glow ring */}
+                    <Animated.View
+                        style={[
+                            craftingStyles.glowRing,
+                            {
+                                borderColor: theme.primary,
+                                opacity: glowAnim,
+                                transform: [{ scale: pulseAnim }],
+                            },
+                        ]}
+                    />
+
+                    {/* Rotating outer ring */}
+                    <Animated.View
+                        style={[
+                            craftingStyles.outerRing,
+                            {
+                                borderColor: theme.primary,
+                                transform: [{ rotate: rotation }],
+                            },
+                        ]}
+                    />
+
+                    {/* Counter-rotating middle ring */}
+                    <Animated.View
+                        style={[
+                            craftingStyles.middleRing,
+                            {
+                                borderColor: theme.primary + '60',
+                                transform: [{ rotate: reverseRotation }],
+                            },
+                        ]}
+                    />
+
+                    {/* Inner pulsing circle */}
+                    <Animated.View
+                        style={[
+                            craftingStyles.innerCircle,
+                            {
+                                backgroundColor: theme.primary + '15',
+                                transform: [{ scale: pulseAnim }],
+                            },
+                        ]}
+                    />
+
+                    {/* Center emoji */}
+                    <Animated.View style={[craftingStyles.emojiContainer, { opacity: fadeAnim }]}>
+                        <ThemedText style={craftingStyles.centerEmoji}>{currentMessage.icon}</ThemedText>
+                    </Animated.View>
+                </View>
+
+                {/* Status section below */}
+                <View style={craftingStyles.statusSection}>
+                    {/* Character name */}
+                    {characterName && (
+                        <ThemedText style={[craftingStyles.characterName, { color: theme.text }]}>
+                            {characterName}
+                        </ThemedText>
+                    )}
+
+                    {/* Status message */}
+                    <Animated.View style={{ opacity: fadeAnim }}>
+                        <ThemedText style={[craftingStyles.statusMessage, { color: theme.text }]}>
+                            {currentMessage.text}
+                        </ThemedText>
+                    </Animated.View>
+
+                    {/* Progress bar */}
+                    <View style={craftingStyles.progressSection}>
+                        <View style={[craftingStyles.progressBarBg, { backgroundColor: theme.card }]}>
+                            <Animated.View
+                                style={[
+                                    craftingStyles.progressBarFill,
+                                    {
+                                        backgroundColor: theme.primary,
+                                        width: progressWidth,
+                                    }
+                                ]}
+                            />
+                        </View>
+                    </View>
+
+                    {/* Subtext */}
+                    <ThemedText style={[craftingStyles.subtext, { color: theme.icon }]}>
+                        This may take a moment...
+                    </ThemedText>
+                </View>
+            </View>
+        </View>
+    );
+};
+
+// Styles for fullscreen crafting overlay
+const craftingStyles = StyleSheet.create({
+    overlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 1000,
+    },
+    container: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 40,
+    },
+    profileSection: {
+        width: 200,
+        height: 200,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 60,
+    },
+    glowRing: {
+        position: 'absolute',
+        width: 200,
+        height: 200,
+        borderRadius: 100,
+        borderWidth: 2,
+    },
+    outerRing: {
+        position: 'absolute',
+        width: 160,
+        height: 160,
+        borderRadius: 80,
+        borderWidth: 3,
+        borderStyle: 'dashed',
+    },
+    middleRing: {
+        position: 'absolute',
+        width: 120,
+        height: 120,
+        borderRadius: 60,
+        borderWidth: 2,
+        borderStyle: 'dotted',
+    },
+    innerCircle: {
+        position: 'absolute',
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+    },
+    emojiContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    centerEmoji: {
+        fontSize: 40,
+    },
+    statusSection: {
+        alignItems: 'center',
+        gap: 16,
+        width: '100%',
+    },
+    characterName: {
+        fontSize: 28,
+        fontWeight: '700',
+        marginBottom: 8,
+    },
+    statusMessage: {
+        fontSize: 18,
+        fontWeight: '500',
+        textAlign: 'center',
+    },
+    progressSection: {
+        width: '100%',
+        marginTop: 8,
+    },
+    progressBarBg: {
+        width: '100%',
+        height: 6,
+        borderRadius: 3,
+        overflow: 'hidden',
+    },
+    progressBarFill: {
+        height: '100%',
+        borderRadius: 3,
+    },
+    subtext: {
+        fontSize: 14,
+        marginTop: 8,
+    },
+});
+
 export default function CreateCharacterScreen() {
     const router = useRouter();
     const colorScheme = useColorScheme();
@@ -605,52 +896,43 @@ export default function CreateCharacterScreen() {
             case 'imageGeneration':
                 return (
                     <View style={styles.stepContainer}>
-                        {/* Image Preview */}
+                        {/* Image Preview - Result view only */}
                         <View style={styles.imagePreviewSection}>
-                            <View style={[styles.imagePreviewContainer, { backgroundColor: theme.card, borderColor: isGeneratingImage ? theme.primary : theme.icon }]}>
-                                {generatedImageUrl && !isGeneratingImage ? (
+                            <View style={[styles.imagePreviewContainer, { backgroundColor: theme.card, borderColor: theme.primary }]}>
+                                {generatedImageUrl ? (
                                     <Image
                                         source={{ uri: generatedImageUrl }}
                                         style={styles.imagePreview}
                                         contentFit="cover"
                                     />
-                                ) : isGeneratingImage ? (
-                                    <ImageGeneratingAnimation theme={theme} characterName={characterData.name} />
                                 ) : (
                                     <View style={styles.emptyImageState}>
                                         <IconSymbol name="sparkles" size={48} color={theme.primary} />
-                                        <ThemedText style={[styles.emptyImageText, { color: theme.icon }]}>Generating...</ThemedText>
+                                        <ThemedText style={[styles.emptyImageText, { color: theme.icon }]}>No image yet</ThemedText>
                                     </View>
                                 )}
                             </View>
                         </View>
 
                         <ThemedText type="title" style={styles.stepTitle}>
-                            {isGeneratingImage
-                                ? ''
-                                : generatedImageUrl
-                                    ? `Meet ${characterData.name || 'your ai.therapist'}!`
-                                    : 'Preparing your ai.therapist...'}
+                            {generatedImageUrl
+                                ? `Meet ${characterData.name || 'your ai.therapist'}!`
+                                : 'Image generation failed'}
                         </ThemedText>
                         <ThemedText style={styles.stepDescription}>
-                            {isGeneratingImage
-                                ? ''
-                                : generatedImageUrl
-                                    ? 'Looking good! Continue to the next step, or regenerate if you\'d like a different look.'
-                                    : 'Please wait while we create your character...'
-                            }
+                            {generatedImageUrl
+                                ? 'Looking good! Continue to the next step, or regenerate if you\'d like a different look.'
+                                : 'Something went wrong. Please try again.'}
                         </ThemedText>
 
-                        {!isGeneratingImage && generatedImageUrl && (
-                            <TouchableOpacity
-                                style={[styles.regenerateButton, { borderColor: theme.primary }]}
-                                onPress={handleGenerateImage}
-                            >
-                                <View style={styles.generateButtonContent}>
-                                    <ThemedText style={[styles.regenerateButtonText, { color: theme.primary }]}>🔄 Regenerate Image</ThemedText>
-                                </View>
-                            </TouchableOpacity>
-                        )}
+                        <TouchableOpacity
+                            style={[styles.regenerateButton, { borderColor: theme.primary }]}
+                            onPress={handleGenerateImage}
+                        >
+                            <View style={styles.generateButtonContent}>
+                                <ThemedText style={[styles.regenerateButtonText, { color: theme.primary }]}>🔄 Regenerate Image</ThemedText>
+                            </View>
+                        </TouchableOpacity>
                     </View>
                 );
 
@@ -787,6 +1069,11 @@ export default function CreateCharacterScreen() {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
+            {/* Fullscreen crafting overlay */}
+            {isGeneratingImage && (
+                <FullscreenCraftingOverlay theme={theme} characterName={characterData.name} />
+            )}
+
             <View style={[styles.header, { borderBottomColor: theme.icon }]}>
                 <TouchableOpacity onPress={handleBack} style={styles.backButton}>
                     <IconSymbol name="chevron.right" size={24} color={theme.text} style={{ transform: [{ rotate: '180deg' }] }} />
@@ -822,6 +1109,10 @@ export default function CreateCharacterScreen() {
                             onPress={handleCreate}>
                             <ThemedText style={styles.buttonText}>{editingId ? 'Save Changes' : 'Create!'}</ThemedText>
                         </TouchableOpacity>
+                    ) : currentStep === 'imageGeneration' && isGeneratingImage ? (
+                        <View style={[styles.button, { backgroundColor: theme.card }]}>
+                            <ThemedText style={[styles.buttonText, { color: theme.icon }]}>Please wait...</ThemedText>
+                        </View>
                     ) : (
                         <TouchableOpacity
                             style={[styles.button, { backgroundColor: theme.primary }]}
