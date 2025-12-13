@@ -52,7 +52,7 @@
             min-height: 100vh;
         }
 
-        /* Ambient Background */
+        /* Ambient Background - Same as home */
         .ambient-bg {
             position: fixed;
             inset: 0;
@@ -102,7 +102,7 @@
             }
         }
 
-        /* Navigation */
+        /* Navigation - Logo centered */
         .nav-glass {
             position: fixed;
             top: 0;
@@ -120,7 +120,8 @@
             padding: 1rem 2rem;
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            justify-content: center;
+            position: relative;
         }
 
         .nav-logo {
@@ -138,6 +139,8 @@
         }
 
         .nav-right {
+            position: absolute;
+            right: 2rem;
             display: flex;
             align-items: center;
             gap: 2rem;
@@ -284,29 +287,6 @@
             font-weight: 500;
         }
 
-        /* Story Card - Full Width */
-        .story-card {
-            background: rgba(255, 255, 255, 0.9);
-            border: 1px solid rgba(0, 114, 255, 0.1);
-            border-radius: 24px;
-            padding: 3rem;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
-        }
-
-        .story-content h3 {
-            font-family: var(--font-display);
-            font-size: 1.75rem;
-            margin-bottom: 1.5rem;
-            color: #1a1a2e;
-        }
-
-        .story-content p {
-            color: var(--text-secondary);
-            margin-bottom: 1rem;
-            line-height: 1.8;
-            font-size: 1.05rem;
-        }
-
         /* Vision Cards */
         .vision-cards {
             display: grid;
@@ -381,25 +361,26 @@
             transform: translateY(-2px);
         }
 
-        /* CTA Section */
+        /* CTA Section - Light version */
         .cta-section {
             text-align: center;
             padding: 4rem 2rem;
-            background: linear-gradient(135deg, #1a1a2e 0%, #2d3748 100%);
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(0, 114, 255, 0.1);
             border-radius: 30px;
             margin: 4rem auto;
             max-width: 1000px;
-            color: white;
         }
 
         .cta-section h2 {
             font-family: var(--font-display);
             font-size: clamp(1.5rem, 3vw, 2rem);
             margin-bottom: 1rem;
+            color: #1a1a2e;
         }
 
         .cta-section p {
-            opacity: 0.8;
+            color: var(--text-secondary);
             margin-bottom: 2rem;
         }
 
@@ -419,7 +400,7 @@
             box-shadow: 0 15px 40px rgba(32, 226, 215, 0.4);
         }
 
-        /* Footer */
+        /* Footer - Only dark element */
         .footer {
             background: #1a1a2e;
             padding: 3rem 2rem;
@@ -451,6 +432,10 @@
 
             .nav-links {
                 display: none;
+            }
+
+            .nav-right {
+                position: static;
             }
         }
 
@@ -491,7 +476,7 @@
         <div class="gradient-layer"></div>
     </div>
 
-    <!-- Navigation -->
+    <!-- Navigation - Logo Centered -->
     <nav class="nav-glass">
         <div class="nav-container">
             <a href="index.html" class="nav-logo">
@@ -530,27 +515,6 @@
                 <div class="founder-icon">🎯</div>
                 <p class="founder-name">Julian Hecht</p>
                 <p class="founder-role">Co-Founder & Psychology</p>
-            </div>
-        </div>
-    </section>
-
-    <!-- Our Story -->
-    <section class="section">
-        <div class="story-card animate-in delay-1">
-            <div class="story-content">
-                <h3>Our Story</h3>
-                <p>
-                    ai.therapy was born from a simple observation: while millions need mental health support, access
-                    remains limited by cost, availability, and stigma.
-                </p>
-                <p>
-                    As psychologists, we saw how therapeutic techniques—from CBT to Schema Therapy—could transform
-                    lives. But we also saw how many people couldn't access this support.
-                </p>
-                <p>
-                    So we asked ourselves: What if we could create AI companions trained in evidence-based therapeutic
-                    approaches, available anytime, anywhere, and for everyone?
-                </p>
             </div>
         </div>
     </section>
@@ -607,7 +571,7 @@
         </div>
     </section>
 
-    <!-- CTA -->
+    <!-- CTA - Light version -->
     <section class="section">
         <div class="cta-section animate-in delay-3">
             <h2>Ready to Start Your Journey?</h2>
@@ -616,7 +580,7 @@
         </div>
     </section>
 
-    <!-- Footer -->
+    <!-- Footer - Only dark element -->
     <footer class="footer">
         <div class="footer-logo">
             ai<span class="logo-dot">.</span>therapy

@@ -583,8 +583,8 @@
             padding: 1rem 2rem;
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            gap: 1rem;
+            justify-content: center;
+            position: relative;
         }
 
         .nav-logo {
@@ -602,6 +602,8 @@
         }
 
         .nav-right {
+            position: absolute;
+            right: 2rem;
             display: flex;
             align-items: center;
             gap: 2rem;
@@ -4917,280 +4919,139 @@
                 </svg>
             </button>
             <div class="legal-modal-header">
-                <h2 class="lang-en">General Terms and Conditions (GTC)</h2>
-                <h2 class="lang-de">Allgemeine Geschäftsbedingungen (AGB)</h2>
+                <h2>General Terms and Conditions (GTC)</h2>
             </div>
             <div class="legal-modal-body">
-                <!-- English Content -->
-                <div class="lang-en">
-                    <h3>1. Scope and Provider</h3>
-                    <p>(1) The provider is Mindflex UG (haftungsbeschränkt), Mariendorfer Damm 85, 12109 Berlin
-                        (hereinafter "Provider").</p>
-                    <p>(2) These GTC apply to all contracts regarding the use of the web application "AI.Therapy" under
-                        the domain ai.therapy.free and ai.therapy.free/app (hereinafter "Service").</p>
-                    <p>(3) Deviating terms and conditions of the user are not recognized unless the Provider expressly
-                        agrees to their validity in writing.</p>
+                <h3>1. Scope and Provider</h3>
+                <p>(1) The provider is Mindflex UG (haftungsbeschränkt), Mariendorfer Damm 85, 12109 Berlin
+                    (hereinafter "Provider").</p>
+                <p>(2) These GTC apply to all contracts regarding the use of the web application "AI.Therapy" under
+                    the domain ai.therapy.free and ai.therapy.free/app (hereinafter "Service").</p>
+                <p>(3) Deviating terms and conditions of the user are not recognized unless the Provider expressly
+                    agrees to their validity in writing.</p>
 
-                    <h3>2. Subject Matter and Disclaimer (IMPORTANT)</h3>
-                    <p>(1) AI.Therapy is a web application for mental wellness and creative self-reflection.</p>
-                    <p>(2) <strong>IMPORTANT DISCLAIMER:</strong><br>
-                        AI.Therapy is a creative mental wellness platform and not a therapeutic service. All
-                        "ai.therapists" are fictional AI characters. Their role titles (such as "Therapist,"
-                        "Psychologist," "Dr.," "Coach," etc.) are used solely for imaginative portrayal and have no
-                        professional, clinical, or medical meaning.</p>
-                    <p>(3) The therapeutic approaches and modalities mentioned on the platform (e.g., CBT, ACT, DBT,
-                        Psychodynamic, Schema, Gestalt, MBCT, etc.) are used exclusively for inspired, model-like
-                        purposes and do not constitute real therapeutic application.</p>
-                    <p>(4) Neither the AI.Therapy platform nor its AI characters hold qualifications, approvals, or
-                        licenses to practice medicine or psychotherapy.</p>
-                    <p>(5) No Promise of Healing: No promise of healing is expressly made. All statements and content
-                        from the AI are intended for inspiration, reflection, and everyday support—they are not intended
-                        for the diagnosis, treatment, or therapy of diseases or disorders.</p>
-                    <p>(6) The Service is not suitable for acute psychological crises, suicidal thoughts, or medical
-                        emergencies. Users are obliged to seek professional help immediately in such cases (Doctor,
-                        Emergency Services 112, Telephone Counseling).</p>
+                <h3>2. Subject Matter and Disclaimer (IMPORTANT)</h3>
+                <p>(1) AI.Therapy is a web application for mental wellness and creative self-reflection.</p>
+                <p>(2) <strong>IMPORTANT DISCLAIMER:</strong><br>
+                    AI.Therapy is a creative mental wellness platform and not a therapeutic service. All
+                    "ai.therapists" are fictional AI characters. Their role titles (such as "Therapist,"
+                    "Psychologist," "Dr.," "Coach," etc.) are used solely for imaginative portrayal and have no
+                    professional, clinical, or medical meaning.</p>
+                <p>(3) The therapeutic approaches and modalities mentioned on the platform (e.g., CBT, ACT, DBT,
+                    Psychodynamic, Schema, Gestalt, MBCT, etc.) are used exclusively for inspired, model-like
+                    purposes and do not constitute real therapeutic application.</p>
+                <p>(4) Neither the AI.Therapy platform nor its AI characters hold qualifications, approvals, or
+                    licenses to practice medicine or psychotherapy.</p>
+                <p>(5) No Promise of Healing: No promise of healing is expressly made. All statements and content
+                    from the AI are intended for inspiration, reflection, and everyday support—they are not intended
+                    for the diagnosis, treatment, or therapy of diseases or disorders.</p>
+                <p>(6) The Service is not suitable for acute psychological crises, suicidal thoughts, or medical
+                    emergencies. Users are obliged to seek professional help immediately in such cases (Doctor,
+                    Emergency Services 112, Telephone Counseling).</p>
 
-                    <h3>3. Registration, Minimum Age, and Access</h3>
-                    <p>(1) Use requires registration. This takes place exclusively via Google Sign-In (OAuth). The
-                        Provider does not manage a separate password.</p>
-                    <p>(2) Minor Users: The offer is generally aimed at adults. Persons under 18 years of age may only
-                        use the Service if the express consent of their legal guardians has been provided.</p>
-                    <p>(3) Confirmation: By confirming the corresponding checkbox during the registration process, the
-                        user explicitly assures that they have either completed their 18th year of age OR possess the
-                        necessary consent of their legal guardians to use this Service and to conclude subscriptions.
-                        The Provider reserves the right to request appropriate proof and to block accounts if proof is
-                        missing.</p>
+                <h3>3. Registration, Minimum Age, and Access</h3>
+                <p>(1) Use requires registration. This takes place exclusively via Google Sign-In (OAuth). The
+                    Provider does not manage a separate password.</p>
+                <p>(2) Minor Users: The offer is generally aimed at adults. Persons under 18 years of age may only
+                    use the Service if the express consent of their legal guardians has been provided.</p>
+                <p>(3) Confirmation: By confirming the corresponding checkbox during the registration process, the
+                    user explicitly assures that they have either completed their 18th year of age OR possess the
+                    necessary consent of their legal guardians to use this Service and to conclude subscriptions.
+                    The Provider reserves the right to request appropriate proof and to block accounts if proof is
+                    missing.</p>
 
-                    <h3>4. Functions: Character Creation & Sharing</h3>
-                    <p>(1) Users can chat with pre-made characters or create their own AI characters (Name, Image,
-                        Personality).</p>
-                    <p>(2) Rights of Use for Created Characters: If the user creates their own AI character and uses the
-                        "Share" function, they grant the Provider the simple, gratuitous, spatially and temporally
-                        unlimited right to make this character (Name, Image, Description) accessible to other users on
-                        the platform ai.therapy.free. Private chat histories remain unaffected by this and strictly
-                        confidential.</p>
+                <h3>4. Functions: Character Creation & Sharing</h3>
+                <p>(1) Users can chat with pre-made characters or create their own AI characters (Name, Image,
+                    Personality).</p>
+                <p>(2) Rights of Use for Created Characters: If the user creates their own AI character and uses the
+                    "Share" function, they grant the Provider the simple, gratuitous, spatially and temporally
+                    unlimited right to make this character (Name, Image, Description) accessible to other users on
+                    the platform ai.therapy.free. Private chat histories remain unaffected by this and strictly
+                    confidential.</p>
 
-                    <h3>5. Models, Prices, and Payment Conditions</h3>
-                    <p>The Provider offers two usage models:</p>
-                    <h4>5.1 AI.Therapy Free (Free / Ad-financed)</h4>
-                    <p>Access is generally free of charge.</p>
-                    <p><strong>Limitation:</strong> At the start, 100 messages (prompts/responses) are available
-                        ad-free.</p>
-                    <p><strong>Advertising:</strong> After the free quota expires or for continued free use,
-                        advertisements will be displayed to the user. Use of the Free Version is contingent upon
-                        acceptance of this advertising (payment with attention/data).</p>
-                    <h4>5.2 AI.Therapy+ (Paid Subscription)</h4>
-                    <p>By booking "AI.Therapy+", the user gains access to extended functions (e.g., ad-free experience,
-                        unlimited messages, prioritized AI responses).</p>
-                    <p><strong>Prices:</strong></p>
-                    <p>Monthly Subscription: 9.99 EUR per month (incl. VAT).</p>
-                    <p>Annual Subscription: 99.99 EUR per year (incl. VAT).</p>
-                    <p>Payment is made in advance via the payment service provider Stripe.</p>
+                <h3>5. Models, Prices, and Payment Conditions</h3>
+                <p>The Provider offers two usage models:</p>
+                <h4>5.1 AI.Therapy Free (Free / Ad-financed)</h4>
+                <p>Access is generally free of charge.</p>
+                <p><strong>Limitation:</strong> At the start, 100 messages (prompts/responses) are available
+                    ad-free.</p>
+                <p><strong>Advertising:</strong> After the free quota expires or for continued free use,
+                    advertisements will be displayed to the user. Use of the Free Version is contingent upon
+                    acceptance of this advertising (payment with attention/data).</p>
+                <h4>5.2 AI.Therapy+ (Paid Subscription)</h4>
+                <p>By booking "AI.Therapy+", the user gains access to extended functions (e.g., ad-free experience,
+                    unlimited messages, prioritized AI responses).</p>
+                <p><strong>Prices:</strong></p>
+                <p>Monthly Subscription: 9.99 EUR per month (incl. VAT).</p>
+                <p>Annual Subscription: 99.99 EUR per year (incl. VAT).</p>
+                <p>Payment is made in advance via the payment service provider Stripe.</p>
 
-                    <h3>6. Contract Duration and Termination</h3>
-                    <p>(1) Monthly Subscription: The contract runs for an indefinite period and can be terminated
-                        monthly. Termination can take place at any time effective at the end of the current billing
-                        period via the account settings (link to the Stripe customer portal).</p>
-                    <p>(2) Annual Subscription: The contract runs for 12 months and automatically renews for another 12
-                        months unless terminated by the day before expiration.</p>
-                    <p>(3) Form: Termination is preferably effected by clicking in the user dashboard or by email to
-                        hello@ai.therapy.free.</p>
-                    <p>(4) The right to extraordinary termination for good cause remains unaffected. Termination
-                        pursuant to § 627 BGB (Services of a higher nature) is excluded, as no personal relationship of
-                        trust with a real person exists.</p>
+                <h3>6. Contract Duration and Termination</h3>
+                <p>(1) Monthly Subscription: The contract runs for an indefinite period and can be terminated
+                    monthly. Termination can take place at any time effective at the end of the current billing
+                    period via the account settings (link to the Stripe customer portal).</p>
+                <p>(2) Annual Subscription: The contract runs for 12 months and automatically renews for another 12
+                    months unless terminated by the day before expiration.</p>
+                <p>(3) Form: Termination is preferably effected by clicking in the user dashboard or by email to
+                    hello@ai.therapy.free.</p>
+                <p>(4) The right to extraordinary termination for good cause remains unaffected. Termination
+                    pursuant to § 627 BGB (Services of a higher nature) is excluded, as no personal relationship of
+                    trust with a real person exists.</p>
 
-                    <h3>7. Right of Withdrawal for Consumers</h3>
-                    <p>(1) Consumers have a 14-day right of withdrawal when concluding a paid subscription.</p>
-                    <p>(2) Expiry of the Right of Withdrawal: The right of withdrawal expires prematurely if the user
-                        has expressly agreed that the execution of the contract (provision of Plus functions) begins
-                        before the expiry of the withdrawal period, and they have confirmed their knowledge that they
-                        lose their right of withdrawal by giving their consent with the start of execution (§ 356 para.
-                        5 BGB).</p>
+                <h3>7. Right of Withdrawal for Consumers</h3>
+                <p>(1) Consumers have a 14-day right of withdrawal when concluding a paid subscription.</p>
+                <p>(2) Expiry of the Right of Withdrawal: The right of withdrawal expires prematurely if the user
+                    has expressly agreed that the execution of the contract (provision of Plus functions) begins
+                    before the expiry of the withdrawal period, and they have confirmed their knowledge that they
+                    lose their right of withdrawal by giving their consent with the start of execution (§ 356 para.
+                    5 BGB).</p>
 
-                    <h3>8. Availability and Technology</h3>
-                    <p>(1) The Service is provided as "Software as a Service" (SaaS). Technical development is based on
-                        the "AntiGravity" platform by Google.</p>
-                    <p>(2) Availability: The Service is generally intended to be available 24/7. Technical interruptions
-                        (maintenance, outages at third-party providers like OpenAI, Vercel, or Supabase) are possible.
-                    </p>
-                    <p>(3) AI Risk: Responses are generated by Artificial Intelligence (models from OpenAI).
-                        "Hallucinations" (false factual claims by the AI) are possible. The Provider is not liable for
-                        content accuracy.</p>
+                <h3>8. Availability and Technology</h3>
+                <p>(1) The Service is provided as "Software as a Service" (SaaS). Technical development is based on
+                    the "AntiGravity" platform by Google.</p>
+                <p>(2) Availability: The Service is generally intended to be available 24/7. Technical interruptions
+                    (maintenance, outages at third-party providers like OpenAI, Vercel, or Supabase) are possible.
+                </p>
+                <p>(3) AI Risk: Responses are generated by Artificial Intelligence (models from OpenAI).
+                    "Hallucinations" (false factual claims by the AI) are possible. The Provider is not liable for
+                    content accuracy.</p>
 
-                    <h3>9. User Duties & Liability for Content</h3>
-                    <p>(1) Lawful Use: Only content whose transmission and processing is lawful may be submitted.</p>
-                    <p>(2) Liability for Created Characters: If the user creates and shares their own AI characters,
-                        they bear sole responsibility for ensuring that these (esp. Name, Image, and Description) do not
-                        violate the rights of third parties (e.g., copyright, trademark, or personality rights). It is
-                        prohibited to create characters that defame real public figures or violate protected trademarks.
-                    </p>
-                    <p>(3) Confidentiality: The user is obliged to protect their Google Account from access by third
-                        parties.</p>
+                <h3>9. User Duties & Liability for Content</h3>
+                <p>(1) Lawful Use: Only content whose transmission and processing is lawful may be submitted.</p>
+                <p>(2) Liability for Created Characters: If the user creates and shares their own AI characters,
+                    they bear sole responsibility for ensuring that these (esp. Name, Image, and Description) do not
+                    violate the rights of third parties (e.g., copyright, trademark, or personality rights). It is
+                    prohibited to create characters that defame real public figures or violate protected trademarks.
+                </p>
+                <p>(3) Confidentiality: The user is obliged to protect their Google Account from access by third
+                    parties.</p>
 
-                    <h3>10. Warranty and Liability</h3>
-                    <p>(1) Statutory warranty rights apply.</p>
-                    <p>(2) The Provider is liable without limitation for intent and gross negligence as well as for
-                        damages resulting from injury to life, body, or health.</p>
-                    <p>(3) In cases of slight negligence, the Provider is only liable for the breach of essential
-                        contractual obligations (cardinal duties); liability is then limited to the typical, foreseeable
-                        damage.</p>
-                    <p>(4) Liability for therapeutic errors by the user based on AI statements is excluded (see Point
-                        2).</p>
+                <h3>10. Warranty and Liability</h3>
+                <p>(1) Statutory warranty rights apply.</p>
+                <p>(2) The Provider is liable without limitation for intent and gross negligence as well as for
+                    damages resulting from injury to life, body, or health.</p>
+                <p>(3) In cases of slight negligence, the Provider is only liable for the breach of essential
+                    contractual obligations (cardinal duties); liability is then limited to the typical, foreseeable
+                    damage.</p>
+                <p>(4) Liability for therapeutic errors by the user based on AI statements is excluded (see Point
+                    2).</p>
 
-                    <h3>11. Special Regulations for Business Customers (B2B)</h3>
-                    <p>(1) If the user is an entrepreneur, Berlin is the exclusive place of jurisdiction.</p>
-                    <p>(2) For business customers, the Provider may act as a processor (Art. 28 GDPR).</p>
-                    <p>(3) The business customer indemnifies the Provider against claims by third parties resulting from
-                        unlawful use of the Service by the business customer.</p>
+                <h3>11. Special Regulations for Business Customers (B2B)</h3>
+                <p>(1) If the user is an entrepreneur, Berlin is the exclusive place of jurisdiction.</p>
+                <p>(2) For business customers, the Provider may act as a processor (Art. 28 GDPR).</p>
+                <p>(3) The business customer indemnifies the Provider against claims by third parties resulting from
+                    unlawful use of the Service by the business customer.</p>
 
-                    <h3>12. Changes to the GTC</h3>
-                    <p>(1) Changes will be communicated via email or pop-up. If the user does not object within 2 weeks,
-                        the new conditions are deemed accepted.</p>
+                <h3>12. Changes to the GTC</h3>
+                <p>(1) Changes will be communicated via email or pop-up. If the user does not object within 2 weeks,
+                    the new conditions are deemed accepted.</p>
 
-                    <h3>13. Final Provisions</h3>
-                    <p>(1) German law applies, excluding the UN Sales Convention.</p>
-                    <p>(2) Should individual provisions be invalid, the contract remains valid in all other respects.
-                    </p>
+                <h3>13. Final Provisions</h3>
+                <p>(1) German law applies, excluding the UN Sales Convention.</p>
+                <p>(2) Should individual provisions be invalid, the contract remains valid in all other respects.
+                </p>
 
-                    <p class="legal-date"><strong>Status: 12.12.2025</strong></p>
-                </div>
-
-                <!-- German Content -->
-                <div class="lang-de">
-                    <h3>1. Geltungsbereich und Anbieter</h3>
-                    <p>(1) Anbieter ist die Mindflex UG (haftungsbeschränkt), Mariendorfer Damm 85, 12109 Berlin
-                        (nachfolgend „Anbieter").</p>
-                    <p>(2) Diese AGB gelten für alle Verträge über die Nutzung der Web-Applikation „AI.Therapy" unter
-                        der Domain ai.therapy.free und ai.therapy.free/app (nachfolgend „Dienst").</p>
-                    <p>(3) Abweichende Geschäftsbedingungen des Nutzers werden nicht anerkannt, es sei denn, der
-                        Anbieter stimmt ihrer Geltung ausdrücklich schriftlich zu.</p>
-
-                    <h3>2. Leistungsgegenstand und Disclaimer (WICHTIG)</h3>
-                    <p>(1) AI.Therapy ist eine Web-Applikation für mentale Wellness und kreative Selbstreflexion.</p>
-                    <p>(2) <strong>WICHTIGER DISCLAIMER (HAFTUNGSAUSSCHLUSS):</strong><br>
-                        AI.Therapy ist eine kreative Mental-Wellness-Plattform und kein therapeutischer Dienst. Alle
-                        „ai.therapists" sind fiktive KI-Charaktere. Ihre Rollenbezeichnungen (wie „Therapeut",
-                        „Psychologe", „Dr.", „Coach" etc.) dienen ausschließlich der phantasievollen Darstellung
-                        („imaginative portrayal") und haben keinerlei berufliche, klinische oder medizinische Bedeutung.
-                    </p>
-                    <p>(3) Die auf der Plattform erwähnten therapeutischen Ansätze und Methoden (z. B. CBT, ACT, DBT,
-                        Psychodynamik, Schema, Gestalt, MBCT usw.) werden ausschließlich zu inspirierten, modellhaften
-                        Zwecken verwendet und stellen keine reale therapeutische Anwendung dar.</p>
-                    <p>(4) Weder die Plattform AI.Therapy noch ihre KI-Charaktere besitzen Qualifikationen,
-                        Approbationen oder Lizenzen zur Ausübung von Heilkunde, Medizin oder Psychotherapie.</p>
-                    <p>(5) Kein Heilversprechen: Es wird ausdrücklich kein Heilversprechen abgegeben. Alle Aussagen und
-                        Inhalte der KI dienen der Inspiration, Reflexion und alltäglichen Unterstützung – sie sind nicht
-                        zur Diagnose, Behandlung oder Therapie von Krankheiten oder Störungen bestimmt.</p>
-                    <p>(6) Bei akuten psychischen Krisen, Suizidgedanken oder medizinischen Notfällen ist der Dienst
-                        nicht geeignet. Nutzer sind verpflichtet, in solchen Fällen umgehend professionelle Hilfe (Arzt,
-                        Notruf 112, Telefonseelsorge) in Anspruch zu nehmen.</p>
-
-                    <h3>3. Registrierung, Mindestalter und Zugang</h3>
-                    <p>(1) Die Nutzung setzt eine Registrierung voraus. Diese erfolgt ausschließlich über Google Sign-In
-                        (OAuth). Ein eigenes Passwort wird vom Anbieter nicht verwaltet.</p>
-                    <p>(2) Minderjährige Nutzer: Das Angebot richtet sich grundsätzlich an volljährige Personen.
-                        Personen unter 18 Jahren dürfen den Dienst nur nutzen, wenn die ausdrückliche Zustimmung der
-                        Erziehungsberechtigten vorliegt.</p>
-                    <p>(3) Bestätigung: Mit der Bestätigung der entsprechenden Checkbox im Anmeldeprozess versichert der
-                        Nutzer ausdrücklich, dass er entweder das 18. Lebensjahr vollendet hat ODER die erforderliche
-                        Zustimmung seiner Erziehungsberechtigten zur Nutzung dieses Dienstes und zum Abschluss von
-                        Abonnements besitzt. Der Anbieter behält sich vor, entsprechende Nachweise anzufordern und
-                        Accounts bei fehlendem Nachweis zu sperren.</p>
-
-                    <h3>4. Funktionen: Charakter-Erstellung & Sharing</h3>
-                    <p>(1) Nutzer können mit vorgefertigten Charakteren chatten oder eigene KI-Charaktere erstellen
-                        (Name, Bild, Persönlichkeit).</p>
-                    <p>(2) Nutzungsrechte an erstellten Charakteren: Wenn der Nutzer einen eigenen KI-Charakter erstellt
-                        und die Funktion "Teilen" (Sharing) nutzt, räumt er dem Anbieter das einfache, unentgeltliche,
-                        räumlich und zeitlich unbeschränkte Recht ein, diesen Charakter (Name, Bild, Beschreibung) auf
-                        der Plattform ai.therapy.free auch anderen Nutzern zugänglich zu machen. Private Chatverläufe
-                        bleiben davon unberührt und strikt vertraulich.</p>
-
-                    <h3>5. Modelle, Preise und Zahlungsbedingungen</h3>
-                    <p>Der Anbieter bietet zwei Nutzungsmodelle an:</p>
-                    <h4>5.1 AI.Therapy Free (Kostenlos / Werbefinanziert)</h4>
-                    <p>Der Zugang ist grundsätzlich kostenlos.</p>
-                    <p><strong>Limitierung:</strong> Zum Start stehen 100 Nachrichten (Prompts/Antworten) werbefrei zur
-                        Verfügung.</p>
-                    <p><strong>Werbung:</strong> Nach Ablauf des Freikontingents oder zur dauerhaften kostenlosen
-                        Nutzung werden dem Nutzer Werbeanzeigen eingeblendet. Die Nutzung der Free-Version ist an die
-                        Akzeptanz dieser Werbung gebunden (Bezahlung mit Aufmerksamkeit/Daten).</p>
-                    <h4>5.2 AI.Therapy+ (Kostenpflichtiges Abonnement)</h4>
-                    <p>Durch Buchung von „AI.Therapy+" erhält der Nutzer Zugriff auf erweiterte Funktionen (z.B.
-                        Werbefreiheit, unbegrenzte Nachrichten, priorisierte KI-Antworten).</p>
-                    <p><strong>Preise:</strong></p>
-                    <p>Monatsabo: 9,99 EUR pro Monat (inkl. gesetzl. USt.).</p>
-                    <p>Jahresabo: 99,99 EUR pro Jahr (inkl. gesetzl. USt.).</p>
-                    <p>Die Zahlung erfolgt im Voraus über den Zahlungsdienstleister Stripe.</p>
-
-                    <h3>6. Vertragslaufzeit und Kündigung</h3>
-                    <p>(1) Monatsabo: Der Vertrag läuft auf unbestimmte Zeit und kann monatlich gekündigt werden. Die
-                        Kündigung kann jederzeit zum Ende des aktuellen Abrechnungszeitraums über die
-                        Account-Einstellungen (Link zum Stripe-Kundenportal) erfolgen.</p>
-                    <p>(2) Jahresabo: Der Vertrag läuft für 12 Monate und verlängert sich automatisch um weitere 12
-                        Monate, sofern nicht bis zum Tag vor Ablauf gekündigt wird.</p>
-                    <p>(3) Form: Die Kündigung erfolgt bevorzugt per Klick im User-Dashboard oder per E-Mail an
-                        hello@ai.therapy.free.</p>
-                    <p>(4) Das Recht zur außerordentlichen Kündigung aus wichtigem Grund bleibt unberührt. Eine
-                        Kündigung nach § 627 BGB (Dienste höherer Art) ist ausgeschlossen, da kein persönliches
-                        Vertrauensverhältnis zu einer realen Person besteht.</p>
-
-                    <h3>7. Widerrufsrecht für Verbraucher</h3>
-                    <p>(1) Verbrauchern steht bei Abschluss des kostenpflichtigen Abos ein 14-tägiges Widerrufsrecht zu.
-                    </p>
-                    <p>(2) Erlöschen des Widerrufsrechts: Das Widerrufsrecht erlischt vorzeitig, wenn der Nutzer
-                        ausdrücklich zugestimmt hat, dass mit der Ausführung des Vertrags (Bereitstellung der
-                        Plus-Funktionen) vor Ablauf der Widerrufsfrist begonnen wird, und er seine Kenntnis davon
-                        bestätigt hat, dass er durch seine Zustimmung mit Beginn der Ausführung sein Widerrufsrecht
-                        verliert (§ 356 Abs. 5 BGB).</p>
-
-                    <h3>8. Verfügbarkeit und Technik</h3>
-                    <p>(1) Der Dienst wird als "Software as a Service" (SaaS) bereitgestellt. Die technische Entwicklung
-                        erfolgt auf Basis der Plattform "AntiGravity" von Google.</p>
-                    <p>(2) Verfügbarkeit: Der Dienst ist grundsätzlich 24/7 vorgesehen. Technische Unterbrechungen
-                        (Wartung, Ausfälle bei Drittanbietern wie OpenAI, Vercel oder Supabase) sind möglich.</p>
-                    <p>(3) KI-Risiko: Die Antworten werden durch Künstliche Intelligenz (Modelle von OpenAI) generiert.
-                        „Halluzinationen" (falsche Tatsachenbehauptungen durch die KI) sind möglich. Der Anbieter haftet
-                        nicht für die inhaltliche Richtigkeit.</p>
-
-                    <h3>9. Pflichten der Nutzer & Haftung für Inhalte</h3>
-                    <p>(1) Rechtmäßige Nutzung: Es dürfen nur Inhalte übermittelt werden, deren Weitergabe und
-                        Verarbeitung rechtmäßig ist.</p>
-                    <p>(2) Haftung für erstellte Charaktere: Erstellt und teilt der Nutzer eigene KI-Charaktere, trägt
-                        er die alleinige Verantwortung dafür, dass diese (insb. Name, Bild und Beschreibung) nicht gegen
-                        Rechte Dritter (z.B. Urheber-, Marken- oder Persönlichkeitsrechte) verstoßen. Es ist untersagt,
-                        Charaktere zu erstellen, die reale Personen des öffentlichen Lebens diffamieren oder geschützte
-                        Marken verletzen.</p>
-                    <p>(3) Geheimhaltung: Der Nutzer ist verpflichtet, seinen Google-Account vor dem Zugriff Dritter zu
-                        schützen.</p>
-
-                    <h3>10. Gewährleistung und Haftung</h3>
-                    <p>(1) Es gilt das gesetzliche Mängelrecht.</p>
-                    <p>(2) Der Anbieter haftet unbeschränkt bei Vorsatz und grober Fahrlässigkeit sowie für Schäden aus
-                        der Verletzung von Leben, Körper oder Gesundheit.</p>
-                    <p>(3) Bei leichter Fahrlässigkeit haftet der Anbieter nur bei Verletzung wesentlicher
-                        Vertragspflichten (Kardinalpflichten); die Haftung ist dann auf den vertragstypischen,
-                        vorhersehbaren Schaden begrenzt.</p>
-                    <p>(4) Eine Haftung für therapeutische Fehlentscheidungen des Nutzers aufgrund von KI-Aussagen ist
-                        ausgeschlossen (siehe Punkt 2).</p>
-
-                    <h3>11. Besondere Regelungen für Geschäftskunden (B2B)</h3>
-                    <p>(1) Sofern der Nutzer Unternehmer ist, gilt Berlin als ausschließlicher Gerichtsstand.</p>
-                    <p>(2) Für Geschäftskunden kann der Anbieter als Auftragsverarbeiter tätig werden (Art. 28 DSGVO).
-                    </p>
-                    <p>(3) Der Geschäftskunde stellt den Anbieter von Ansprüchen Dritter frei, die auf einer
-                        rechtswidrigen Nutzung des Dienstes durch den Geschäftskunden beruhen.</p>
-
-                    <h3>12. Änderungen der AGB</h3>
-                    <p>(1) Änderungen werden per E-Mail oder Pop-up mitgeteilt. Widerspricht der Nutzer nicht innerhalb
-                        von 2 Wochen, gelten die neuen Bedingungen als angenommen.</p>
-
-                    <h3>13. Schlussbestimmungen</h3>
-                    <p>(1) Es gilt deutsches Recht unter Ausschluss des UN-Kaufrechts.</p>
-                    <p>(2) Sollten einzelne Bestimmungen unwirksam sein, bleibt der Vertrag im Übrigen wirksam.</p>
-
-                    <p class="legal-date"><strong>Stand: 12.12.2025</strong></p>
-                </div>
+                <p class="legal-date"><strong>Status: 12.12.2025</strong></p>
             </div>
         </div>
     </div>
@@ -5205,263 +5066,129 @@
                 </svg>
             </button>
             <div class="legal-modal-header">
-                <h2 class="lang-en">Privacy Policy (DSE)</h2>
-                <h2 class="lang-de">Datenschutzerklärung (DSE)</h2>
+                <h2>Privacy Policy</h2>
             </div>
             <div class="legal-modal-body">
-                <!-- English Content -->
-                <div class="lang-en">
-                    <h3>1. Introduction</h3>
-                    <p>Below we provide information about the processing of personal data when using our web application
-                        (Web App) at https://ai.therapy.free/app and our website https://ai.therapy.free.</p>
+                <h3>1. Introduction</h3>
+                <p>Below we provide information about the processing of personal data when using our web application
+                    (Web App) at https://ai.therapy.free/app and our website https://ai.therapy.free.</p>
 
-                    <h4>1.1 Controller</h4>
-                    <p>The Controller pursuant to Art. 4 No. 7 GDPR is:</p>
-                    <p>Mindflex UG (haftungsbeschränkt)<br>
-                        Mariendorfer Damm 85, 12109 Berlin, Germany<br>
-                        E-Mail: hello@ai.therapy.free<br>
-                        Represented by: Felix Mai, Moritz Tiedemann, Julian Hecht.</p>
-                    <p><strong>Data Protection Officer reachable via:</strong><br>
-                        heyData GmbH, Schützenstraße 5, 10117 Berlin, E-Mail: datenschutz@heydata.eu.</p>
+                <h4>1.1 Controller</h4>
+                <p>The Controller pursuant to Art. 4 No. 7 GDPR is:</p>
+                <p>Mindflex UG (haftungsbeschränkt)<br>
+                    Mariendorfer Damm 85, 12109 Berlin, Germany<br>
+                    E-Mail: hello@ai.therapy.free<br>
+                    Represented by: Felix Mai, Moritz Tiedemann, Julian Hecht.</p>
+                <p><strong>Data Protection Officer reachable via:</strong><br>
+                    heyData GmbH, Schützenstraße 5, 10117 Berlin, E-Mail: datenschutz@heydata.eu.</p>
 
-                    <h4>1.2 Hosting & Technical Infrastructure</h4>
-                    <p><strong>Hosting (Vercel):</strong> Our Web App is hosted by Vercel Inc. (USA). Vercel processes
-                        IP addresses and technical log data to ensure secure delivery. (Legal basis: Art. 6 para. 1 lit.
-                        f GDPR).</p>
-                    <p><strong>Development Framework:</strong> The application was created using, among others, tools
-                        from Google ("AntiGravity"). The runtime environment serves the technical provision of the app.
-                    </p>
+                <h4>1.2 Hosting & Technical Infrastructure</h4>
+                <p><strong>Hosting (Vercel):</strong> Our Web App is hosted by Vercel Inc. (USA). Vercel processes
+                    IP addresses and technical log data to ensure secure delivery. (Legal basis: Art. 6 para. 1 lit.
+                    f GDPR).</p>
+                <p><strong>Development Framework:</strong> The application was created using, among others, tools
+                    from Google ("AntiGravity"). The runtime environment serves the technical provision of the app.
+                </p>
 
-                    <h3>2. User Account & Login (Google Sign-In)</h3>
-                    <p>A login is required for use. We exclusively use Google Sign-In (OAuth 2.0). We do not store
-                        passwords.</p>
-                    <p><strong>Data:</strong> E-mail address, name, Google User ID, profile picture (if released).</p>
-                    <p><strong>Purpose:</strong> Authentication and creation of the user profile.</p>
-                    <p><strong>Age Confirmation:</strong> We store the user's confirmation that they are over 18 years
-                        old or that parental consent has been provided (Art. 6 para. 1 lit. c GDPR, obligation to
-                        provide proof).</p>
-                    <p><strong>Legal basis:</strong> Art. 6 para. 1 lit. b GDPR (Performance of contract).</p>
+                <h3>2. User Account & Login (Google Sign-In)</h3>
+                <p>A login is required for use. We exclusively use Google Sign-In (OAuth 2.0). We do not store
+                    passwords.</p>
+                <p><strong>Data:</strong> E-mail address, name, Google User ID, profile picture (if released).</p>
+                <p><strong>Purpose:</strong> Authentication and creation of the user profile.</p>
+                <p><strong>Age Confirmation:</strong> We store the user's confirmation that they are over 18 years
+                    old or that parental consent has been provided (Art. 6 para. 1 lit. c GDPR, obligation to
+                    provide proof).</p>
+                <p><strong>Legal basis:</strong> Art. 6 para. 1 lit. b GDPR (Performance of contract).</p>
 
-                    <h3>3. Core Functions: Creative AI Interaction & Characters</h3>
-                    <p>AI.Therapy is a creative platform where users can interact with fictional AI characters ("AI
-                        Therapists"). The core is the personalized conversation.</p>
+                <h3>3. Core Functions: Creative AI Interaction & Characters</h3>
+                <p>AI.Therapy is a creative platform where users can interact with fictional AI characters ("AI
+                    Therapists"). The core is the personalized conversation.</p>
 
-                    <h4>3.1 Creation and Use of Characters</h4>
-                    <p>Users can either chat with characters provided by us or create their own AI characters.</p>
-                    <p><strong>Personalization:</strong> When creating a custom character, data regarding the desired
-                        therapeutic style, tonality, and visual appearance is processed.</p>
-                    <p><strong>Sharing:</strong> Users have the option to share their created characters with others. In
-                        this case, the character's configuration data (name, image, style) is made publicly accessible.
-                        <strong>Important: Your private chat histories with this character are never shared.</strong>
-                    </p>
-                    <p><strong>Legal basis:</strong> Art. 6 para. 1 lit. b GDPR (Performance of contract).</p>
+                <h4>3.1 Creation and Use of Characters</h4>
+                <p>Users can either chat with characters provided by us or create their own AI characters.</p>
+                <p><strong>Personalization:</strong> When creating a custom character, data regarding the desired
+                    therapeutic style, tonality, and visual appearance is processed.</p>
+                <p><strong>Sharing:</strong> Users have the option to share their created characters with others. In
+                    this case, the character's configuration data (name, image, style) is made publicly accessible.
+                    <strong>Important: Your private chat histories with this character are never shared.</strong>
+                </p>
+                <p><strong>Legal basis:</strong> Art. 6 para. 1 lit. b GDPR (Performance of contract).</p>
 
-                    <h4>3.2 AI Processing (OpenAI: ChatGPT & Whisper)</h4>
-                    <p>To generate dialogues and for speech processing, we use the API of OpenAI.</p>
-                    <p><strong>ChatGPT 5.1 API:</strong> Processes your text inputs to generate context-related
-                        responses from the respective character.</p>
-                    <p><strong>Whisper API:</strong> Processes voice messages (audio) to convert them into text for the
-                        AI.</p>
-                    <p><strong>Data Protection:</strong> Data is transmitted via a secured Enterprise interface. OpenAI
-                        does not, by default, use data transmitted via the API to train its models.</p>
+                <h4>3.2 AI Processing (OpenAI: ChatGPT & Whisper)</h4>
+                <p>To generate dialogues and for speech processing, we use the API of OpenAI.</p>
+                <p><strong>ChatGPT 5.1 API:</strong> Processes your text inputs to generate context-related
+                    responses from the respective character.</p>
+                <p><strong>Whisper API:</strong> Processes voice messages (audio) to convert them into text for the
+                    AI.</p>
+                <p><strong>Data Protection:</strong> Data is transmitted via a secured Enterprise interface. OpenAI
+                    does not, by default, use data transmitted via the API to train its models.</p>
 
-                    <h4>3.3 Image Generation (Nanobana API)</h4>
-                    <p>For the visual design of the characters (profile pictures), we use the Nanobana API
-                        (https://nanobananaapi.org/).</p>
-                    <p><strong>Processing:</strong> Only descriptive texts (prompts) are transmitted to generate an
-                        individual image for the character.</p>
+                <h4>3.3 Image Generation (Nanobana API)</h4>
+                <p>For the visual design of the characters (profile pictures), we use the Nanobana API
+                    (https://nanobananaapi.org/).</p>
+                <p><strong>Processing:</strong> Only descriptive texts (prompts) are transmitted to generate an
+                    individual image for the character.</p>
 
-                    <h4>3.4 Data Storage (Supabase Frankfurt)</h4>
-                    <p>All characters created by you, profile information, and chat histories are stored in encrypted
-                        form in our database at Supabase Inc. at the location Frankfurt/Main (Germany).</p>
-                    <p><strong>Legal basis:</strong> Art. 6 para. 1 lit. b GDPR; for sensitive content (health data)
-                        Art. 9 para. 2 lit. a GDPR (explicit consent).</p>
+                <h4>3.4 Data Storage (Supabase Frankfurt)</h4>
+                <p>All characters created by you, profile information, and chat histories are stored in encrypted
+                    form in our database at Supabase Inc. at the location Frankfurt/Main (Germany).</p>
+                <p><strong>Legal basis:</strong> Art. 6 para. 1 lit. b GDPR; for sensitive content (health data)
+                    Art. 9 para. 2 lit. a GDPR (explicit consent).</p>
 
-                    <h4>3.5 Workflow Control (n8n)</h4>
-                    <p>For the technical orchestration of data streams, we use n8n (n8n GmbH, Berlin). Data is processed
-                        strictly according to instructions.</p>
+                <h4>3.5 Workflow Control (n8n)</h4>
+                <p>For the technical orchestration of data streams, we use n8n (n8n GmbH, Berlin). Data is processed
+                    strictly according to instructions.</p>
 
-                    <h3>4. Tracking & Analysis</h3>
-                    <p>We use analysis tools to improve the app.</p>
-                    <p><strong>Google Analytics 4:</strong> Records usage behavior (e.g., session duration, subscription
-                        completion). IP addresses are anonymized.</p>
-                    <p><strong>Vercel Analytics:</strong> Records performance data (load times).</p>
-                    <p><strong>Legal basis:</strong> Art. 6 para. 1 lit. f GDPR (Legitimate interest in product
-                        optimization). Note: You can object to tracking in your Google settings.</p>
+                <h3>4. Tracking & Analysis</h3>
+                <p>We use analysis tools to improve the app.</p>
+                <p><strong>Google Analytics 4:</strong> Records usage behavior (e.g., session duration, subscription
+                    completion). IP addresses are anonymized.</p>
+                <p><strong>Vercel Analytics:</strong> Records performance data (load times).</p>
+                <p><strong>Legal basis:</strong> Art. 6 para. 1 lit. f GDPR (Legitimate interest in product
+                    optimization). Note: You can object to tracking in your Google settings.</p>
 
-                    <h3>5. Payment Processing & Subscriptions</h3>
-                    <p><strong>Stripe:</strong> Payment processing is carried out via Stripe Payments Europe Ltd.
-                        (Ireland). We do not store payment data. Stripe is the independent controller for the
-                        transaction.</p>
-                    <p><strong>RevenueCat:</strong> We use RevenueCat to manage subscription status (Free vs. Plus). A
-                        pseudonymized User ID (App User ID) is transmitted to validate the purchase status.</p>
-                    <p><strong>Legal basis:</strong> Art. 6 para. 1 lit. b GDPR (Performance of contract).</p>
+                <h3>5. Payment Processing & Subscriptions</h3>
+                <p><strong>Stripe:</strong> Payment processing is carried out via Stripe Payments Europe Ltd.
+                    (Ireland). We do not store payment data. Stripe is the independent controller for the
+                    transaction.</p>
+                <p><strong>RevenueCat:</strong> We use RevenueCat to manage subscription status (Free vs. Plus). A
+                    pseudonymized User ID (App User ID) is transmitted to validate the purchase status.</p>
+                <p><strong>Legal basis:</strong> Art. 6 para. 1 lit. b GDPR (Performance of contract).</p>
 
-                    <h3>6. Advertising (Free Tier)</h3>
-                    <p>In the free version, advertisements are displayed by third-party providers. Technical identifiers
-                        (Mobile Advertising IDs, IP addresses) may be processed to display relevant advertising. Use of
-                        the Free Version requires acceptance of this ad-financed delivery.</p>
-                    <p><strong>Legal basis:</strong> Art. 6 para. 1 lit. b GDPR (Performance of contract – "Paying with
-                        data").</p>
+                <h3>6. Advertising (Free Tier)</h3>
+                <p>In the free version, advertisements are displayed by third-party providers. Technical identifiers
+                    (Mobile Advertising IDs, IP addresses) may be processed to display relevant advertising. Use of
+                    the Free Version requires acceptance of this ad-financed delivery.</p>
+                <p><strong>Legal basis:</strong> Art. 6 para. 1 lit. b GDPR (Performance of contract – "Paying with
+                    data").</p>
 
-                    <h3>7. Social Media Presences</h3>
-                    <p>We maintain profiles on Facebook, Instagram, TikTok, X (Twitter), and LinkedIn.</p>
-                    <p><strong>Responsibility:</strong> We are partially jointly responsible with the platform operators
-                        (e.g., Meta) (Art. 26 GDPR).</p>
-                    <p><strong>Data:</strong> When you contact us there, we process your data to respond. Furthermore,
-                        the platforms analyze your usage behavior for advertising purposes.</p>
-                    <p><strong>Details:</strong> Please refer to the privacy policies of the respective platforms (these
-                        apply analogously to the statements of the platform operators).</p>
+                <h3>7. Social Media Presences</h3>
+                <p>We maintain profiles on Facebook, Instagram, TikTok, X (Twitter), and LinkedIn.</p>
+                <p><strong>Responsibility:</strong> We are partially jointly responsible with the platform operators
+                    (e.g., Meta) (Art. 26 GDPR).</p>
+                <p><strong>Data:</strong> When you contact us there, we process your data to respond. Furthermore,
+                    the platforms analyze your usage behavior for advertising purposes.</p>
+                <p><strong>Details:</strong> Please refer to the privacy policies of the respective platforms (these
+                    apply analogously to the statements of the platform operators).</p>
 
-                    <h3>8. Contact & Support</h3>
-                    <p>Inquiries to hello@ai.therapy.free or via feedback buttons in the app are processed via our email
-                        provider. Legal basis is Art. 6 para. 1 lit. f GDPR (Support) or lit. b (Contractual questions).
-                    </p>
+                <h3>8. Contact & Support</h3>
+                <p>Inquiries to hello@ai.therapy.free or via feedback buttons in the app are processed via our email
+                    provider. Legal basis is Art. 6 para. 1 lit. f GDPR (Support) or lit. b (Contractual questions).
+                </p>
 
-                    <h3>9. Storage Duration & Deletion</h3>
-                    <p>We store data for as long as the account is active.</p>
-                    <p><strong>Deletion:</strong> You can request the deletion of your account at any time. Your data in
-                        the live database (Supabase) will be removed immediately.</p>
-                    <p><strong>Retention Obligation:</strong> We are legally required to retain invoice data (for Stripe
-                        payments) for 10 years (§ 147 AO).</p>
+                <h3>9. Storage Duration & Deletion</h3>
+                <p>We store data for as long as the account is active.</p>
+                <p><strong>Deletion:</strong> You can request the deletion of your account at any time. Your data in
+                    the live database (Supabase) will be removed immediately.</p>
+                <p><strong>Retention Obligation:</strong> We are legally required to retain invoice data (for Stripe
+                    payments) for 10 years (§ 147 AO).</p>
 
-                    <h3>10. Your Rights</h3>
-                    <p>You have the right to access, rectification, deletion, restriction of processing, objection, and
-                        data portability. Complaints may be directed to the Berlin Commissioner for Data Protection and
-                        Freedom of Information.</p>
+                <h3>10. Your Rights</h3>
+                <p>You have the right to access, rectification, deletion, restriction of processing, objection, and
+                    data portability. Complaints may be directed to the Berlin Commissioner for Data Protection and
+                    Freedom of Information.</p>
 
-                    <p class="legal-date"><strong>Status: 12.12.2025</strong></p>
-                </div>
-
-                <!-- German Content -->
-                <div class="lang-de">
-                    <h3>1. Einleitung</h3>
-                    <p>Im Folgenden informieren wir über die Verarbeitung personenbezogener Daten bei der Nutzung
-                        unserer Web-Applikation (Web-App) unter https://ai.therapy.free/app sowie unserer Website
-                        https://ai.therapy.free.</p>
-
-                    <h4>1.1 Verantwortlicher</h4>
-                    <p>Verantwortlicher gem. Art. 4 Abs. 7 DSGVO ist:</p>
-                    <p>Mindflex UG (haftungsbeschränkt)<br>
-                        Mariendorfer Damm 85, 12109 Berlin, Deutschland<br>
-                        E-Mail: hello@ai.therapy.free<br>
-                        Vertreten durch: Felix Mai, Moritz Tiedemann, Julian Hecht.</p>
-                    <p><strong>Datenschutzbeauftragter:</strong><br>
-                        heyData GmbH, Schützenstraße 5, 10117 Berlin, E-Mail: datenschutz@heydata.eu.</p>
-
-                    <h4>1.2 Hosting & Technische Infrastruktur</h4>
-                    <p><strong>Hosting (Vercel):</strong> Unsere Web-App wird bei Vercel Inc. (USA) gehostet. Vercel
-                        verarbeitet IP-Adressen und technische Log-Daten zur sicheren Auslieferung. (Rechtsgrundlage:
-                        Art. 6 Abs. 1 lit. f DSGVO).</p>
-                    <p><strong>Entwicklungs-Framework:</strong> Die Applikation wurde u.a. mit Tools von Google
-                        ("AntiGravity") erstellt. Die Laufzeitumgebung dient der technischen Bereitstellung.</p>
-
-                    <h3>2. Benutzerkonto & Anmeldung (Google Sign-In)</h3>
-                    <p>Für die Nutzung ist ein Login erforderlich. Wir nutzen ausschließlich Google Sign-In (OAuth 2.0).
-                        Wir speichern keine Passwörter.</p>
-                    <p><strong>Daten:</strong> E-Mail-Adresse, Name, Google-Nutzer-ID, Profilbild (sofern freigegeben).
-                    </p>
-                    <p><strong>Zweck:</strong> Authentifizierung und Erstellung des Nutzerprofils.</p>
-                    <p><strong>Altersbestätigung:</strong> Wir speichern die Bestätigung des Nutzers, dass er über 18
-                        Jahre alt ist oder eine elterliche Zustimmung vorliegt (Art. 6 Abs. 1 lit. c DSGVO,
-                        Nachweispflicht).</p>
-                    <p><strong>Rechtsgrundlage:</strong> Art. 6 Abs. 1 lit. b DSGVO (Vertragserfüllung).</p>
-
-                    <h3>3. Kernfunktionen: Kreative KI-Interaktion & Charaktere</h3>
-                    <p>AI.Therapy ist eine kreative Plattform, auf der Nutzer mit fiktiven KI-Charakteren („AI
-                        Therapists") interagieren können. Das Herzstück ist die personalisierte Konversation.</p>
-
-                    <h4>3.1 Erstellung und Nutzung von Charakteren</h4>
-                    <p>Nutzer können entweder mit von uns bereitgestellten Charakteren chatten oder eigene KI-Charaktere
-                        erstellen.</p>
-                    <p><strong>Personalisierung:</strong> Bei der Erstellung eines eigenen Charakters werden Daten zum
-                        gewünschten therapeutischen Stil, zur Tonalität und zur optischen Erscheinung verarbeitet.</p>
-                    <p><strong>Sharing (Teilen):</strong> Nutzer haben die Möglichkeit, ihre erstellten Charaktere mit
-                        anderen zu teilen. Dabei werden die Konfigurationsdaten des Charakters (Name, Bild, Stil)
-                        öffentlich zugänglich gemacht. <strong>Wichtig: Ihre privaten Chatverläufe mit diesem Charakter
-                            werden niemals geteilt.</strong></p>
-                    <p><strong>Rechtsgrundlage:</strong> Art. 6 Abs. 1 lit. b DSGVO (Vertragserfüllung).</p>
-
-                    <h4>3.2 KI-Verarbeitung (OpenAI: ChatGPT & Whisper)</h4>
-                    <p>Zur Generierung der Dialoge und zur Sprachverarbeitung nutzen wir die API von OpenAI.</p>
-                    <p><strong>ChatGPT 5.1 API:</strong> Verarbeitet Ihre Texteingaben, um kontextbezogene Antworten des
-                        jeweiligen Charakters zu erzeugen.</p>
-                    <p><strong>Whisper API:</strong> Verarbeitet Sprachnachrichten (Audio), um diese in Text für die KI
-                        umzuwandeln.</p>
-                    <p><strong>Datenschutz:</strong> Die Daten werden über eine gesicherte Enterprise-Schnittstelle
-                        übertragen. OpenAI verwendet die über die API übermittelten Daten standardmäßig nicht zum
-                        Training der Modelle.</p>
-
-                    <h4>3.3 Bildgenerierung (Nanobana API)</h4>
-                    <p>Für die visuelle Gestaltung der Charaktere (Profilbilder) nutzen wir die Nanobana API
-                        (https://nanobananaapi.org/).</p>
-                    <p><strong>Verarbeitung:</strong> Hierbei werden ausschließlich beschreibende Texte (Prompts)
-                        übermittelt, um ein individuelles Bild für den Charakter zu generieren.</p>
-
-                    <h4>3.4 Datenhaltung (Supabase Frankfurt)</h4>
-                    <p>Alle von Ihnen erstellten Charaktere, Profilinformationen und Chatverläufe werden verschlüsselt
-                        in unserer Datenbank bei Supabase Inc. am Standort Frankfurt/Main (Deutschland) gespeichert.</p>
-                    <p><strong>Rechtsgrundlage:</strong> Art. 6 Abs. 1 lit. b DSGVO; bei sensiblen Inhalten
-                        (Gesundheitsdaten) Art. 9 Abs. 2 lit. a DSGVO (ausdrückliche Einwilligung).</p>
-
-                    <h4>3.5 Workflow-Steuerung (n8n)</h4>
-                    <p>Zur technischen Orchestrierung der Datenströme nutzen wir n8n (n8n GmbH, Berlin). Daten werden
-                        weisungsgebunden verarbeitet.</p>
-
-                    <h3>4. Tracking & Analyse</h3>
-                    <p>Wir nutzen Analysetools, um die App zu verbessern.</p>
-                    <p><strong>Google Analytics 4:</strong> Erfasst Nutzungsverhalten (z.B. Session-Dauer,
-                        Abo-Abschluss). IP-Adressen werden anonymisiert.</p>
-                    <p><strong>Vercel Analytics:</strong> Erfasst Performance-Daten (Ladezeiten).</p>
-                    <p><strong>Rechtsgrundlage:</strong> Art. 6 Abs. 1 lit. f DSGVO (Berechtigtes Interesse an
-                        Produktoptimierung). Hinweis: Sie können dem Tracking in den Google-Einstellungen widersprechen.
-                    </p>
-
-                    <h3>5. Zahlungsabwicklung & Abonnements</h3>
-                    <p><strong>Stripe:</strong> Die Zahlungsabwicklung erfolgt über Stripe Payments Europe Ltd.
-                        (Irland). Wir speichern keine Zahlungsdaten. Stripe ist eigener Verantwortlicher für die
-                        Transaktion.</p>
-                    <p><strong>RevenueCat:</strong> Wir nutzen RevenueCat zur Verwaltung des Abo-Status (Free vs. Plus).
-                        Hierbei wird eine pseudonymisierte User-ID (App-User-ID) übertragen, um den Kaufstatus zu
-                        validieren.</p>
-                    <p><strong>Rechtsgrundlage:</strong> Art. 6 Abs. 1 lit. b DSGVO (Vertragserfüllung).</p>
-
-                    <h3>6. Werbung (Free Tier)</h3>
-                    <p>In der kostenlosen Version werden Werbeanzeigen durch Drittanbieter eingeblendet. Hierbei können
-                        technische Kennungen (Mobile Advertising IDs, IP-Adressen) verarbeitet werden, um relevante
-                        Werbung anzuzeigen. Die Nutzung der Free-Version setzt die Hinnahme dieser werbefinanzierten
-                        Ausspielung voraus.</p>
-                    <p><strong>Rechtsgrundlage:</strong> Art. 6 Abs. 1 lit. b DSGVO (Vertragserfüllung – "Bezahlen mit
-                        Daten").</p>
-
-                    <h3>7. Social Media Präsenzen</h3>
-                    <p>Wir unterhalten Profile auf Facebook, Instagram, TikTok, X (Twitter) und LinkedIn.</p>
-                    <p><strong>Verantwortlichkeit:</strong> Wir sind mit den Plattformbetreibern (z.B. Meta) teilweise
-                        gemeinsam verantwortlich (Art. 26 DSGVO).</p>
-                    <p><strong>Daten:</strong> Wenn Sie uns dort kontaktieren, verarbeiten wir Ihre Daten zur
-                        Beantwortung. Zudem werten die Plattformen Ihr Nutzungsverhalten für Werbung aus.</p>
-                    <p><strong>Details:</strong> Bitte beachten Sie die Datenschutzerklärungen der jeweiligen
-                        Plattformen (diese gelten analog zu den Angaben der Plattformbetreiber fort).</p>
-
-                    <h3>8. Kontakt & Support</h3>
-                    <p>Anfragen an hello@ai.therapy.free oder über Feedback-Buttons in der App werden über unseren
-                        E-Mail-Provider verarbeitet. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (Support) bzw. lit.
-                        b (Vertragsfragen).</p>
-
-                    <h3>9. Speicherdauer & Löschung</h3>
-                    <p>Wir speichern Daten so lange, wie der Account aktiv ist.</p>
-                    <p><strong>Löschung:</strong> Sie können jederzeit die Löschung Ihres Accounts beantragen. Ihre
-                        Daten in der Live-Datenbank (Supabase) werden unverzüglich entfernt.</p>
-                    <p><strong>Aufbewahrungspflicht:</strong> Rechnungsdaten (bei Stripe-Zahlungen) müssen wir
-                        gesetzlich 10 Jahre aufbewahren (§ 147 AO).</p>
-
-                    <h3>10. Ihre Rechte</h3>
-                    <p>Sie haben das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung,
-                        Widerspruch und Datenübertragbarkeit. Beschwerden können Sie an die Berliner Beauftragte für
-                        Datenschutz und Informationsfreiheit richten.</p>
-
-                    <p class="legal-date"><strong>Stand: 12.12.2025</strong></p>
-                </div>
+                <p class="legal-date"><strong>Status: 12.12.2025</strong></p>
             </div>
         </div>
     </div>
@@ -5483,7 +5210,8 @@
             <div class="modal-body">
                 <div class="modal-section">
                     <h4><span class="section-icon">💡</span> What is it?</h4>
-                    <p id="modalWhatIsIt">Our thoughts, feelings, and behaviors are interconnected. By changing negative
+                    <p id="modalWhatIsIt">Our thoughts, feelings, and behaviors are interconnected. By changing
+                        negative
                         thought patterns, we can change how we feel and act.</p>
                 </div>
                 <div class="modal-section">
