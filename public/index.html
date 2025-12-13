@@ -2652,6 +2652,146 @@
             text-decoration: underline;
         }
 
+        /* ===== Legal Links ===== */
+        .legal-links {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .legal-link {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.85rem;
+            cursor: pointer;
+            padding: 0.5rem 1rem;
+            transition: color 0.3s, text-decoration 0.3s;
+            font-family: var(--font-body);
+        }
+
+        .legal-link:hover {
+            color: #fff;
+            text-decoration: underline;
+        }
+
+        .legal-separator {
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        /* ===== Legal Modal ===== */
+        .legal-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 10000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .legal-modal.active {
+            display: flex;
+        }
+
+        .legal-modal-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+        }
+
+        .legal-modal-content {
+            position: relative;
+            background: linear-gradient(145deg, #1a1a2e 0%, #0f0f1a 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            max-width: 800px;
+            max-height: 85vh;
+            width: 90%;
+            overflow: hidden;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
+        }
+
+        .legal-modal-header {
+            padding: 2rem 2rem 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .legal-modal-header h2 {
+            color: #fff;
+            font-size: 1.5rem;
+            margin: 0;
+        }
+
+        .legal-modal-body {
+            padding: 2rem;
+            max-height: 60vh;
+            overflow-y: auto;
+            color: rgba(255, 255, 255, 0.85);
+            line-height: 1.7;
+        }
+
+        .legal-modal-body h3 {
+            color: #5B8FD9;
+            font-size: 1.1rem;
+            margin: 1.5rem 0 0.75rem;
+        }
+
+        .legal-modal-body h3:first-child {
+            margin-top: 0;
+        }
+
+        .legal-modal-body p {
+            margin: 0.5rem 0;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .legal-modal-body strong {
+            color: #fff;
+        }
+
+        .legal-date {
+            margin-top: 2rem !important;
+            color: rgba(255, 255, 255, 0.5) !important;
+            font-size: 0.9rem;
+        }
+
+        .legal-modal-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.3s;
+            color: #fff;
+        }
+
+        .legal-modal-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .legal-modal-body::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .legal-modal-body::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .legal-modal-body::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+
         /* ===== Floating Elements ===== */
         /* .orb removed, consolidated below */
 
@@ -4697,12 +4837,155 @@
             reflection, and everyday support—not for diagnosis, treatment, or therapy.
         </p>
 
+        <!-- Legal Links -->
+        <div class="legal-links">
+            <button class="legal-link" id="openAGB" data-en="Terms & Conditions (AGB)"
+                data-de="Allgemeine Geschäftsbedingungen (AGB)">Terms & Conditions (AGB)</button>
+            <span class="legal-separator">|</span>
+            <button class="legal-link" id="openPrivacy" data-en="Privacy Policy" data-de="Datenschutzerklärung">Privacy
+                Policy</button>
+        </div>
+
         <div class="footer-bottom">
-            <p class="footer-credit">
+            <p class="footer-credit"
+                data-en="Crafted with ❤️ and <a href='https://antigravity.google' target='_blank' rel='noopener'>Google Antigravity</a>"
+                data-de="Erstellt mit ❤️ und <a href='https://antigravity.google' target='_blank' rel='noopener'>Google Antigravity</a>">
                 Crafted with ❤️ and <a href="https://antigravity.google" target="_blank" rel="noopener">Google
                     Antigravity</a></p>
         </div>
     </footer>
+
+    <!-- AGB Modal -->
+    <div class="legal-modal" id="agbModal">
+        <div class="legal-modal-overlay"></div>
+        <div class="legal-modal-content">
+            <button class="legal-modal-close" id="closeAGB">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+            <div class="legal-modal-header">
+                <h2>Allgemeine Geschäftsbedingungen (AGB)</h2>
+            </div>
+            <div class="legal-modal-body">
+                <h3>1. Geltungsbereich und Anbieter</h3>
+                <p>(1) Anbieter ist die Mindflex UG (haftungsbeschränkt), Mariendorfer Damm 85, 12109 Berlin
+                    (nachfolgend „Anbieter").</p>
+                <p>(2) Diese AGB gelten für alle Verträge über die Nutzung der Web-Applikation „AI.Therapy" unter der
+                    Domain ai.therapy.free und ai.therapy.free/app (nachfolgend „Dienst").</p>
+                <p>(3) Abweichende Geschäftsbedingungen des Nutzers werden nicht anerkannt, es sei denn, der Anbieter
+                    stimmt ihrer Geltung ausdrücklich schriftlich zu.</p>
+
+                <h3>2. Leistungsgegenstand und Disclaimer (WICHTIG)</h3>
+                <p>(1) AI.Therapy ist eine Web-Applikation für mentale Wellness und kreative Selbstreflexion.</p>
+                <p>(2) <strong>WICHTIGER DISCLAIMER (HAFTUNGSAUSSCHLUSS):</strong><br>
+                    AI.Therapy ist eine kreative Mental-Wellness-Plattform und kein therapeutischer Dienst. Alle
+                    „ai.therapists" sind fiktive KI-Charaktere. Ihre Rollenbezeichnungen (wie „Therapeut", „Psychologe",
+                    „Dr.", „Coach" etc.) dienen ausschließlich der phantasievollen Darstellung („imaginative portrayal")
+                    und haben keinerlei berufliche, klinische oder medizinische Bedeutung.</p>
+                <p>(3) Die auf der Plattform erwähnten therapeutischen Ansätze und Methoden (z. B. CBT, ACT, DBT,
+                    Psychodynamik, Schema, Gestalt, MBCT usw.) werden ausschließlich zu inspirierten, modellhaften
+                    Zwecken verwendet und stellen keine reale therapeutische Anwendung dar.</p>
+                <p>(4) Weder die Plattform AI.Therapy noch ihre KI-Charaktere besitzen Qualifikationen, Approbationen
+                    oder Lizenzen zur Ausübung von Heilkunde, Medizin oder Psychotherapie.</p>
+                <p>(5) Kein Heilversprechen: Es wird ausdrücklich kein Heilversprechen abgegeben. Alle Aussagen und
+                    Inhalte der KI dienen der Inspiration, Reflexion und alltäglichen Unterstützung – sie sind nicht zur
+                    Diagnose, Behandlung oder Therapie von Krankheiten oder Störungen bestimmt.</p>
+                <p>(6) Bei akuten psychischen Krisen, Suizidgedanken oder medizinischen Notfällen ist der Dienst nicht
+                    geeignet. Nutzer sind verpflichtet, in solchen Fällen umgehend professionelle Hilfe (Arzt, Notruf
+                    112, Telefonseelsorge) in Anspruch zu nehmen.</p>
+
+                <h3>3. Registrierung, Mindestalter und Zugang</h3>
+                <p>(1) Die Nutzung setzt eine Registrierung voraus. Diese erfolgt ausschließlich über Google Sign-In
+                    (OAuth). Ein eigenes Passwort wird vom Anbieter nicht verwaltet.</p>
+                <p>(2) Minderjährige Nutzer: Das Angebot richtet sich grundsätzlich an volljährige Personen. Personen
+                    unter 18 Jahren dürfen den Dienst nur nutzen, wenn die ausdrückliche Zustimmung der
+                    Erziehungsberechtigten vorliegt.</p>
+                <p>(3) Bestätigung: Mit der Bestätigung der entsprechenden Checkbox im Anmeldeprozess versichert der
+                    Nutzer ausdrücklich, dass er entweder das 18. Lebensjahr vollendet hat ODER die erforderliche
+                    Zustimmung seiner Erziehungsberechtigten zur Nutzung dieses Dienstes und zum Abschluss von
+                    Abonnements besitzt.</p>
+
+                <h3>4. Funktionen: Charakter-Erstellung & Sharing</h3>
+                <p>(1) Nutzer können mit vorgefertigten Charakteren chatten oder eigene KI-Charaktere erstellen (Name,
+                    Bild, Persönlichkeit).</p>
+                <p>(2) Nutzungsrechte an erstellten Charakteren: Wenn der Nutzer einen eigenen KI-Charakter erstellt und
+                    die Funktion "Teilen" (Sharing) nutzt, räumt er dem Anbieter ein räumlich und zeitlich
+                    unbeschränktes Recht ein, diesen Charakter auf der Plattform anderen Nutzern zugänglich zu machen.
+                    Private Chatverläufe bleiben strikt vertraulich.</p>
+
+                <h3>5. Modelle, Preise und Zahlungsbedingungen</h3>
+                <p><strong>AI.Therapy Free:</strong> Kostenlos, zum Start 100 Nachrichten werbefrei, danach
+                    werbefinanziert.</p>
+                <p><strong>AI.Therapy+:</strong> Erweiterte Funktionen. Monatsabo: 9,99 EUR/Monat. Jahresabo: 99,99
+                    EUR/Jahr. Zahlung über Stripe.</p>
+
+                <h3>6. Vertragslaufzeit und Kündigung</h3>
+                <p>Monatsabo: monatlich kündbar. Jahresabo: 12 Monate, automatische Verlängerung. Kündigung per
+                    Dashboard oder E-Mail an hello@ai.therapy.free.</p>
+
+                <h3>7. Widerrufsrecht für Verbraucher</h3>
+                <p>14-tägiges Widerrufsrecht. Erlischt bei sofortiger Nutzung nach ausdrücklicher Zustimmung (§ 356 Abs.
+                    5 BGB).</p>
+
+                <h3>8-13. Weitere Bestimmungen</h3>
+                <p>Verfügbarkeit 24/7 (Unterbrechungen möglich). KI-Halluzinationen möglich, keine Haftung für
+                    inhaltliche Richtigkeit. Deutsches Recht. Gerichtsstand Berlin für B2B.</p>
+
+                <p class="legal-date"><strong>Stand: 12.12.2025</strong></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Privacy Policy Modal -->
+    <div class="legal-modal" id="privacyModal">
+        <div class="legal-modal-overlay"></div>
+        <div class="legal-modal-content">
+            <button class="legal-modal-close" id="closePrivacy">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+            <div class="legal-modal-header">
+                <h2>Datenschutzerklärung (DSE)</h2>
+            </div>
+            <div class="legal-modal-body">
+                <h3>1. Verantwortlicher</h3>
+                <p>Mindflex UG (haftungsbeschränkt), Mariendorfer Damm 85, 12109 Berlin. E-Mail: hello@ai.therapy.free.
+                    Vertreten durch: Felix Mai, Moritz Tiedemann, Julian Hecht.</p>
+                <p>Datenschutzbeauftragter: heyData GmbH, Schützenstraße 5, 10117 Berlin.</p>
+
+                <h3>2. Hosting & Login</h3>
+                <p><strong>Vercel:</strong> Hosting in USA. IP-Adressen und Log-Daten werden verarbeitet.</p>
+                <p><strong>Google Sign-In:</strong> E-Mail, Name, Google-ID, Profilbild. Keine Passwörter gespeichert.
+                </p>
+
+                <h3>3. KI-Verarbeitung</h3>
+                <p><strong>OpenAI (ChatGPT & Whisper):</strong> Texteingaben und Sprachnachrichten werden verarbeitet.
+                    Daten werden nicht zum Training verwendet.</p>
+                <p><strong>Nanobana API:</strong> Für Charakterbilder.</p>
+                <p><strong>Supabase Frankfurt:</strong> Alle Daten verschlüsselt in Deutschland gespeichert.</p>
+
+                <h3>4. Tracking</h3>
+                <p>Google Analytics 4 (anonymisierte IP) und Vercel Analytics für Performance.</p>
+
+                <h3>5. Zahlung</h3>
+                <p>Stripe (keine Zahlungsdaten bei uns). RevenueCat für Abo-Status.</p>
+
+                <h3>6. Werbung (Free)</h3>
+                <p>Werbeanzeigen durch Drittanbieter im kostenlosen Tier.</p>
+
+                <h3>7-10. Weitere Rechte</h3>
+                <p>Social Media: Gemeinsame Verantwortlichkeit (Art. 26 DSGVO).</p>
+                <p>Speicherung solange Account aktiv. Löschung jederzeit beantragbar. Rechnungsdaten 10 Jahre (§147 AO).
+                </p>
+                <p>Rechte: Auskunft, Berichtigung, Löschung, Einschränkung, Widerspruch, Datenübertragbarkeit.
+                    Beschwerde bei Berliner Datenschutzbehörde.</p>
+
+                <p class="legal-date"><strong>Stand: 12.12.2025</strong></p>
+            </div>
+        </div>
+    </div>
 
     <!-- Therapy Detail Modal -->
     <div class="therapy-modal" id="therapyModal">

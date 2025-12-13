@@ -1471,3 +1471,68 @@ function initCarouselScroll() {
 }
 
 
+// ===== Legal Modal Functions =====
+function openLegalModal(type) {
+    const modalId = type === 'agb' ? 'agbModal' : 'privacyModal';
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeLegalModal(type) {
+    const modalId = type === 'agb' ? 'agbModal' : 'privacyModal';
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+}
+
+// Initialize legal modal buttons
+document.addEventListener('DOMContentLoaded', () => {
+    // Open buttons
+    const openAGBBtn = document.getElementById('openAGB');
+    const openPrivacyBtn = document.getElementById('openPrivacy');
+
+    if (openAGBBtn) {
+        openAGBBtn.addEventListener('click', () => openLegalModal('agb'));
+    }
+
+    if (openPrivacyBtn) {
+        openPrivacyBtn.addEventListener('click', () => openLegalModal('privacy'));
+    }
+
+    // Close buttons
+    const closeAGBBtn = document.getElementById('closeAGB');
+    const closePrivacyBtn = document.getElementById('closePrivacy');
+
+    if (closeAGBBtn) {
+        closeAGBBtn.addEventListener('click', () => closeLegalModal('agb'));
+    }
+
+    if (closePrivacyBtn) {
+        closePrivacyBtn.addEventListener('click', () => closeLegalModal('privacy'));
+    }
+
+    // Close on overlay click
+    const agbModal = document.getElementById('agbModal');
+    const privacyModal = document.getElementById('privacyModal');
+
+    if (agbModal) {
+        agbModal.querySelector('.legal-modal-overlay')?.addEventListener('click', () => closeLegalModal('agb'));
+    }
+
+    if (privacyModal) {
+        privacyModal.querySelector('.legal-modal-overlay')?.addEventListener('click', () => closeLegalModal('privacy'));
+    }
+});
+
+// Close legal modals with Escape key
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        closeLegalModal('agb');
+        closeLegalModal('privacy');
+    }
+});
