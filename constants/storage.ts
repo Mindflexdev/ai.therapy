@@ -99,7 +99,15 @@ export const getPublicCharacters = async (): Promise<UserCharacter[]> => {
 
         // Merge them (deduplicating by ID if necessary, though IDs should be unique)
         // For now, just returning Supabase chars as primary source + local user chars
-        return [...(supabaseChars || []), ...localChars];
+        // Map keys for Supabase chars
+        const mappedSupabaseChars = (supabaseChars || []).map(char => ({
+            ...char,
+            isPublic: char.is_public,
+            therapyStyles: char.therapy_styles,
+            imageDescription: char.image_description,
+        }));
+
+        return [...mappedSupabaseChars, ...localChars];
     } catch (error) {
         console.error('Error getting public characters:', error);
         return [];
@@ -142,7 +150,12 @@ export const getCharactersByTopic = async (topicId: string): Promise<UserCharact
             return [];
         }
 
-        return data || [];
+        return (data || []).map(char => ({
+            ...char,
+            isPublic: char.is_public,
+            therapyStyles: char.therapy_styles,
+            imageDescription: char.image_description,
+        }));
     } catch (error) {
         console.error('Error in getCharactersByTopic:', error);
         return [];
@@ -191,11 +204,17 @@ export const getAllCharactersGroupedByTopic = async (forceRefresh: boolean = fal
         // 3. Group by topic
         const grouped: Record<string, UserCharacter[]> = {};
         data?.forEach((char: any) => {
+            const mappedChar: UserCharacter = {
+                ...char,
+                isPublic: char.is_public,
+                therapyStyles: char.therapy_styles,
+                imageDescription: char.image_description,
+            };
             const topic = char.topic || 'other'; // Default to 'other' if no topic
             if (!grouped[topic]) {
                 grouped[topic] = [];
             }
-            grouped[topic].push(char);
+            grouped[topic].push(mappedChar);
         });
 
         // 4. Convert to array format
