@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="About ai.therapy - A Berlin startup founded by three psychologists on a mission to make mental health support accessible to everyone.">
+    <title>About | ai.therapy</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #f5ebe0;
+            --bg-dark: #ede4d9;
+            --bg-card: rgba(255, 252, 247, 0.95);
+            --glass-bg: rgba(255, 255, 255, 0.8);
+            --glass-border: rgba(139, 90, 43, 0.15);
+            --gradient-calm: linear-gradient(180deg, #f5ebe0 0%, #e8ddd0 50%, #ddd0c0 100%);
+            --glow-purple: rgba(32, 226, 215, 0.3);
+            --glow-pink: rgba(0, 114, 255, 0.2);
+            --text-primary: #2d2418;
+            --text-secondary: rgba(45, 36, 24, 0.8);
+            --text-muted: rgba(45, 36, 24, 0.6);
+            --accent-blue: #5B8FD9;
+            --accent-cyan: #20E2D7;
+            --font-display: 'Playfair Display', serif;
+            --font-body: 'Outfit', sans-serif;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--bg-deep);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* Ambient Background */
+        .ambient-bg {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .gradient-layer {
+            position: absolute;
+            inset: 0;
+            background: var(--gradient-calm);
+        }
+
+        .gradient-layer::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse, var(--glow-purple) 0%, transparent 60%);
+            animation: ambientGlow 15s ease-in-out infinite;
+        }
+
+        .gradient-layer::after {
+            content: '';
+            position: absolute;
+            bottom: -30%;
+            left: -30%;
+            width: 80%;
+            height: 80%;
+            background: radial-gradient(ellipse, var(--glow-pink) 0%, transparent 50%);
+            animation: ambientGlow 20s ease-in-out infinite reverse;
+        }
+
+        @keyframes ambientGlow {
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+                opacity: 0.5;
+            }
+
+            50% {
+                transform: translate(30px, -30px) scale(1.1);
+                opacity: 0.8;
+            }
+        }
+
+        /* Navigation */
+        .nav-glass {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0, 114, 255, 0.1);
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.5rem;
+            color: #1a1a2e;
+        }
+
+        .logo-dot {
+            color: #5B8FD9;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 400;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: #0072FF;
+        }
+
+        .nav-cta {
+            padding: 0.75rem 1.5rem;
+            background: #5B8FD9;
+            border-radius: 30px;
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .nav-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(91, 143, 217, 0.4);
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 8rem 2rem 4rem;
+            text-align: center;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .hero-tag {
+            display: inline-block;
+            padding: 0.5rem 1.25rem;
+            background: rgba(91, 143, 217, 0.1);
+            border-radius: 30px;
+            color: #5B8FD9;
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 1.5rem;
+        }
+
+        .hero-title {
+            font-family: var(--font-display);
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 500;
+            line-height: 1.2;
+            margin-bottom: 1.5rem;
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #0072FF 0%, #20E2D7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        /* Sections */
+        .section {
+            padding: 5rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .section-tag {
+            display: inline-block;
+            padding: 0.4rem 1rem;
+            background: rgba(91, 143, 217, 0.1);
+            border-radius: 20px;
+            color: #5B8FD9;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 1rem;
+        }
+
+        .section-title {
+            font-family: var(--font-display);
+            font-size: clamp(1.75rem, 3vw, 2.5rem);
+            font-weight: 500;
+            margin-bottom: 1rem;
+        }
+
+        .section-desc {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        /* Story Card */
+        .story-card {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(0, 114, 255, 0.1);
+            border-radius: 24px;
+            padding: 3rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            align-items: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+        }
+
+        .story-content h3 {
+            font-family: var(--font-display);
+            font-size: 1.75rem;
+            margin-bottom: 1rem;
+            color: #1a1a2e;
+        }
+
+        .story-content p {
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            line-height: 1.8;
+        }
+
+        .story-visual {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .berlin-badge {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem 3rem;
+            background: linear-gradient(135deg, #1a1a2e 0%, #2d3748 100%);
+            border-radius: 20px;
+            color: white;
+            text-align: center;
+        }
+
+        .berlin-badge .emoji {
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .berlin-badge .text {
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        .berlin-badge .subtext {
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        /* Founders */
+        .founders-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .founder-card {
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(0, 114, 255, 0.1);
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .founder-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 114, 255, 0.12);
+        }
+
+        .founder-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #5B8FD9 0%, #20E2D7 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin: 0 auto 1rem;
+        }
+
+        .founder-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 0.25rem;
+            color: #1a1a2e;
+        }
+
+        .founder-role {
+            color: #5B8FD9;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        /* Vision Card */
+        .vision-cards {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 2rem;
+        }
+
+        .vision-card {
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(0, 114, 255, 0.1);
+            border-radius: 20px;
+            padding: 2.5rem;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .vision-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 114, 255, 0.12);
+        }
+
+        .vision-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .vision-card h3 {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            margin-bottom: 0.75rem;
+            color: #1a1a2e;
+        }
+
+        .vision-card p {
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+
+        /* Therapy Approaches */
+        .approaches-intro {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .approaches-intro p {
+            color: var(--text-secondary);
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .therapy-pills {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .therapy-pill {
+            padding: 0.75rem 1.5rem;
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(0, 114, 255, 0.15);
+            border-radius: 30px;
+            color: #1a1a2e;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .therapy-pill:hover {
+            background: #5B8FD9;
+            color: white;
+            border-color: #5B8FD9;
+            transform: translateY(-2px);
+        }
+
+        /* CTA Section */
+        .cta-section {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: linear-gradient(135deg, #1a1a2e 0%, #2d3748 100%);
+            border-radius: 30px;
+            margin: 4rem auto;
+            max-width: 1000px;
+            color: white;
+        }
+
+        .cta-section h2 {
+            font-family: var(--font-display);
+            font-size: clamp(1.5rem, 3vw, 2rem);
+            margin-bottom: 1rem;
+        }
+
+        .cta-section p {
+            opacity: 0.8;
+            margin-bottom: 2rem;
+        }
+
+        .cta-btn {
+            display: inline-block;
+            padding: 1rem 2.5rem;
+            background: linear-gradient(135deg, #20E2D7 0%, #0072FF 100%);
+            border-radius: 30px;
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .cta-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(32, 226, 215, 0.4);
+        }
+
+        /* Footer */
+        .footer {
+            background: #1a1a2e;
+            padding: 3rem 2rem;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .footer-logo {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 1rem;
+        }
+
+        .footer a {
+            color: #20E2D7;
+            text-decoration: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .story-card {
+                grid-template-columns: 1fr;
+            }
+
+            .founders-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .vision-cards {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-links {
+                display: none;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-in {
+            animation: fadeInUp 0.6s ease forwards;
+        }
+
+        .delay-1 {
+            animation-delay: 0.1s;
+        }
+
+        .delay-2 {
+            animation-delay: 0.2s;
+        }
+
+        .delay-3 {
+            animation-delay: 0.3s;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Ambient Background -->
+    <div class="ambient-bg">
+        <div class="gradient-layer"></div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="nav-glass">
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo">
+                <span>ai<span class="logo-dot">.</span>therapy</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="about.html" class="active">About</a></li>
+                <li><a href="blog.html">Blog</a></li>
+            </ul>
+            <a href="/app" class="nav-cta">Start ai.therapy</a>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="hero animate-in">
+        <span class="hero-tag">About Us</span>
+        <h1 class="hero-title">
+            Making <span class="gradient-text">Mental Health Support</span> Accessible to Everyone
+        </h1>
+        <p class="hero-subtitle">
+            We're three psychologists from Berlin with a shared dream: to democratize mental health support using AI and
+            modern therapeutic approaches.
+        </p>
+    </section>
+
+    <!-- Our Story -->
+    <section class="section">
+        <div class="story-card animate-in delay-1">
+            <div class="story-content">
+                <h3>Our Story</h3>
+                <p>
+                    ai.therapy was born from a simple observation: while millions need mental health support, access
+                    remains limited by cost, availability, and stigma.
+                </p>
+                <p>
+                    As practicing psychologists, we saw how therapeutic techniques—from CBT to Schema Therapy—could
+                    transform lives. But we also saw how many people couldn't access this support.
+                </p>
+                <p>
+                    So we asked ourselves: What if we could create AI companions trained in evidence-based therapeutic
+                    approaches, available anytime, anywhere, and for everyone?
+                </p>
+            </div>
+            <div class="story-visual">
+                <div class="berlin-badge">
+                    <span class="emoji">🏙️</span>
+                    <span class="text">Made in Berlin</span>
+                    <span class="subtext">Germany's startup capital</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Founders -->
+    <section class="section">
+        <div class="section-header">
+            <span class="section-tag">The Team</span>
+            <h2 class="section-title">Founded by Psychologists</h2>
+            <p class="section-desc">
+                Three passionate mental health professionals united by a vision to make therapeutic support accessible.
+            </p>
+        </div>
+        <div class="founders-grid animate-in delay-2">
+            <div class="founder-card">
+                <div class="founder-icon">🧠</div>
+                <p class="founder-name">Felix Mai</p>
+                <p class="founder-role">Co-Founder & Psychology</p>
+            </div>
+            <div class="founder-card">
+                <div class="founder-icon">💡</div>
+                <p class="founder-name">Moritz Tiedemann</p>
+                <p class="founder-role">Co-Founder & Psychology</p>
+            </div>
+            <div class="founder-card">
+                <div class="founder-icon">🎯</div>
+                <p class="founder-name">Julian Hecht</p>
+                <p class="founder-role">Co-Founder & Psychology</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Vision & Mission -->
+    <section class="section">
+        <div class="section-header">
+            <span class="section-tag">Vision & Mission</span>
+            <h2 class="section-title">What Drives Us</h2>
+        </div>
+        <div class="vision-cards animate-in delay-2">
+            <div class="vision-card">
+                <div class="vision-icon">🌍</div>
+                <h3>Our Vision</h3>
+                <p>
+                    A world where everyone has access to quality mental health support—regardless of their location,
+                    income, or circumstances. We believe mental wellness should be a right, not a privilege.
+                </p>
+            </div>
+            <div class="vision-card">
+                <div class="vision-icon">🎓</div>
+                <h3>Our Mission</h3>
+                <p>
+                    To educate the world about mental health through engaging, AI-powered experiences. We spread
+                    psychoeducation and make therapeutic techniques accessible and understandable for everyone.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Integrative Approach -->
+    <section class="section">
+        <div class="section-header">
+            <span class="section-tag">Our Approach</span>
+            <h2 class="section-title">Integrative Therapy</h2>
+        </div>
+        <div class="approaches-intro">
+            <p>
+                We believe no single therapeutic approach works for everyone. That's why ai.therapy draws from multiple
+                evidence-based modalities, allowing each AI therapist to use the techniques that resonate most with you.
+            </p>
+        </div>
+        <div class="therapy-pills animate-in delay-3">
+            <span class="therapy-pill">Cognitive Behavioral Therapy (CBT)</span>
+            <span class="therapy-pill">Acceptance & Commitment Therapy (ACT)</span>
+            <span class="therapy-pill">Dialectical Behavior Therapy (DBT)</span>
+            <span class="therapy-pill">Schema Therapy</span>
+            <span class="therapy-pill">Psychodynamic Therapy</span>
+            <span class="therapy-pill">Gestalt Therapy</span>
+            <span class="therapy-pill">Mindfulness-Based (MBCT)</span>
+            <span class="therapy-pill">Humanistic Therapy</span>
+            <span class="therapy-pill">Somatic Therapy</span>
+            <span class="therapy-pill">Compassion-Focused Therapy</span>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="section">
+        <div class="cta-section animate-in delay-3">
+            <h2>Ready to Start Your Journey?</h2>
+            <p>Experience personalized mental wellness support today.</p>
+            <a href="/app" class="cta-btn">Start ai.therapy Free</a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-logo">
+            ai<span class="logo-dot">.</span>therapy
+        </div>
+        <p>Crafted with ❤️ and <a href="https://antigravity.google" target="_blank">Google Antigravity</a></p>
+        <p style="margin-top: 1rem; font-size: 0.85rem; opacity: 0.7;">
+            © 2025 Mindflex UG (haftungsbeschränkt), Berlin
+        </p>
+    </footer>
+</body>
+
+</html>
