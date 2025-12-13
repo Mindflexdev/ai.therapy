@@ -621,9 +621,9 @@ export default function CreateCharacterScreen() {
     }, [currentStep, generatedImageUrl]);
 
     const handleNext = async () => {
-        // Updated flow: Goal -> Name -> Therapy Style -> Greeting -> Visibility -> Characteristics -> Image Gen -> Review
-        const steps: Step[] = ['goal', 'name', 'therapyStyle', 'greeting', 'visibility', 'characteristics', 'imageGeneration', 'review'];
-        const currentStepsList: Step[] = ['goal', 'name', 'therapyStyle', 'greeting', 'visibility', 'characteristics', 'imageGeneration', 'review'];
+        // Updated flow: Goal -> Name -> Visibility -> Therapy Style -> Greeting -> Characteristics -> Image Gen -> Review
+        const steps: Step[] = ['goal', 'name', 'visibility', 'therapyStyle', 'greeting', 'characteristics', 'imageGeneration', 'review'];
+        const currentStepsList: Step[] = ['goal', 'name', 'visibility', 'therapyStyle', 'greeting', 'characteristics', 'imageGeneration', 'review'];
         const currentIndex = currentStepsList.indexOf(currentStep);
 
         // Auto-generate image when moving from characteristics to imageGeneration
@@ -718,8 +718,8 @@ export default function CreateCharacterScreen() {
     };
 
     const handleBack = () => {
-        // Updated flow: Goal -> Name -> Therapy Style -> Greeting -> Visibility -> Characteristics -> Image Gen -> Review
-        const steps: Step[] = ['goal', 'name', 'therapyStyle', 'greeting', 'visibility', 'characteristics', 'imageGeneration', 'review'];
+        // Updated flow: Goal -> Name -> Visibility -> Therapy Style -> Greeting -> Characteristics -> Image Gen -> Review
+        const steps: Step[] = ['goal', 'name', 'visibility', 'therapyStyle', 'greeting', 'characteristics', 'imageGeneration', 'review'];
         const currentIndex = steps.indexOf(currentStep);
         if (currentIndex > 0) {
             setCurrentStep(steps[currentIndex - 1]);
@@ -1051,11 +1051,11 @@ export default function CreateCharacterScreen() {
                             How does {characterData.name} greet you?
                         </ThemedText>
                         <ThemedText style={styles.stepDescription}>
-                            Write the first message your character will send
+                            Write the first message your ai.therapist will send
                         </ThemedText>
                         <TextInput
                             style={[styles.textArea, { backgroundColor: theme.card, color: theme.text }]}
-                            placeholder={`Hi, I’m ${characterData.name || '...'}. I work with acceptance, awareness, and values rather than control or quick fixes. Together, we’ll explore how to make room for what’s here and still move toward what matters to you. We can begin when you’re ready...`}
+                            placeholder={`e.g., Hi, I’m ${characterData.name || '...'}. I work with acceptance, awareness, and values rather than control or quick fixes. Together, we’ll explore how to make room for what’s here and still move toward what matters to you. We can begin when you’re ready...`}
                             placeholderTextColor={theme.icon}
                             value={characterData.greeting}
                             onChangeText={(text) => setCharacterData({ ...characterData, greeting: text })}
