@@ -265,6 +265,14 @@ export default function RootLayout() {
           }}
         />
         <Stack.Screen
+          name="c/[id]"
+          options={{
+            headerShown: false,
+            animation: 'fade',
+            presentation: 'card'
+          }}
+        />
+        <Stack.Screen
           name="therapy-detail-modal"
           options={{
             headerShown: false,

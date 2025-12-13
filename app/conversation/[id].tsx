@@ -12,6 +12,7 @@ import {
     TextInput,
     TouchableOpacity,
     View,
+    ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -59,6 +60,7 @@ export default function ConversationScreen() {
     const [isLoading, setIsLoading] = useState(true);
     const [activeTherapyStyles, setActiveTherapyStyles] = useState<string[]>(['Integrative Therapy (AI decides)']);
     const [isStyleModalVisible, setIsStyleModalVisible] = useState(false);
+    const [showDisclaimer, setShowDisclaimer] = useState(false);
 
     // State for the Detail Popup (Learn More)
     const [detailStyleName, setDetailStyleName] = useState<string | null>(null);
@@ -630,17 +632,45 @@ export default function ConversationScreen() {
                     )}
                 </TouchableOpacity>
 
-                <TouchableOpacity
-                    style={[styles.styleSelector, { backgroundColor: theme.card, marginLeft: 8 }]}
-                    onPress={handleStyleModalOpen}
-                >
-                    <IconSymbol name="sparkles" size={14} color={theme.primary} />
-                    <ThemedText style={styles.styleSelectorText} numberOfLines={1}>
-                        {activeTherapyStyles.map(s => STYLE_ABBREVIATIONS[s] || s).join(', ')}
-                    </ThemedText>
-                    <IconSymbol name="chevron.down" size={12} color={theme.icon} />
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <TouchableOpacity
+                        style={[styles.styleSelector, { backgroundColor: theme.card, marginRight: 8 }]}
+                        onPress={handleStyleModalOpen}
+                    >
+                        <IconSymbol name="sparkles" size={14} color={theme.primary} />
+                        <ThemedText style={styles.styleSelectorText} numberOfLines={1}>
+                            {activeTherapyStyles.map(s => STYLE_ABBREVIATIONS[s] || s).join(', ')}
+                        </ThemedText>
+                        <IconSymbol name="chevron.down" size={12} color={theme.icon} />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity onPress={() => setShowDisclaimer(true)} style={{ padding: 4 }}>
+                        <IconSymbol name="info.circle" size={24} color={theme.icon} />
+                    </TouchableOpacity>
+                </View>
             </View>
+
+            {/* Disclaimer Modal */}
+            <React.Fragment>
+                {showDisclaimer && (
+                    <View style={styles.modalOverlay}>
+                        <View style={[styles.modalContent, { backgroundColor: theme.card }]}>
+                            <ThemedText type="defaultSemiBold" style={{ marginBottom: 16 }}>AI Disclaimer</ThemedText>
+                            <ScrollView style={{ maxHeight: 300 }}>
+                                <ThemedText style={{ fontSize: 14, lineHeight: 20 }}>
+                                    ai.therapy is a creative mental-wellness platform and not a therapeutic service. All ai.therapists are fictional AI characters. Their role titles (“Therapist,” “Psychologist,” “Dr.,” “Coach,” etc.) are used solely for imaginative portrayal and have no professional, clinical, or medical meaning. The therapeutic approaches and modalities mentioned on the platform (e.g., CBT, ACT, DBT, Psychodynamic, Schema, Gestalt, MBCT, etc.) are used exclusively for inspired, model-like purposes and do not constitute real therapeutic application. Neither the ai.therapy platform nor its AI characters hold qualifications or licenses to practice medicine or psychotherapy. No promise of healing is made. Everything they say is intended for inspiration, reflection, and everyday support—not for diagnosis, treatment, or therapy.
+                                </ThemedText>
+                            </ScrollView>
+                            <TouchableOpacity
+                                style={[styles.primaryButton, { backgroundColor: theme.tint, marginTop: 16 }]}
+                                onPress={() => setShowDisclaimer(false)}
+                            >
+                                <ThemedText style={{ color: '#fff', fontWeight: '600' }}>I Understand</ThemedText>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                )}
+            </React.Fragment>
 
             {/* Therapy Style Modal (Main Selection) */}
             <TherapyStyleModal
@@ -675,7 +705,6 @@ export default function ConversationScreen() {
                     contentContainerStyle={styles.messagesList}
                     showsVerticalScrollIndicator={false}
                     ListFooterComponent={typingIndicator}
-                    ListHeaderComponent={disclaimerHeader}
                     removeClippedSubviews={true}
                     maxToRenderPerBatch={10}
                     updateCellsBatchingPeriod={50}
@@ -936,5 +965,33 @@ const styles = StyleSheet.create({
         fontSize: 9,
         color: '#999',
         textAlign: 'center',
+    },
+    modalOverlay: {
+        position: 'absolute',
+        top: 0, bottom: 0, left: 0, right: 0,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 1000,
+        padding: 24,
+    },
+    modalContent: {
+        width: '100%',
+        maxWidth: 400,
+        borderRadius: 24,
+        padding: 24,
+        maxHeight: '80%',
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 8,
+    },
+    primaryButton: {
+        width: '100%',
+        height: 48,
+        borderRadius: 24,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
 });

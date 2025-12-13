@@ -21,7 +21,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { MessageBubble } from '@/components/message-bubble';
 import { getPublicCharacters } from '@/constants/storage';
 import { Character } from '@/constants/data';
-import { generateChatResponse } from '@/lib/gemini';
+import { createJWT } from '@/lib/jwt';
 import { supabase } from '@/lib/supabase';
 
 // Helper to get character by ID from public list + static

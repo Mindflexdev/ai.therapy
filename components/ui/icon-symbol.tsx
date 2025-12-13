@@ -59,6 +59,7 @@ const MAPPING = {
   'star.fill': 'star',
   'star': 'star-border',
   'shuffle': 'shuffle',
+  'info.circle': 'info-outline',
 } as IconMapping;
 
 /**
