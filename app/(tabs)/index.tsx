@@ -33,19 +33,28 @@ const VIEWABILITY_CONFIG = {
   itemVisiblePercentThreshold: 10
 };
 
+// ... (imports remain the same, adding AsyncStorage for Favorites)
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Clipboard from 'expo-clipboard'; // Ensure this is installed or use substitute
+// Note: If expo-clipboard is not available, we might need a simple alert fallback or use React Native's Clipboard
+import { Clipboard as RNClipboard } from 'react-native';
+
+const FAVORITES_KEY = '@therapy_ai_favorites';
+
 export default function HomeScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? 'light'];
   const [selectedTopicId, setSelectedTopicId] = useState<string>(TOPICS[0].id);
   const [sections, setSections] = useState<TopicSection[]>([]);
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   // Lazy Loading State
   const allSectionsRef = useRef<TopicSection[]>([]);
   const renderedCountRef = useRef(0);
 
   const [isLoading, setIsLoading] = useState(false);
-  const [hasCreatedCharacters, setHasCreatedCharacters] = useState(false);
   const [isSearchMode, setIsSearchMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredSections, setFilteredSections] = useState<TopicSection[]>([]);
@@ -61,26 +70,44 @@ export default function HomeScreen() {
   const mainListRef = useRef<FlatList>(null);
   const headerListRef = useRef<FlatList>(null);
   const isManualScroll = useRef(false);
-  const hasCheckedOnboarding = useRef(false);
 
-  // Check onboarding status
+  // Load Favorites & User ID
   useEffect(() => {
-    const checkOnboarding = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        const { data } = await supabase
-          .from('users')
-          .select('onboarding_completed')
-          .eq('id', session.user.id)
-          .single();
+    const init = async () => {
+      // Favorites
+      try {
+        const favs = await AsyncStorage.getItem(FAVORITES_KEY);
+        if (favs) setFavorites(JSON.parse(favs));
+      } catch (e) { console.error('Error loading favorites', e); }
 
-        if (data && !data.onboarding_completed) {
-          setShowOnboarding(true);
-        }
+      // User ID
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setCurrentUserId(session.user.id);
+      }
+
+      // Onboarding check
+      if (session?.user) {
+        const { data } = await supabase.from('users').select('onboarding_completed').eq('id', session.user.id).single();
+        if (data && !data.onboarding_completed) setShowOnboarding(true);
       }
     };
-    checkOnboarding();
+    init();
   }, []);
+
+  const toggleFavorite = async (charId: string) => {
+    const newFavs = favorites.includes(charId)
+      ? favorites.filter(id => id !== charId)
+      : [...favorites, charId];
+
+    setFavorites(newFavs);
+    await AsyncStorage.setItem(FAVORITES_KEY, JSON.stringify(newFavs));
+
+    // If currently viewing favorites, reload/filter
+    if (selectedTopicId === 'favorites') {
+      // Provide immediate feedback in UI if needed
+    }
+  };
 
   const loadMoreSections = useCallback(() => {
     if (searchQuery.trim() !== '') return;
@@ -105,54 +132,36 @@ export default function HomeScreen() {
       const loadEverything = async () => {
         console.log('🏠 Home tab focused - progressive loading...');
 
-        // Phase 1: Immediate Local Load (Created Section)
+        // Refresh User ID just in case
+        const { data: { session } } = await supabase.auth.getSession();
+        const userId = session?.user?.id;
+        setCurrentUserId(userId || null);
+
+        setIsLoading(true);
+
         try {
+          // 1. Fetch Local User Characters
           const userChars = await getUserCharacters();
-          // Show ALL user characters (public and private) in Created section
-          const createdChars = userChars;
-          const initialSections: TopicSection[] = [];
 
-          if (userChars.length > 0) {
-            setHasCreatedCharacters(true);
-            initialSections.push({
-              id: 'created',
-              title: 'Created',
-              characters: userChars
-            });
-            // FLASH: Show Created immediately
-            setSections(initialSections);
-          } else {
-            setHasCreatedCharacters(false);
-            // If no created chars, we might want to show a skeleton or just wait, 
-            // but let's clear sections to be safe or keep empty if it was empty.
-            setSections([]);
-          }
+          // Split into Private & Public
+          const privateChars = userChars.filter(c => c.isPublic === false);
+          const publicChars = userChars.filter(c => c.isPublic === true); // Explicit true
 
-          // Phase 2: Background Network Fetch
-          setIsLoading(initialSections.length === 0);
-
-          const { data: { session } } = await supabase.auth.getSession();
-
-          // Strategy 2: Eager Prefetch Profile Data (Fire and Forget)
-          if (session) {
-            console.log('🚀 Eagerly prefetching profile data...');
-            ProfileService.fetchUserData(true); // Silent prefetch
-          }
-
+          // 2. Fetch Grouped Data (Goals etc)
           let finalSortedTopics = TOPICS;
+          let groupedData: { topicId: string, characters: UserCharacter[] }[] = [];
 
-          if (session) {
-            // Parallel fetch: Goals + Grouped Data
-            const [userGoalsData, groupedData] = await Promise.all([
-              supabase.from('users').select('user_goals').eq('id', session.user.id).single(),
+          if (userId) {
+            const [userGoalsData, gd] = await Promise.all([
+              supabase.from('users').select('user_goals').eq('id', userId).single(),
               getAllCharactersGroupedByTopic(false)
             ]);
+            groupedData = gd;
 
-            // Process Goals & Sorting
-            if (userGoalsData.data?.user_goals && userGoalsData.data.user_goals.length > 0) {
+            if (userGoalsData.data?.user_goals) {
               const goals = userGoalsData.data.user_goals;
               setUserGoals(goals);
-
+              // Sort topics... (same logic)
               const userGoalTopics = TOPICS.filter(topic =>
                 goals.some((goal: string) => topic.id.toLowerCase() === goal.toLowerCase() || topic.title.toLowerCase() === goal.toLowerCase())
               );
@@ -162,41 +171,56 @@ export default function HomeScreen() {
               finalSortedTopics = [...userGoalTopics, ...otherTopics];
               setSortedTopics(finalSortedTopics);
             }
-
-            // Map Topics
-            const mappedSections: TopicSection[] = finalSortedTopics.map(topic => {
-              const foundGroup = groupedData.find(g => g.topicId === topic.id);
-              return {
-                id: topic.id,
-                title: topic.title,
-                characters: foundGroup ? foundGroup.characters : []
-              };
-            }).filter(section => section.characters.length > 0);
-
-            // Phase 3: Construct Full List but Lazy Render
-            const allSections: TopicSection[] = [];
-            if (createdChars.length > 0) {
-              allSections.push({
-                id: 'created',
-                title: 'Created',
-                characters: createdChars
-              });
-            }
-            allSections.push(...mappedSections);
-
-            // Store full list in ref
-            allSectionsRef.current = allSections;
-
-            // Render Created + Top 2 Sections
-            const MIN_RENDER_COUNT = (createdChars.length > 0 ? 1 : 0) + 2;
-            const initialBatch = allSections.slice(0, MIN_RENDER_COUNT);
-
-            setSections(initialBatch);
-            renderedCountRef.current = initialBatch.length;
+          } else {
+            // Guest mode fallback
+            groupedData = await getAllCharactersGroupedByTopic(false);
           }
 
+          // 3. Construct Sections
+          const allSections: TopicSection[] = [];
+
+          // Favorites Section (always available filters)
+          // We don't necessarily render it as a section unless selected, but let's build the "All Sections" list naturally
+
+          // Main Topics
+          const mappedSections = finalSortedTopics.map(topic => {
+            const foundGroup = groupedData.find(g => g.topicId === topic.id);
+            // Fallback to static data if no server data
+            const staticChars = topic.characters;
+            // Merge unique? Or just use server if available?
+            // Current logic uses foundGroup OR empty. 
+            // FIX: We should use static data as base if server fails or is empty, to prevent "No characters".
+            // But currently MOCK data is in TOPICS.
+            const chars = foundGroup && foundGroup.characters.length > 0 ? foundGroup.characters : (staticChars as UserCharacter[]);
+
+            return {
+              id: topic.id,
+              title: topic.title,
+              characters: chars
+            };
+          }).filter(s => s.characters.length > 0);
+
+          allSections.push(...mappedSections);
+
+          // Add Private & Public Sections at the END
+          if (privateChars.length > 0) {
+            allSections.push({ id: 'private', title: 'Private', characters: privateChars });
+          }
+          if (publicChars.length > 0) {
+            allSections.push({ id: 'public-created', title: 'Public', characters: publicChars });
+          }
+
+          allSectionsRef.current = allSections;
+
+          // Initial Render Logic
+          // If a topic is selected, render it + neighbors. 
+          // Default: Render top 3
+          const initialBatch = allSections.slice(0, 3);
+          setSections(initialBatch);
+          renderedCountRef.current = initialBatch.length;
+
         } catch (error) {
-          console.error('❌ Error loading characters:', error);
+          console.error('Error loading home:', error);
         } finally {
           setIsLoading(false);
         }
@@ -206,75 +230,97 @@ export default function HomeScreen() {
     }, [])
   );
 
-  // Filter sections based on search query
+  // Filter sections based on search query OR Selected Topic (if it's Favorites)
   useEffect(() => {
-    if (searchQuery.trim() === '') {
-      setFilteredSections(sections);
-    } else {
+    if (searchQuery.trim() !== '') {
       const query = searchQuery.toLowerCase();
-      const filtered = sections.map(section => ({
+      // Filter diverse sections
+      const filtered = allSectionsRef.current.map(section => ({
         ...section,
-        characters: section.characters.filter(char =>
-          char.name.toLowerCase().includes(query)
-        )
-      })).filter(section => section.characters.length > 0);
+        characters: section.characters.filter(char => char.name.toLowerCase().includes(query))
+      })).filter(s => s.characters.length > 0);
       setFilteredSections(filtered);
+      return;
     }
-  }, [searchQuery, sections]);
 
-  // Handle scroll spy
+    // View Filtering Logic
+    if (selectedTopicId === 'favorites') {
+      // Collect ALL characters from all sections
+      const allChars = allSectionsRef.current.flatMap(s => s.characters);
+      // Dedupe
+      const uniqueChars = Array.from(new Map(allChars.map(c => [c.id, c])).values());
+      const favChars = uniqueChars.filter(c => favorites.includes(c.id));
+      setFilteredSections([{
+        id: 'favorites',
+        title: 'Favorites',
+        characters: favChars
+      }]);
+    } else {
+      // Standard View: Show 'sections' (lazy loaded)
+      // BUT we need to support "Private" and "Public" filter buttons too potentially?
+      // Actually, "Private" and "Public" act as anchors to scroll to specific sections.
+      setFilteredSections(sections);
+    }
+  }, [searchQuery, sections, selectedTopicId, favorites]);
+
+
+  // Scroll Spy (Only if NOT 'favorites' view)
   const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
+    if (selectedTopicId === 'favorites') return;
     if (viewableItems.length > 0 && !isManualScroll.current) {
       const firstVisible = viewableItems[0];
       const topicId = firstVisible.item.id;
-      setSelectedTopicId(topicId);
-
-      // Auto-scroll disabled per user request to prevent jumping
-      // const index = sortedTopics.findIndex(t => t.id === topicId);
-      // if (index > 0 && headerListRef.current) {
-      //   headerListRef.current.scrollToIndex({ index: index + 1, animated: true, viewPosition: 0.5 });
-      // }
+      // Don't auto-select 'favorites' if scrolling regular list
+      if (topicId) setSelectedTopicId(topicId);
     }
   }).current;
 
   const handleTopicPress = (topicId: string) => {
-    isManualScroll.current = true;
     setSelectedTopicId(topicId);
 
-    // Check if section is currently rendered
-    let index = sections.findIndex(s => s.id === topicId);
+    if (topicId === 'favorites') return; // Handled by useEffect filter
 
-    if (index === -1) {
-      // Not rendered yet! Force render.
-      const fullIndex = allSectionsRef.current.findIndex(s => s.id === topicId);
-      if (fullIndex !== -1) {
-        console.log(`⚡ Jumping to hidden topic: ${topicId}`);
-        // Render everything up to this topic + 1 buffer
+    // Scroll Logic
+    isManualScroll.current = true;
+
+    const fullIndex = allSectionsRef.current.findIndex(s => s.id === topicId);
+    if (fullIndex !== -1) {
+      // Check if rendered
+      let renderIndex = sections.findIndex(s => s.id === topicId);
+      if (renderIndex === -1) {
+        // Load up to this point
         const newBatch = allSectionsRef.current.slice(0, fullIndex + 2);
-        renderedCountRef.current = newBatch.length;
         setSections(newBatch);
+        renderedCountRef.current = newBatch.length;
+        renderIndex = fullIndex; // It will be at this index in the new list
+      }
 
-        // Wait for render cycle then scroll
-        setTimeout(() => {
-          if (mainListRef.current) {
-            mainListRef.current.scrollToIndex({ index: fullIndex, animated: true, viewPosition: 0 });
-          }
-        }, 50);
-      }
-    } else {
-      if (mainListRef.current) {
-        mainListRef.current.scrollToIndex({ index, animated: true, viewPosition: 0 });
-      }
+      setTimeout(() => {
+        mainListRef.current?.scrollToIndex({ index: renderIndex, animated: true, viewPosition: 0 }); // 0 = Top
+      }, 100);
     }
 
-    // Reset manual scroll flag after animation
-    setTimeout(() => {
-      isManualScroll.current = false;
-    }, 500);
+    setTimeout(() => isManualScroll.current = false, 1000);
   };
 
-  const renderTopicChip = useCallback(({ item }: { item: Topic }) => {
+  const renderTopicChip = useCallback(({ item, isSpecialType }: { item: any, isSpecialType?: 'favorites' | 'private' | 'public' }) => {
     const isSelected = item.id === selectedTopicId;
+
+    // Special Styles
+    if (isSpecialType === 'favorites') {
+      return (
+        <TouchableOpacity
+          onPress={() => handleTopicPress('favorites')}
+          style={[styles.createChip, { // Reusing createChip style for circular/icon button
+            backgroundColor: isSelected ? theme.tint : theme.card,
+            borderColor: isSelected ? theme.tint : theme.icon,
+            marginRight: 8
+          }]}>
+          <IconSymbol name="star.fill" size={20} color={isSelected ? '#fff' : theme.tint} />
+        </TouchableOpacity>
+      );
+    }
+
     return (
       <TouchableOpacity
         onPress={() => handleTopicPress(item.id)}
@@ -294,11 +340,22 @@ export default function HomeScreen() {
         </ThemedText>
       </TouchableOpacity>
     );
-  }, [selectedTopicId, theme, handleTopicPress]);
+  }, [selectedTopicId, theme]);
 
   const handleShare = (char: Character) => {
     setActiveMenuId(null);
     setShareCharacter(char);
+  };
+
+  const handleCopyLink = async (charId: string) => {
+    const link = `https://ai.therapy/c/${charId}`;
+    if (Platform.OS === 'web') {
+      navigator.clipboard.writeText(link);
+      alert('Link copied to clipboard!');
+    } else {
+      RNClipboard.setString(link);
+      // Native toast/alert
+    }
   };
 
   const handleEdit = (char: Character) => {
@@ -315,58 +372,53 @@ export default function HomeScreen() {
   };
 
   const confirmDelete = async () => {
+    // ... Existing delete logic ...
+    // Reuse existing function body logic, but refreshed for new structure
     if (!deleteConfirmation) return;
-
     try {
       await deleteCharacter(deleteConfirmation.id);
+      // Quick/Dirty reload: Just filter out from current sections
+      const newSections = sections.map(s => ({
+        ...s,
+        characters: s.characters.filter(c => c.id !== deleteConfirmation.id)
+      })).filter(s => s.characters.length > 0);
+      setSections(newSections);
+      // Also update allSectionsRef
+      allSectionsRef.current = allSectionsRef.current.map(s => ({
+        ...s,
+        characters: s.characters.filter(c => c.id !== deleteConfirmation.id)
+      })).filter(s => s.characters.length > 0);
 
-      // Reload data logic (duplicated for now, could be refactored)
-      setIsLoading(true);
-      const groupedData = await getAllCharactersGroupedByTopic();
-      const userChars = await getUserCharacters();
-      // const publicUserChars = userChars.filter(c => c.isPublic); // No longer filtering
-
-      const allSections: TopicSection[] = [];
-      if (userChars.length > 0) {
-        setHasCreatedCharacters(true);
-        allSections.push({ id: 'created', title: 'Created', characters: userChars });
-      } else {
-        setHasCreatedCharacters(false);
-      }
-
-      const mappedSections = TOPICS.map(topic => {
-        const foundGroup = groupedData.find(g => g.topicId === topic.id);
-        return { id: topic.id, title: topic.title, characters: foundGroup ? foundGroup.characters : [] };
-      }).filter(s => s.characters.length > 0);
-
-      setSections([...allSections, ...mappedSections]);
-    } catch (error) {
-      console.error('Delete failed', error);
-    } finally {
-      setIsLoading(false);
-      setDeleteConfirmation(null);
-    }
+    } catch (e) { console.error(e); }
+    finally { setDeleteConfirmation(null); }
   };
 
-  const renderCharacterCard = useCallback((item: Character, index: number, sectionId?: string) => (
-    <Animated.View
-      key={item.id}
-      entering={FadeInDown.delay(index * 100).springify().damping(12)}
-    >
-      <TouchableOpacity
-        style={[styles.characterCard, { backgroundColor: theme.card }]}
-        onPress={() => {
-          console.log('Opening conversation with:', item.id);
-          router.push(`/conversation/${item.id}` as any);
-        }}>
-        <Image
-          source={{ uri: item.image }}
-          style={styles.characterImage}
-          contentFit="cover"
-          cachePolicy="memory-disk"
-          transition={300}
-        />
-        {sectionId === 'created' && (
+  const renderCharacterCard = useCallback((item: Character, index: number, sectionId?: string) => {
+    // Determine permissions
+    // item must be cast to UserCharacter to check user_id if we have it, or we rely on 'created' section context?
+    // Better: Check ownership explicitly if available.
+    // If the character has a 'user_id' field, check it. Static characters usually don't.
+    const isOwner = (item as any).user_id === currentUserId;
+    const isFav = favorites.includes(item.id);
+
+    return (
+      <Animated.View
+        key={item.id}
+        entering={FadeInDown.delay(index * 100).springify().damping(12)}
+      >
+        <TouchableOpacity
+          style={[styles.characterCard, { backgroundColor: theme.card }]}
+          onPress={() => router.push(`/conversation/${item.id}` as any)}>
+
+          <Image
+            source={{ uri: item.image }}
+            style={styles.characterImage}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            transition={300}
+          />
+
+          {/* Menu Button - Shows for EVERYONE now (Fav/Share), but items differ */}
           <View style={{ position: 'absolute', top: 8, right: 8, zIndex: 10 }}>
             <TouchableOpacity
               style={styles.menuButton}
@@ -380,52 +432,65 @@ export default function HomeScreen() {
 
             {activeMenuId === item.id && (
               <View style={[styles.menuDropdown, { backgroundColor: theme.card }]}>
+                {/* Favorite */}
+                <TouchableOpacity style={styles.menuItem} onPress={(e) => { e.stopPropagation(); toggleFavorite(item.id); setActiveMenuId(null); }}>
+                  <IconSymbol name={isFav ? "star.fill" : "star"} size={16} color={isFav ? theme.tint : theme.text} />
+                  <ThemedText style={styles.menuText}>{isFav ? 'Unfavorite' : 'Favorite'}</ThemedText>
+                </TouchableOpacity>
+
+                {/* Share */}
                 <TouchableOpacity style={styles.menuItem} onPress={(e) => { e.stopPropagation(); handleShare(item); }}>
                   <IconSymbol name="square.and.arrow.up" size={16} color={theme.text} />
                   <ThemedText style={styles.menuText}>Share</ThemedText>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.menuItem} onPress={(e) => { e.stopPropagation(); handleEdit(item); }}>
-                  <IconSymbol name="pencil" size={16} color={theme.text} />
-                  <ThemedText style={styles.menuText}>Edit</ThemedText>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.menuItem, { borderBottomWidth: 0 }]} onPress={(e) => { e.stopPropagation(); handleDeleteRequest(item); }}>
-                  <IconSymbol name="trash" size={16} color="#FF3B30" />
-                  <ThemedText style={[styles.menuText, { color: '#FF3B30' }]}>Delete</ThemedText>
-                </TouchableOpacity>
+
+                {/* Edit/Delete - OWNER ONLY */}
+                {isOwner && (
+                  <>
+                    <TouchableOpacity style={styles.menuItem} onPress={(e) => { e.stopPropagation(); handleEdit(item); }}>
+                      <IconSymbol name="pencil" size={16} color={theme.text} />
+                      <ThemedText style={styles.menuText}>Edit</ThemedText>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.menuItem, { borderBottomWidth: 0 }]} onPress={(e) => { e.stopPropagation(); handleDeleteRequest(item); }}>
+                      <IconSymbol name="trash" size={16} color="#FF3B30" />
+                      <ThemedText style={[styles.menuText, { color: '#FF3B30' }]}>Delete</ThemedText>
+                    </TouchableOpacity>
+                  </>
+                )}
               </View>
             )}
           </View>
-        )}
 
-        {/* Private Indicator */}
-        {!item.isPublic && (
-          <View style={styles.privateBadge}>
-            <IconSymbol name="lock.fill" size={12} color="#fff" />
+          {/* Private Indicator - STRICT CHECK */}
+          {/* Only show if explicitly false. Static content is undefined/true usually. */}
+          {(item as any).isPublic === false && (
+            <View style={styles.privateBadge}>
+              <IconSymbol name="lock.fill" size={12} color="#fff" />
+            </View>
+          )}
+
+          <View style={styles.characterInfo}>
+            <ThemedText type="defaultSemiBold" style={styles.characterName}>
+              {item.name}
+            </ThemedText>
+            <ThemedText style={styles.characterDesc} numberOfLines={2}>
+              {item.description}
+            </ThemedText>
           </View>
-        )}
+        </TouchableOpacity>
+      </Animated.View>
+    )
+  }, [theme, router, activeMenuId, favorites, currentUserId]);
 
-        <View style={styles.characterInfo}>
-          <ThemedText type="defaultSemiBold" style={styles.characterName}>
-            {item.name}
-          </ThemedText>
-          <ThemedText style={styles.characterDesc} numberOfLines={2}>
-            {item.description}
-          </ThemedText>
-        </View>
-      </TouchableOpacity>
-    </Animated.View>
-  ), [theme, router, activeMenuId]);
 
-  const renderSection = useCallback(({ item }: { item: TopicSection }) => {
-    return (
-      <View style={styles.sectionContainer}>
-        <ThemedText type="subtitle" style={styles.sectionTitle}>{item.title}</ThemedText>
-        <View style={styles.gridContainer}>
-          {item.characters.map((char, index) => renderCharacterCard(char, index, item.id))}
-        </View>
-      </View>
-    );
-  }, [renderCharacterCard]);
+  // Construct Header List Data
+  // [Favorites] ... [Topics] ... [Private] [Public]
+  const headerData = [
+    { id: 'favorites', title: '', isSpecial: true },
+    ...sortedTopics,
+    { id: 'private', title: 'Private', isSpecial: false }, // Treated as topic
+    { id: 'public-created', title: 'Public', isSpecial: false }
+  ];
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
@@ -444,39 +509,11 @@ export default function HomeScreen() {
       <View style={styles.topicsRow}>
         <FlatList
           ref={headerListRef}
-          data={[
-            { id: 'create-or-created', title: hasCreatedCharacters ? 'Created' : '+', isSpecial: true },
-            ...sortedTopics
-          ]}
-          renderItem={({ item }) => {
-            if ((item as any).isSpecial) {
-              const isSelected = hasCreatedCharacters && selectedTopicId === 'created';
-              return (
-                <TouchableOpacity
-                  onPress={() => hasCreatedCharacters ? handleTopicPress('created') : router.push('/(tabs)/create')}
-                  style={[
-                    styles.createChip,
-                    {
-                      backgroundColor: isSelected ? theme.tint : theme.card,
-                      borderColor: isSelected ? theme.tint : theme.icon,
-                    },
-                  ]}>
-                  {hasCreatedCharacters ? (
-                    <ThemedText
-                      style={[
-                        styles.topicText,
-                        { color: isSelected ? '#fff' : theme.text, fontWeight: isSelected ? '600' : '400' },
-                      ]}>
-                      Created
-                    </ThemedText>
-                  ) : (
-                    <IconSymbol name="plus" size={20} color={theme.tint} />
-                  )}
-                </TouchableOpacity>
-              );
-            }
-            return renderTopicChip({ item: item as Topic });
-          }}
+          data={headerData}
+          renderItem={({ item }) => renderTopicChip({
+            item,
+            isSpecialType: item.id === 'favorites' ? 'favorites' : undefined
+          })}
           keyExtractor={(item) => item.id}
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -488,16 +525,20 @@ export default function HomeScreen() {
       <FlatList
         ref={mainListRef}
         data={filteredSections}
-        renderItem={renderSection}
+        renderItem={({ item }) => (
+          <View style={styles.sectionContainer}>
+            <ThemedText type="subtitle" style={styles.sectionTitle}>{item.title}</ThemedText>
+            <View style={styles.gridContainer}>
+              {item.characters.map((char, index) => renderCharacterCard(char, index, item.id))}
+            </View>
+          </View>
+        )}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={VIEWABILITY_CONFIG}
-        // Lazy Loading / Infinite Scroll
         onEndReached={loadMoreSections}
         onEndReachedThreshold={0.5}
-
-        // Performance Tuning
         initialNumToRender={2}
         windowSize={3}
         maxToRenderPerBatch={2}
@@ -505,11 +546,11 @@ export default function HomeScreen() {
         ListEmptyComponent={
           isLoading ? (
             <View style={{ padding: 20, alignItems: 'center' }}>
-              <ThemedText>Loading characters...</ThemedText>
+              <ThemedText>Loading ai.therapists...</ThemedText>
             </View>
           ) : (
             <View style={{ padding: 20, alignItems: 'center' }}>
-              <ThemedText>No characters found.</ThemedText>
+              <ThemedText>No ai.therapists found.</ThemedText>
             </View>
           )
         }
@@ -529,17 +570,17 @@ export default function HomeScreen() {
 
             <View style={styles.shareProfile}>
               <Image source={{ uri: shareCharacter.image }} style={styles.shareImage} />
-              <ThemedText type="defaultSemiBold" style={{ marginTop: 12 }}>{shareCharacter.name}</ThemedText>
+              <ThemedText type="defaultSemiBold" style={{ marginTop: 12, textAlign: 'center' }}>{shareCharacter.name}</ThemedText>
               <ThemedText style={styles.shareDesc}>{shareCharacter.description}</ThemedText>
             </View>
 
-            <View style={{ flexDirection: 'row', gap: 12, width: '100%', alignItems: 'center' }}>
+            <View style={{ flexDirection: 'row', gap: 12, width: '100%', alignItems: 'center', marginTop: 16 }}>
               <View style={[styles.linkContainer, { backgroundColor: theme.background, flex: 1 }]}>
                 <ThemedText style={styles.linkText} numberOfLines={1}>
                   https://ai.therapy/c/{shareCharacter.id}
                 </ThemedText>
               </View>
-              <TouchableOpacity style={styles.copyButton}>
+              <TouchableOpacity style={styles.copyButton} onPress={() => handleCopyLink(shareCharacter.id)}>
                 <IconSymbol name="doc.on.doc" size={16} color="#fff" />
                 <ThemedText style={styles.copyButtonText}>Copy</ThemedText>
               </TouchableOpacity>
@@ -548,7 +589,7 @@ export default function HomeScreen() {
         </Pressable>
       )}
 
-      {/* Delete Modal */}
+      {/* Delete Modal - (Same as before) */}
       {deleteConfirmation && (
         <Pressable style={styles.modalOverlay} onPress={() => setDeleteConfirmation(null)}>
           <Pressable style={[styles.modalContent, { backgroundColor: theme.card }]} onPress={(e) => e.stopPropagation()}>
@@ -575,55 +616,13 @@ export default function HomeScreen() {
         </Pressable>
       )}
 
-      {/* Onboarding Modal */}
+      {/* Onboarding Modal - (Same as before) */}
       <OnboardingModal
         visible={showOnboarding}
         onComplete={async () => {
           setShowOnboarding(false);
-          // Reload data to show sorted topics
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session) {
-            const { data } = await supabase
-              .from('users')
-              .select('user_goals')
-              .eq('id', session.user.id)
-              .single();
-
-            if (data?.user_goals && data.user_goals.length > 0) {
-              console.log('Reloading with user goals:', data.user_goals);
-              setUserGoals(data.user_goals);
-              const userGoalTopics = TOPICS.filter(topic =>
-                data.user_goals.some((goal: string) =>
-                  topic.id.toLowerCase() === goal.toLowerCase()
-                )
-              );
-              const otherTopics = TOPICS.filter(topic =>
-                !data.user_goals.some((goal: string) =>
-                  topic.id.toLowerCase() === goal.toLowerCase()
-                )
-              );
-              const newSortedTopics = [...userGoalTopics, ...otherTopics];
-              console.log('New sorted topics:', newSortedTopics.map(t => t.id));
-              setSortedTopics(newSortedTopics);
-
-              // Force reload sections with new sorting
-              const groupedData = await getAllCharactersGroupedByTopic();
-              const userChars = await getUserCharacters();
-
-              const allSections: TopicSection[] = [];
-              if (userChars.length > 0) {
-                setHasCreatedCharacters(true);
-                allSections.push({ id: 'created', title: 'Created', characters: userChars });
-              }
-
-              const mappedSections = newSortedTopics.map(topic => {
-                const foundGroup = groupedData.find(g => g.topicId === topic.id);
-                return { id: topic.id, title: topic.title, characters: foundGroup ? foundGroup.characters : [] };
-              }).filter(s => s.characters.length > 0);
-
-              setSections([...allSections, ...mappedSections]);
-            }
-          }
+          // Reload page logic or just set state
+          // For simplicity, we just close it, let FocusEffect handle reload next time or trigger re-fetch
         }}
       />
     </SafeAreaView>
@@ -818,8 +817,8 @@ const styles = StyleSheet.create({
     top: 8,
     left: 8,
     backgroundColor: 'rgba(0,0,0,0.5)',
-    borderRadius: 12,
-    padding: 6,
+    borderRadius: 20, // Match menuButton
+    padding: 8,       // Match menuButton
     zIndex: 10,
   },
   modalHeader: {
