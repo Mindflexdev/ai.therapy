@@ -1175,94 +1175,94 @@ const renderStepContent = () => {
         default:
             return null;
     }
-};
 
-return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
-        {/* Fullscreen crafting overlay */}
-        {isGeneratingImage && (
-            <FullscreenCraftingOverlay theme={theme} characterName={characterData.name} />
-        )}
 
-        <View style={[styles.header, { borderBottomColor: theme.icon }]}>
-            <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-                <IconSymbol name="chevron.right" size={24} color={theme.text} style={{ transform: [{ rotate: '180deg' }] }} />
-            </TouchableOpacity>
-            <ThemedText type="defaultSemiBold" style={styles.headerTitle}>
-                {editingId ? 'Edit ai.therapist' : 'Create ai.therapist'}
-            </ThemedText>
-            <View style={{ width: 40 }} />
-        </View>
+    return (
+        <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
+            {/* Fullscreen crafting overlay */}
+            {isGeneratingImage && (
+                <FullscreenCraftingOverlay theme={theme} characterName={characterData.name} />
+            )}
 
-        <KeyboardAvoidingView
-            style={styles.flex}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-            <ScrollView
-                contentContainerStyle={styles.scrollContent}
-                showsVerticalScrollIndicator={false}>
-                {renderStepContent()}
-            </ScrollView>
-
-            <View style={[styles.footer, { backgroundColor: theme.background, borderTopColor: theme.icon }]}>
-                {/* Show selected therapy styles when on therapy style step */}
-                {currentStep === 'therapyStyle' && characterData.therapyStyles.length > 0 && (
-                    <View style={styles.selectedStylesPreviewSimple}>
-                        <ThemedText style={[styles.selectedStylesPreviewTextSimple, { color: theme.text }]}>
-                            Selected: <ThemedText type="defaultSemiBold">{characterData.therapyStyles.map(s => STYLE_ABBREVIATIONS[s] || s).join(', ')}</ThemedText>
-                        </ThemedText>
-                    </View>
-                )}
-
-                {currentStep === 'review' ? (
-                    <TouchableOpacity
-                        style={[
-                            styles.button,
-                            {
-                                backgroundColor: !isFormComplete() || isCreating
-                                    ? theme.icon + '40'
-                                    : theme.primary
-                            }
-                        ]}
-                        onPress={handleCreate}
-                        disabled={isCreating || !isFormComplete()}
-                    >
-                        <ThemedText style={styles.buttonText}>{editingId ? 'Save Changes' : 'Create!'}</ThemedText>
-                    </TouchableOpacity>
-                ) : currentStep === 'imageGeneration' && isGeneratingImage ? (
-                    <View style={[styles.button, { backgroundColor: theme.card }]}>
-                        <ThemedText style={[styles.buttonText, { color: theme.icon }]}>Please wait...</ThemedText>
-                    </View>
-                ) : (
-                    <TouchableOpacity
-                        style={[
-                            styles.button,
-                            {
-                                backgroundColor: isStepValid(currentStep)
-                                    ? theme.primary
-                                    : theme.icon + '40' // Disabled state color (faded icon color)
-                            }
-                        ]}
-                        onPress={handleNext}
-                        disabled={!isStepValid(currentStep)}
-                    >
-                        <ThemedText style={[
-                            styles.buttonText,
-                            { opacity: isStepValid(currentStep) ? 1 : 0.7 }
-                        ]}>
-                            Continue
-                        </ThemedText>
-                    </TouchableOpacity>
-                )}
+            <View style={[styles.header, { borderBottomColor: theme.icon }]}>
+                <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+                    <IconSymbol name="chevron.right" size={24} color={theme.text} style={{ transform: [{ rotate: '180deg' }] }} />
+                </TouchableOpacity>
+                <ThemedText type="defaultSemiBold" style={styles.headerTitle}>
+                    {editingId ? 'Edit ai.therapist' : 'Create ai.therapist'}
+                </ThemedText>
+                <View style={{ width: 40 }} />
             </View>
-        </KeyboardAvoidingView>
-        <ErrorModal
-            visible={errorModalVisible}
-            message={errorMessage}
-            onClose={() => setErrorModalVisible(false)}
-            theme={theme}
-        />
-    </SafeAreaView >
-);
+
+            <KeyboardAvoidingView
+                style={styles.flex}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+                <ScrollView
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={false}>
+                    {renderStepContent()}
+                </ScrollView>
+
+                <View style={[styles.footer, { backgroundColor: theme.background, borderTopColor: theme.icon }]}>
+                    {/* Show selected therapy styles when on therapy style step */}
+                    {currentStep === 'therapyStyle' && characterData.therapyStyles.length > 0 && (
+                        <View style={styles.selectedStylesPreviewSimple}>
+                            <ThemedText style={[styles.selectedStylesPreviewTextSimple, { color: theme.text }]}>
+                                Selected: <ThemedText type="defaultSemiBold">{characterData.therapyStyles.map(s => STYLE_ABBREVIATIONS[s] || s).join(', ')}</ThemedText>
+                            </ThemedText>
+                        </View>
+                    )}
+
+                    {currentStep === 'review' ? (
+                        <TouchableOpacity
+                            style={[
+                                styles.button,
+                                {
+                                    backgroundColor: !isFormComplete() || isCreating
+                                        ? theme.icon + '40'
+                                        : theme.primary
+                                }
+                            ]}
+                            onPress={handleCreate}
+                            disabled={isCreating || !isFormComplete()}
+                        >
+                            <ThemedText style={styles.buttonText}>{editingId ? 'Save Changes' : 'Create!'}</ThemedText>
+                        </TouchableOpacity>
+                    ) : currentStep === 'imageGeneration' && isGeneratingImage ? (
+                        <View style={[styles.button, { backgroundColor: theme.card }]}>
+                            <ThemedText style={[styles.buttonText, { color: theme.icon }]}>Please wait...</ThemedText>
+                        </View>
+                    ) : (
+                        <TouchableOpacity
+                            style={[
+                                styles.button,
+                                {
+                                    backgroundColor: isStepValid(currentStep)
+                                        ? theme.primary
+                                        : theme.icon + '40' // Disabled state color (faded icon color)
+                                }
+                            ]}
+                            onPress={handleNext}
+                            disabled={!isStepValid(currentStep)}
+                        >
+                            <ThemedText style={[
+                                styles.buttonText,
+                                { opacity: isStepValid(currentStep) ? 1 : 0.7 }
+                            ]}>
+                                Continue
+                            </ThemedText>
+                        </TouchableOpacity>
+                    )}
+                </View>
+            </KeyboardAvoidingView>
+            <ErrorModal
+                visible={errorModalVisible}
+                message={errorMessage}
+                onClose={() => setErrorModalVisible(false)}
+                theme={theme}
+            />
+        </SafeAreaView >
+    );
 }
 
 const styles = StyleSheet.create({
