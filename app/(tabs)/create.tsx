@@ -637,6 +637,10 @@ export default function CreateCharacterScreen() {
             setCurrentStep('imageGeneration');
             setIsGeneratingImage(true);
             try {
+                // Get authenticated user ID
+                const { data: { user } } = await supabase.auth.getUser();
+                const userId = user?.id;
+
                 console.log('🎨 Starting automatic image generation...');
                 console.log('👤 User ID:', userId);
 
