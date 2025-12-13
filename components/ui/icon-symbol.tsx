@@ -56,6 +56,9 @@ const MAPPING = {
   'bolt.fill': 'bolt',
   'timer.fill': 'timer',
   'exclamationmark.circle.fill': 'error',
+  'star.fill': 'star',
+  'star': 'star-border',
+  'shuffle': 'shuffle',
 } as IconMapping;
 
 /**

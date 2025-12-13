@@ -591,28 +591,42 @@ export default function CreateCharacterScreen() {
 
     const params = useLocalSearchParams();
     const [editingId, setEditingId] = useState<string | null>(null);
+    const [remixMode, setRemixMode] = useState(false);
 
-    // Initial load for edit mode
+    // Initial load for edit or remix mode
     React.useEffect(() => {
-        if (params.editMode === 'true' && params.characterData) {
+        if ((params.editMode === 'true' || params.remixMode === 'true') && params.characterData) {
             try {
                 const charData = JSON.parse(params.characterData as string) as UserCharacter;
+                const isRemix = params.remixMode === 'true';
 
-                // Only initialize if we haven't already (or if switching to a different character)
-                if (editingId !== charData.id) {
+                // Set state if not already set or switching
+                // For remix, we specifically DO NOT set editingId (so it creates new)
+                const targetId = isRemix ? null : charData.id;
+
+                if (editingId !== targetId || isRemix) {
                     setCharacterData({
                         goal: charData.goal || '',
-                        name: charData.name,
+                        name: isRemix ? `${charData.name} (Remix)` : charData.name,
                         characteristics: charData.description,
                         therapyStyles: charData.therapyStyles || [],
                         greeting: charData.greeting || '',
                         isPublic: charData.isPublic || false,
                     });
                     setGeneratedImageUrl(charData.image);
-                    setEditingId(charData.id);
+
+                    if (!isRemix) {
+                        setEditingId(charData.id);
+                    } else {
+                        setEditingId(null);
+                        setRemixMode(true);
+                        // For Remix, we might want to start at 'goal' or specific step?
+                        // User likely wants to tweak stats.
+                        setCurrentStep('goal');
+                    }
                 }
             } catch (e) {
-                console.error("Failed to parse character data for editing", e);
+                console.error("Failed to parse character data", e);
             }
         }
     }, [params, editingId]);
@@ -647,6 +661,11 @@ export default function CreateCharacterScreen() {
                     setTimeout(() => reject(new Error('TIMEOUT')), 30000);
                 });
 
+                // Determine action type
+                let actionType: 'create' | 'edit' | 'remix' = 'create';
+                if (remixMode) actionType = 'remix';
+                else if (editingId) actionType = 'edit';
+
                 // Race the generation against the timeout
                 const result = await Promise.race([
                     generateCharacterImage({
@@ -658,6 +677,7 @@ export default function CreateCharacterScreen() {
                         characteristics: characterData.characteristics,
                         isPublic: characterData.isPublic,
                         userId: userId,
+                        actionType: actionType,
                     }),
                     timeoutPromise
                 ]) as GenerateImageResponse; // Cast to expected response type (timeout throws error so safe to cast)

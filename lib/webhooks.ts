@@ -11,6 +11,7 @@ interface GenerateImageRequest {
     goal?: string;
     characteristics?: string; // Character personality/description
     isPublic?: boolean;
+    actionType?: 'create' | 'edit' | 'remix';
 }
 
 interface GenerateImageResponse {
@@ -27,6 +28,7 @@ export async function generateCharacterImage(
         console.log('🚀 Starting image generation...');
         console.log('📝 Description:', request.description);
         console.log('👤 Character name:', request.characterName);
+        console.log('⚡ Action Type:', request.actionType);
 
         // Create JWT token for authentication (now async)
         const token = await createJWT({
@@ -44,6 +46,7 @@ export async function generateCharacterImage(
             therapyStyles: request.therapyStyles,
             goal: request.goal,
             isPublic: request.isPublic,
+            actionType: request.actionType || 'create',
             timestamp: new Date().toISOString(),
         };
 

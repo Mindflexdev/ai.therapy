@@ -444,6 +444,19 @@ export default function HomeScreen() {
                   <ThemedText style={styles.menuText}>Share</ThemedText>
                 </TouchableOpacity>
 
+                {/* Remix - Always visible */}
+                <TouchableOpacity style={styles.menuItem} onPress={(e) => {
+                  e.stopPropagation();
+                  setActiveMenuId(null);
+                  router.push({
+                    pathname: '/(tabs)/create',
+                    params: { remixMode: 'true', characterData: JSON.stringify(item) }
+                  } as any);
+                }}>
+                  <IconSymbol name="shuffle" size={16} color={theme.text} />
+                  <ThemedText style={styles.menuText}>Remix</ThemedText>
+                </TouchableOpacity>
+
                 {/* Edit/Delete - OWNER ONLY */}
                 {isOwner && (
                   <>
