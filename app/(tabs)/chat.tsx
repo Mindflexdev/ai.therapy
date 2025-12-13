@@ -57,23 +57,34 @@ export default function ChatScreen() {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) return;
 
-            // Optimised query: Join with characters table
-            // Assumes foreign key on character_id -> characters.id
-            const { data, error } = await supabase
+            // 1. Fetch Sessions (Robust separate query)
+            const { data: sessionData, error } = await supabase
                 .from('chat_sessions')
-                .select('*, characters:character_id(name, image)')
+                .select('*')
                 .eq('user_id', session.user.id)
                 .order('last_message_at', { ascending: false });
 
             if (error) throw error;
 
-            console.log('Fetched data:', data);
+            // 2. Fetch Characters safely
+            const characterIds = [...new Set(sessionData.map(s => s.character_id))];
+            let characterMap: Record<string, any> = {};
 
-            const enrichedSessions = data.map((s: any) => ({
+            if (characterIds.length > 0) {
+                const { data: chars } = await supabase
+                    .from('characters')
+                    .select('id, name, image')
+                    .in('id', characterIds);
+
+                if (chars) {
+                    chars.forEach(c => { characterMap[c.id] = c; });
+                }
+            }
+
+            const enrichedSessions = sessionData.map(s => ({
                 ...s,
-                // Handle joined data which comes as an object/array property
-                character_name: s.characters?.name || 'Unknown Character',
-                character_image: s.characters?.image,
+                character_name: characterMap[s.character_id]?.name || 'Unknown Character',
+                character_image: characterMap[s.character_id]?.image,
             }));
 
             setSessions(enrichedSessions);
@@ -133,11 +144,7 @@ export default function ChatScreen() {
                 <ThemedText type="title" style={styles.title}>
                     Chats
                 </ThemedText>
-                <View style={styles.headerIcons}>
-                    <TouchableOpacity style={styles.iconButton}>
-                        <IconSymbol name="magnifyingglass" size={24} color={theme.text} />
-                    </TouchableOpacity>
-                </View>
+                <View style={styles.headerIcons} />
             </View>
 
             <View style={[styles.searchContainer, { backgroundColor: theme.card }]}>
