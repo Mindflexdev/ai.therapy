@@ -374,10 +374,11 @@ export default function MindGymScreen() {
                 <View style={styles.overlayContent}>
                     <IconSymbol name="brain" size={100} color="#fff" style={{ marginBottom: 24, opacity: 0.9 }} />
                     <ThemedText type="title" style={styles.overlayTitle}>Meditate</ThemedText>
-                    <ThemedText style={styles.overlayText}>
-                        Your mental fitness studio is coming soon.
-                        Join us for guided sessions with your ai.therapist.
-                    </ThemedText>
+                    <View style={styles.overlayTextContainer}>
+                        <ThemedText style={styles.overlayText}>
+                            Guided meditations with your favourite ai.therapists coming soon.
+                        </ThemedText>
+                    </View>
                 </View>
             </View>
         </SafeAreaView >
@@ -406,12 +407,21 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 28,
         marginTop: 8,
+        fontWeight: 'bold',
+    },
+    overlayTextContainer: {
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        borderRadius: 16,
+        marginTop: 8,
     },
     overlayText: {
-        color: 'rgba(255,255,255,0.8)',
+        color: '#fff',
         textAlign: 'center',
         fontSize: 16,
         lineHeight: 24,
+        fontWeight: 'bold',
     },
     section: {
         marginBottom: 32,
