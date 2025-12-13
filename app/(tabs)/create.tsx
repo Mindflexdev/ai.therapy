@@ -621,15 +621,9 @@ export default function CreateCharacterScreen() {
     }, [currentStep, generatedImageUrl]);
 
     const handleNext = async () => {
-        const steps: Step[] = ['goal', 'name', 'greeting', 'characteristics', 'therapyStyle', 'visibility', 'imageGeneration', 'review'];
-        // Re-ordering steps based on requested flow: Goal -> Name -> Greeting -> Characteristics -> Therapy Style -> Visibility -> Image Gen -> Review
-        // The user originally asked for: Goal -> Name -> Greeting -> Therapy Style -> Visibility -> Characteristics -> Image Description -> Image Generation -> Review (previous flow)
-        // Wait, checking previous 'steps' array in handleNext: ['goal', 'name', 'greeting', 'therapyStyle', 'visibility', 'characteristics', 'imageDescription', 'imageGeneration', 'review']
-        // Actually, let's keep the existing flow but remove imageDescription.
-        // Current: ['goal', 'name', 'greeting', 'therapyStyle', 'visibility', 'characteristics', 'imageDescription', 'imageGeneration', 'review']
-        // New: ['goal', 'name', 'greeting', 'therapyStyle', 'visibility', 'characteristics', 'imageGeneration', 'review']
-
-        const currentStepsList: Step[] = ['goal', 'name', 'greeting', 'therapyStyle', 'visibility', 'characteristics', 'imageGeneration', 'review'];
+        // Updated flow: Goal -> Name -> Therapy Style -> Greeting -> Visibility -> Characteristics -> Image Gen -> Review
+        const steps: Step[] = ['goal', 'name', 'therapyStyle', 'greeting', 'visibility', 'characteristics', 'imageGeneration', 'review'];
+        const currentStepsList: Step[] = ['goal', 'name', 'therapyStyle', 'greeting', 'visibility', 'characteristics', 'imageGeneration', 'review'];
         const currentIndex = currentStepsList.indexOf(currentStep);
 
         // Auto-generate image when moving from characteristics to imageGeneration
@@ -724,7 +718,8 @@ export default function CreateCharacterScreen() {
     };
 
     const handleBack = () => {
-        const steps: Step[] = ['goal', 'name', 'greeting', 'therapyStyle', 'visibility', 'characteristics', 'imageGeneration', 'review'];
+        // Updated flow: Goal -> Name -> Therapy Style -> Greeting -> Visibility -> Characteristics -> Image Gen -> Review
+        const steps: Step[] = ['goal', 'name', 'therapyStyle', 'greeting', 'visibility', 'characteristics', 'imageGeneration', 'review'];
         const currentIndex = steps.indexOf(currentStep);
         if (currentIndex > 0) {
             setCurrentStep(steps[currentIndex - 1]);
@@ -1060,12 +1055,12 @@ export default function CreateCharacterScreen() {
                         </ThemedText>
                         <TextInput
                             style={[styles.textArea, { backgroundColor: theme.card, color: theme.text }]}
-                            placeholder={`e.g., Hello! I'm ${characterData.name || 'your character'}. I'm here to help you...`}
+                            placeholder={`Hi, I’m ${characterData.name || '...'}. I work with acceptance, awareness, and values rather than control or quick fixes. Together, we’ll explore how to make room for what’s here and still move toward what matters to you. We can begin when you’re ready...`}
                             placeholderTextColor={theme.icon}
                             value={characterData.greeting}
                             onChangeText={(text) => setCharacterData({ ...characterData, greeting: text })}
                             multiline
-                            numberOfLines={6}
+                            numberOfLines={8}
                             returnKeyType="done"
                             blurOnSubmit={true}
                             onSubmitEditing={handleNext}
