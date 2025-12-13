@@ -954,7 +954,7 @@ export default function CreateCharacterScreen() {
                 return (
                     <View style={styles.stepContainer}>
                         <ThemedText type="title" style={styles.stepTitle}>
-                            What's {characterData.name || <ThemedText type="title">your ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist</ThemedText>}?
+                            What's {characterData.name || <ThemedText type="title">your ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist</ThemedText>}'s style?
                         </ThemedText>
 
                         <View style={styles.therapyStylesContainer}>

@@ -121,3 +121,9 @@ export const STYLE_ABBREVIATIONS: Record<string, string> = {
     'Sexual Therapy': 'Sexual Therapy',
     'Child and Adolescent Therapy': 'Child & Adolescent',
 };
+
+// Reverse lookup: abbreviation -> full name
+export const ABBREVIATION_TO_FULL: Record<string, string> = Object.fromEntries(
+    Object.entries(STYLE_ABBREVIATIONS).map(([full, abbr]) => [abbr, full])
+);
+

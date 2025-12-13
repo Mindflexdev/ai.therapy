@@ -22,7 +22,7 @@ import { TherapyStyleModal } from '@/components/therapy-style-modal';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { TOPICS } from '@/constants/data';
 import { Colors } from '@/constants/theme';
-import { ALL_THERAPY_OPTIONS, STYLE_ABBREVIATIONS } from '@/constants/therapy';
+import { ALL_THERAPY_OPTIONS, STYLE_ABBREVIATIONS, ABBREVIATION_TO_FULL } from '@/constants/therapy';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { createCacheKey, queryCache } from '@/lib/query-cache';
 import { generateSessionId } from '@/lib/session';
@@ -287,10 +287,14 @@ export default function ConversationScreen() {
                             // Look for style in metadata: "Style: CBT" or "Style: CBT, ACT"
                             const styleMatch = msgContent.content.match(/Style:\s*([^)]+)\)/i);
                             if (styleMatch && styleMatch[1]) {
-                                // Parse comma-separated styles
-                                const styles = styleMatch[1].split(',').map((s: string) => s.trim()).filter((s: string) => s);
-                                if (styles.length > 0) {
-                                    detectedStyle = styles;
+                                // Parse comma-separated styles and convert abbreviations to full names
+                                const rawStyles = styleMatch[1].split(',').map((s: string) => s.trim()).filter((s: string) => s);
+                                const fullStyles = rawStyles.map((s: string) => {
+                                    // Check if it's an abbreviation and convert to full name
+                                    return ABBREVIATION_TO_FULL[s] || s;
+                                });
+                                if (fullStyles.length > 0) {
+                                    detectedStyle = fullStyles;
                                     console.log('🎯 Detected therapy style from last message:', detectedStyle);
                                 }
                             }
