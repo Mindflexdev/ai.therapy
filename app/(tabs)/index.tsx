@@ -82,8 +82,16 @@ export default function HomeScreen() {
         console.log('🏠 Home tab focused - loading data...');
         setIsLoading(true);
         try {
-          // 1. Load user goals and sort topics
-          const { data: { session } } = await supabase.auth.getSession();
+          // 1. Load user goals and sort topics - Wait for session first
+          let session = null;
+          // Retry logic: wait up to 3 times (1.5s total) for session to be ready
+          for (let i = 0; i < 3; i++) {
+            const { data } = await supabase.auth.getSession();
+            session = data.session;
+            if (session) break;
+            if (i < 2) await new Promise(r => setTimeout(r, 500));
+          }
+
           let finalSortedTopics = TOPICS;
 
           if (session) {

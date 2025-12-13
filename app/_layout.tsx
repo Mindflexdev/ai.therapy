@@ -60,6 +60,24 @@ export default function RootLayout() {
         setAuthError(null); // Clear any previous errors
         setSkipLogin(false);
 
+        // SYNC GOOGLE PROFILE: Ensure user profile data is synced to users table
+        try {
+          const metadata = session.user.user_metadata;
+          if (metadata) {
+            console.log('🔄 Syncing user profile from metadata...');
+            await supabase.from('users').upsert({
+              id: session.user.id,
+              email: session.user.email,
+              full_name: metadata.full_name || metadata.name || null,
+              avatar_url: metadata.avatar_url || metadata.picture || null,
+              // Keep existing fields if they exist
+              updated_at: new Date().toISOString()
+            }, { onConflict: 'id' }).select(); // Add .select() to ensure completion
+          }
+        } catch (e) {
+          console.error('Error syncing user profile:', e);
+        }
+
         // Fetch onboarding status
         const { data } = await supabase
           .from('users')
