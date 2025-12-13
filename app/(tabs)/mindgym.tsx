@@ -40,7 +40,7 @@ const MEDITATIONS = [
         duration: '20 min',
         characterName: 'Dr. Morpheus',
         characterImage: '/characters/Dr. Morpheus.jpg',
-        image: 'https://images.unsplash.com/photo-1515890435782-59a5bb6e0c15?q=80&w=2525&auto=format&fit=crop',
+        image: require('@/assets/images/deep_sleep_journey.png'),
         streakRequired: 0,
     },
     {
@@ -209,7 +209,12 @@ export default function MindGymScreen() {
             })}
         >
             <View style={[styles.highlightRing, { borderColor: theme.primary }]}>
-                <Image source={{ uri: item.image }} style={styles.highlightImage} />
+                <Image
+                    source={{ uri: item.image }}
+                    style={styles.highlightImage}
+                    cachePolicy="memory-disk"
+                    transition={300}
+                />
             </View>
             <ThemedText style={styles.highlightName} numberOfLines={1}>{item.name}</ThemedText>
         </TouchableOpacity>
@@ -239,8 +244,15 @@ export default function MindGymScreen() {
                     }
                 })}
             >
+
                 <View style={styles.imageContainer}>
-                    <Image source={{ uri: item.image }} style={styles.cardImage} contentFit="cover" />
+                    <Image
+                        source={typeof item.image === 'string' ? { uri: item.image } : item.image}
+                        style={styles.cardImage}
+                        contentFit="cover"
+                        cachePolicy="memory-disk"
+                        transition={300}
+                    />
                     <LinearGradient
                         colors={['transparent', 'rgba(0,0,0,0.7)']}
                         style={styles.cardGradient}
@@ -280,7 +292,12 @@ export default function MindGymScreen() {
                     </ThemedText>
 
                     <View style={styles.authorContainer}>
-                        <Image source={{ uri: item.characterImage }} style={styles.authorImage} />
+                        <Image
+                            source={{ uri: item.characterImage }}
+                            style={styles.authorImage}
+                            cachePolicy="memory-disk"
+                            transition={300}
+                        />
                         <ThemedText style={styles.authorName} numberOfLines={1}>
                             {item.characterName}
                         </ThemedText>
@@ -299,7 +316,7 @@ export default function MindGymScreen() {
         <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
             {/* Header with Search and Feedback */}
             <View style={styles.header}>
-                <ThemedText type="title" style={styles.headerTitle}>MindGym</ThemedText>
+                <ThemedText type="title" style={styles.headerTitle}>Meditate</ThemedText>
                 <View style={styles.headerButtons}>
                     <TouchableOpacity style={styles.headerButton}>
                         <IconSymbol name="magnifyingglass" size={24} color={theme.text} />
@@ -355,12 +372,8 @@ export default function MindGymScreen() {
             {/* Coming Soon Overlay */}
             <View style={[styles.overlay, { backgroundColor: 'rgba(0,0,0,0.4)' }]}>
                 <View style={styles.overlayContent}>
-                    <Image
-                        source={require('@/assets/images/lotus.png')}
-                        style={{ width: 120, height: 120, marginBottom: 24, opacity: 0.9 }}
-                        contentFit="contain"
-                    />
-                    <ThemedText type="title" style={styles.overlayTitle}>MindGym</ThemedText>
+                    <IconSymbol name="brain" size={100} color="#fff" style={{ marginBottom: 24, opacity: 0.9 }} />
+                    <ThemedText type="title" style={styles.overlayTitle}>Meditate</ThemedText>
                     <ThemedText style={styles.overlayText}>
                         Your mental fitness studio is coming soon.
                         Join us for guided sessions with your ai.therapist.
