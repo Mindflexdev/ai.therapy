@@ -366,7 +366,7 @@ export default function ProfileScreen() {
                             </View>
                             <TouchableOpacity
                                 style={[styles.premiumButton, { backgroundColor: theme.primary }]}
-                                onPress={() => Linking.openURL('https://ai.therapy')}
+                                onPress={() => router.push('/subscribe')}
                             >
                                 <ThemedText style={styles.premiumButtonText}>Get ai.therapy</ThemedText>
                                 <IconSymbol name="plus" size={16} color="#fff" />
