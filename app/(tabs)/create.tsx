@@ -852,7 +852,7 @@ export default function CreateCharacterScreen() {
                 return (
                     <View style={styles.stepContainer}>
                         <ThemedText type="title" style={styles.stepTitle}>
-                            Name your <ThemedText type="defaultSemiBold">ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist</ThemedText>
+                            Name your <ThemedText type="title">ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist</ThemedText>
                         </ThemedText>
                         <ThemedText style={styles.stepDescription}>
                             What should we call your <ThemedText type="defaultSemiBold">ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist</ThemedText>?
@@ -869,29 +869,7 @@ export default function CreateCharacterScreen() {
                     </View>
                 );
 
-            case 'characteristics':
-                return (
-                    <View style={styles.stepContainer}>
-                        <ThemedText type="title" style={styles.stepTitle}>
-                            Who is {characterData.name || 'your ai.therapist'}?
-                        </ThemedText>
-                        <ThemedText style={styles.stepDescription}>
-                            Describe their personality, expertise, characteristics and appearance
-                        </ThemedText>
-                        <TextInput
-                            style={[styles.textArea, { backgroundColor: theme.card, color: theme.text }]}
-                            placeholder="e.g., Compassionate, direct, philosophical, humorous, tough-love..."
-                            placeholderTextColor={theme.icon}
-                            value={characterData.characteristics}
-                            onChangeText={(text) => setCharacterData({ ...characterData, characteristics: text })}
-                            multiline
-                            numberOfLines={4}
-                            returnKeyType="done"
-                            blurOnSubmit={true}
-                            onSubmitEditing={handleNext}
-                        />
-                    </View>
-                );
+
 
             case 'visibility':
                 return (
@@ -900,7 +878,7 @@ export default function CreateCharacterScreen() {
                             Who can chat with {characterData.name}?
                         </ThemedText>
                         <ThemedText style={styles.stepDescription}>
-                            Choose the visibility of your character
+                            Choose the visibility of your <ThemedText type="defaultSemiBold">ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist</ThemedText>
                         </ThemedText>
                         <TouchableOpacity
                             style={[
@@ -976,7 +954,7 @@ export default function CreateCharacterScreen() {
                 return (
                     <View style={styles.stepContainer}>
                         <ThemedText type="title" style={styles.stepTitle}>
-                            What's {characterData.name || <ThemedText type="defaultSemiBold">your ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist</ThemedText>}'s style?
+                            What's {characterData.name || <ThemedText type="title">your ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist</ThemedText>}?
                         </ThemedText>
 
                         <View style={styles.therapyStylesContainer}>
@@ -1039,26 +1017,7 @@ export default function CreateCharacterScreen() {
                     </View>
                 );
 
-            case 'imageDescription':
-                return (
-                    <View style={styles.stepContainer}>
-                        <ThemedText type="title" style={styles.stepTitle}>
-                            Describe {characterData.name || 'your ai.therapist'}'s appearance
-                        </ThemedText>
-                        <ThemedText style={styles.stepDescription}>
-                            💡 The more detailed your description, the better the AI-generated image will be!
-                        </ThemedText>
-                        <TextInput
-                            style={[styles.textArea, { backgroundColor: theme.card, color: theme.text }]}
-                            placeholder="e.g., A warm, middle-aged woman with kind eyes, wearing professional attire..."
-                            placeholderTextColor={theme.icon}
-                            value={characterData.imageDescription}
-                            onChangeText={(text) => setCharacterData({ ...characterData, imageDescription: text })}
-                            multiline
-                            numberOfLines={4}
-                        />
-                    </View>
-                );
+
 
             case 'imageGeneration':
                 return (
@@ -1123,7 +1082,7 @@ export default function CreateCharacterScreen() {
                 return (
                     <View style={styles.stepContainer}>
                         <ThemedText type="title" style={styles.stepTitle}>
-                            Who is {characterData.name || <ThemedText type="defaultSemiBold">your ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist</ThemedText>}?
+                            Who is {characterData.name || <ThemedText type="title">your ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist</ThemedText>}?
                         </ThemedText>
                         <ThemedText style={styles.stepDescription}>
                             Describe the character’s appearance, small habits, and overall presence.
@@ -1156,7 +1115,7 @@ export default function CreateCharacterScreen() {
                 return (
                     <View style={styles.stepContainer}>
                         <ThemedText type="title" style={styles.stepTitle}>
-                            Review your <ThemedText type="defaultSemiBold">ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist</ThemedText>
+                            Review your <ThemedText type="title">ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist</ThemedText>
                         </ThemedText>
                         <ThemedText style={styles.stepDescription}>
                             {formComplete
