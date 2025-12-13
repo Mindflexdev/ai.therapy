@@ -23,14 +23,17 @@ export const saveCharacter = async (character: UserCharacter): Promise<void> => 
         const userChars = await getUserCharacters();
         const publicChars = await getPublicCharacters();
 
-        // Add to user's characters (local storage)
-        userChars.push(character);
-        await AsyncStorage.setItem(STORAGE_KEYS.USER_CHARACTERS, JSON.stringify(userChars));
+        // Update user's characters (local storage)
+        // Remove existing version if any (handle updates)
+        const updatedUserChars = userChars.filter(c => c.id !== character.id);
+        updatedUserChars.push(character);
+        await AsyncStorage.setItem(STORAGE_KEYS.USER_CHARACTERS, JSON.stringify(updatedUserChars));
 
-        // If public, add to public pool locally
+        // If public, update public pool locally
         if (character.isPublic) {
-            publicChars.push(character)
-            await AsyncStorage.setItem(STORAGE_KEYS.PUBLIC_CHARACTERS, JSON.stringify(publicChars));
+            const updatedPublicChars = publicChars.filter(c => c.id !== character.id);
+            updatedPublicChars.push(character);
+            await AsyncStorage.setItem(STORAGE_KEYS.PUBLIC_CHARACTERS, JSON.stringify(updatedPublicChars));
         }
 
         // Save to Supabase (for persistence and cross-device sync)
