@@ -14,17 +14,17 @@
         rel="stylesheet">
     <style>
         :root {
-            --bg-deep: #f5ebe0;
-            --bg-dark: #ede4d9;
-            --bg-card: rgba(255, 252, 247, 0.95);
-            --glass-bg: rgba(255, 255, 255, 0.8);
-            --glass-border: rgba(139, 90, 43, 0.15);
-            --gradient-calm: linear-gradient(180deg, #f5ebe0 0%, #e8ddd0 50%, #ddd0c0 100%);
-            --glow-purple: rgba(32, 226, 215, 0.3);
-            --glow-pink: rgba(0, 114, 255, 0.2);
-            --text-primary: #2d2418;
-            --text-secondary: rgba(45, 36, 24, 0.8);
-            --text-muted: rgba(45, 36, 24, 0.6);
+            --bg-deep: #0a0a12;
+            --bg-dark: #12121f;
+            --bg-card: rgba(30, 30, 50, 0.6);
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --gradient-calm: linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
+            --glow-purple: rgba(32, 226, 215, 0.4);
+            --glow-pink: rgba(0, 114, 255, 0.3);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --text-muted: rgba(255, 255, 255, 0.5);
             --accent-blue: #5B8FD9;
             --accent-cyan: #20E2D7;
             --font-display: 'Playfair Display', serif;
@@ -109,9 +109,9 @@
             left: 0;
             right: 0;
             z-index: 1000;
-            background: rgba(255, 255, 255, 0.85);
+            background: rgba(10, 10, 18, 0.8);
             backdrop-filter: blur(20px);
-            border-bottom: 1px solid rgba(0, 114, 255, 0.1);
+            border-bottom: 1px solid var(--glass-border);
         }
 
         .nav-container {
@@ -131,7 +131,7 @@
             text-decoration: none;
             font-weight: 600;
             font-size: 1.5rem;
-            color: #1a1a2e;
+            color: var(--text-primary);
         }
 
         .logo-dot {
@@ -234,8 +234,8 @@
         }
 
         .founder-card {
-            background: rgba(255, 255, 255, 0.95);
-            border: 1px solid rgba(0, 114, 255, 0.1);
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
             border-radius: 20px;
             padding: 2rem;
             text-align: center;
@@ -278,7 +278,7 @@
             font-weight: 600;
             font-size: 1.1rem;
             margin-bottom: 0.25rem;
-            color: #1a1a2e;
+            color: var(--text-primary);
         }
 
         .founder-role {
@@ -295,8 +295,8 @@
         }
 
         .vision-card {
-            background: rgba(255, 255, 255, 0.95);
-            border: 1px solid rgba(0, 114, 255, 0.1);
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
             border-radius: 20px;
             padding: 2.5rem;
             transition: transform 0.3s, box-shadow 0.3s;
@@ -316,7 +316,7 @@
             font-family: var(--font-display);
             font-size: 1.5rem;
             margin-bottom: 0.75rem;
-            color: #1a1a2e;
+            color: var(--text-primary);
         }
 
         .vision-card p {
@@ -346,10 +346,10 @@
 
         .therapy-pill {
             padding: 0.75rem 1.5rem;
-            background: rgba(255, 255, 255, 0.95);
+            background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(0, 114, 255, 0.15);
             border-radius: 30px;
-            color: #1a1a2e;
+            color: var(--text-primary);
             font-weight: 500;
             transition: all 0.3s;
         }
@@ -365,8 +365,8 @@
         .cta-section {
             text-align: center;
             padding: 4rem 2rem;
-            background: rgba(255, 255, 255, 0.95);
-            border: 1px solid rgba(0, 114, 255, 0.1);
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
             border-radius: 30px;
             margin: 4rem auto;
             max-width: 1000px;
@@ -376,7 +376,7 @@
             font-family: var(--font-display);
             font-size: clamp(1.5rem, 3vw, 2rem);
             margin-bottom: 1rem;
-            color: #1a1a2e;
+            color: var(--text-primary);
         }
 
         .cta-section p {
@@ -507,12 +507,16 @@
                 <p class="founder-role">Co-Founder & Psychology</p>
             </div>
             <div class="founder-card">
-                <div class="founder-icon">💡</div>
+                <div class="founder-image">
+                    <img src="moritz.png" alt="Moritz Tiedemann">
+                </div>
                 <p class="founder-name">Moritz Tiedemann</p>
                 <p class="founder-role">Co-Founder & Psychology</p>
             </div>
             <div class="founder-card">
-                <div class="founder-icon">🎯</div>
+                <div class="founder-image">
+                    <img src="julian.png" alt="Julian Hecht">
+                </div>
                 <p class="founder-name">Julian Hecht</p>
                 <p class="founder-role">Co-Founder & Psychology</p>
             </div>
