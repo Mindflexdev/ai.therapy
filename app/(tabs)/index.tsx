@@ -108,15 +108,16 @@ export default function HomeScreen() {
         // Phase 1: Immediate Local Load (Created Section)
         try {
           const userChars = await getUserCharacters();
-          const publicUserChars = userChars.filter(c => c.isPublic);
+          // Show ALL user characters (public and private) in Created section
+          const createdChars = userChars;
           const initialSections: TopicSection[] = [];
 
-          if (publicUserChars.length > 0) {
+          if (userChars.length > 0) {
             setHasCreatedCharacters(true);
             initialSections.push({
               id: 'created',
               title: 'Created',
-              characters: publicUserChars
+              characters: userChars
             });
             // FLASH: Show Created immediately
             setSections(initialSections);
@@ -174,11 +175,11 @@ export default function HomeScreen() {
 
             // Phase 3: Construct Full List but Lazy Render
             const allSections: TopicSection[] = [];
-            if (publicUserChars.length > 0) {
+            if (createdChars.length > 0) {
               allSections.push({
                 id: 'created',
                 title: 'Created',
-                characters: publicUserChars
+                characters: createdChars
               });
             }
             allSections.push(...mappedSections);
@@ -187,7 +188,7 @@ export default function HomeScreen() {
             allSectionsRef.current = allSections;
 
             // Render Created + Top 2 Sections
-            const MIN_RENDER_COUNT = (publicUserChars.length > 0 ? 1 : 0) + 2;
+            const MIN_RENDER_COUNT = (createdChars.length > 0 ? 1 : 0) + 2;
             const initialBatch = allSections.slice(0, MIN_RENDER_COUNT);
 
             setSections(initialBatch);
@@ -323,12 +324,12 @@ export default function HomeScreen() {
       setIsLoading(true);
       const groupedData = await getAllCharactersGroupedByTopic();
       const userChars = await getUserCharacters();
-      const publicUserChars = userChars.filter(c => c.isPublic);
+      // const publicUserChars = userChars.filter(c => c.isPublic); // No longer filtering
 
       const allSections: TopicSection[] = [];
-      if (publicUserChars.length > 0) {
+      if (userChars.length > 0) {
         setHasCreatedCharacters(true);
-        allSections.push({ id: 'created', title: 'Created', characters: publicUserChars });
+        allSections.push({ id: 'created', title: 'Created', characters: userChars });
       } else {
         setHasCreatedCharacters(false);
       }
@@ -395,6 +396,14 @@ export default function HomeScreen() {
             )}
           </View>
         )}
+
+        {/* Private Indicator */}
+        {!item.isPublic && (
+          <View style={styles.privateBadge}>
+            <IconSymbol name="lock.fill" size={12} color="#fff" />
+          </View>
+        )}
+
         <View style={styles.characterInfo}>
           <ThemedText type="defaultSemiBold" style={styles.characterName}>
             {item.name}
@@ -600,12 +609,11 @@ export default function HomeScreen() {
               // Force reload sections with new sorting
               const groupedData = await getAllCharactersGroupedByTopic();
               const userChars = await getUserCharacters();
-              const publicUserChars = userChars.filter(c => c.isPublic);
 
               const allSections: TopicSection[] = [];
-              if (publicUserChars.length > 0) {
+              if (userChars.length > 0) {
                 setHasCreatedCharacters(true);
-                allSections.push({ id: 'created', title: 'Created', characters: publicUserChars });
+                allSections.push({ id: 'created', title: 'Created', characters: userChars });
               }
 
               const mappedSections = newSortedTopics.map(topic => {
@@ -804,6 +812,15 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 10,
     elevation: 8,
+  },
+  privateBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 12,
+    padding: 6,
+    zIndex: 10,
   },
   modalHeader: {
     width: '100%',
