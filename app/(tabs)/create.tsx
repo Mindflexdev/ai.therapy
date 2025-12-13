@@ -828,7 +828,7 @@ export default function CreateCharacterScreen() {
                             What's your goal?
                         </ThemedText>
                         <ThemedText style={styles.stepDescription}>
-                            Tell us what you'd like to work on or achieve with your ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist
+                            Tell us what you'd like to work on or achieve with your <ThemedText type="defaultSemiBold">ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist</ThemedText>
                         </ThemedText>
                         <TextInput
                             style={[styles.textArea, { backgroundColor: theme.card, color: theme.text }]}
@@ -852,10 +852,10 @@ export default function CreateCharacterScreen() {
                 return (
                     <View style={styles.stepContainer}>
                         <ThemedText type="title" style={styles.stepTitle}>
-                            Name your ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist
+                            Name your <ThemedText type="defaultSemiBold">ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist</ThemedText>
                         </ThemedText>
                         <ThemedText style={styles.stepDescription}>
-                            What should we call your ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist?
+                            What should we call your <ThemedText type="defaultSemiBold">ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist</ThemedText>?
                         </ThemedText>
                         <TextInput
                             style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
@@ -893,6 +893,57 @@ export default function CreateCharacterScreen() {
                     </View>
                 );
 
+            case 'visibility':
+                return (
+                    <View style={styles.stepContainer}>
+                        <ThemedText type="title" style={styles.stepTitle}>
+                            Who can chat with {characterData.name}?
+                        </ThemedText>
+                        <ThemedText style={styles.stepDescription}>
+                            Choose the visibility of your character
+                        </ThemedText>
+                        <TouchableOpacity
+                            style={[
+                                styles.visibilityOption,
+                                { backgroundColor: theme.card, borderColor: characterData.isPublic ? theme.primary : 'transparent' },
+                            ]}
+                            onPress={() => setCharacterData({ ...characterData, isPublic: true })}>
+                            <View style={styles.visibilityContent}>
+                                <IconSymbol name="house.fill" size={32} color={theme.text} />
+                                <View style={styles.visibilityText}>
+                                    <ThemedText type="defaultSemiBold">Public</ThemedText>
+                                    <ThemedText style={styles.visibilityDescription}>
+                                        Anyone can find and chat with this character
+                                    </ThemedText>
+                                </View>
+                            </View>
+                            {characterData.isPublic && (
+                                <IconSymbol name="chevron.right" size={24} color={theme.primary} />
+                            )}
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={[
+                                styles.visibilityOption,
+                                { backgroundColor: theme.card, borderColor: !characterData.isPublic ? theme.primary : 'transparent' },
+                            ]}
+                            onPress={() => setCharacterData({ ...characterData, isPublic: false })}>
+                            <View style={styles.visibilityContent}>
+                                <IconSymbol name="person" size={32} color={theme.text} />
+                                <View style={styles.visibilityText}>
+                                    <ThemedText type="defaultSemiBold">Private</ThemedText>
+                                    <ThemedText style={styles.visibilityDescription}>
+                                        Only you can chat with this character
+                                    </ThemedText>
+                                </View>
+                            </View>
+                            {!characterData.isPublic && (
+                                <IconSymbol name="chevron.right" size={24} color={theme.primary} />
+                            )}
+                        </TouchableOpacity>
+                    </View>
+                );
+
             case 'therapyStyle':
                 const toggleTherapyStyle = (styleName: string) => {
                     const integrativeName = 'Integrative Therapy (AI decides)';
@@ -925,7 +976,7 @@ export default function CreateCharacterScreen() {
                 return (
                     <View style={styles.stepContainer}>
                         <ThemedText type="title" style={styles.stepTitle}>
-                            What's {characterData.name || 'your ai.therapist'}'s style?
+                            What's {characterData.name || <ThemedText type="defaultSemiBold">your ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist</ThemedText>}'s style?
                         </ThemedText>
 
                         <View style={styles.therapyStylesContainer}>
@@ -1015,7 +1066,7 @@ export default function CreateCharacterScreen() {
                         {/* Title and description */}
                         <ThemedText type="title" style={styles.stepTitle}>
                             {generatedImageUrl
-                                ? `Meet ${characterData.name || 'your ai.therapist'}!`
+                                ? <ThemedText type="title">Meet {characterData.name || <ThemedText type="title" style={{ fontWeight: 'bold' }}>your ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist</ThemedText>}!</ThemedText>
                                 : 'Image generation failed'}
                         </ThemedText>
                         <ThemedText style={styles.stepDescription}>
@@ -1051,7 +1102,7 @@ export default function CreateCharacterScreen() {
                             How does {characterData.name} greet you?
                         </ThemedText>
                         <ThemedText style={styles.stepDescription}>
-                            Write the first message your ai.therapist will send
+                            Write the first message your <ThemedText type="defaultSemiBold">ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist</ThemedText> will send
                         </ThemedText>
                         <TextInput
                             style={[styles.textArea, { backgroundColor: theme.card, color: theme.text }]}
@@ -1068,54 +1119,27 @@ export default function CreateCharacterScreen() {
                     </View>
                 );
 
-            case 'visibility':
+            case 'characteristics':
                 return (
                     <View style={styles.stepContainer}>
                         <ThemedText type="title" style={styles.stepTitle}>
-                            Who can chat with {characterData.name}?
+                            Who is {characterData.name || <ThemedText type="defaultSemiBold">your ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist</ThemedText>}?
                         </ThemedText>
                         <ThemedText style={styles.stepDescription}>
-                            Choose the visibility of your character
+                            Describe the character’s appearance, small habits, and overall presence.
                         </ThemedText>
-                        <TouchableOpacity
-                            style={[
-                                styles.visibilityOption,
-                                { backgroundColor: theme.card, borderColor: characterData.isPublic ? theme.primary : 'transparent' },
-                            ]}
-                            onPress={() => setCharacterData({ ...characterData, isPublic: true })}>
-                            <View style={styles.visibilityContent}>
-                                <IconSymbol name="house.fill" size={32} color={theme.text} />
-                                <View style={styles.visibilityText}>
-                                    <ThemedText type="defaultSemiBold">Public</ThemedText>
-                                    <ThemedText style={styles.visibilityDescription}>
-                                        Anyone can find and chat with this character
-                                    </ThemedText>
-                                </View>
-                            </View>
-                            {characterData.isPublic && (
-                                <IconSymbol name="chevron.right" size={24} color={theme.primary} />
-                            )}
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={[
-                                styles.visibilityOption,
-                                { backgroundColor: theme.card, borderColor: !characterData.isPublic ? theme.primary : 'transparent' },
-                            ]}
-                            onPress={() => setCharacterData({ ...characterData, isPublic: false })}>
-                            <View style={styles.visibilityContent}>
-                                <IconSymbol name="person" size={32} color={theme.text} />
-                                <View style={styles.visibilityText}>
-                                    <ThemedText type="defaultSemiBold">Private</ThemedText>
-                                    <ThemedText style={styles.visibilityDescription}>
-                                        Only you can chat with this character
-                                    </ThemedText>
-                                </View>
-                            </View>
-                            {!characterData.isPublic && (
-                                <IconSymbol name="chevron.right" size={24} color={theme.primary} />
-                            )}
-                        </TouchableOpacity>
+                        <TextInput
+                            style={[styles.textArea, { backgroundColor: theme.card, color: theme.text }]}
+                            placeholder="e.g., an older male wizard, with soft, attentive eyes, flowing robes, and faint magical elements woven into his appearance. He looks like someone who has traveled far, his robes carrying the subtle wear of long journeys, his gaze lingering as if it has learned patience from watching many seasons pass. He pauses often, listening before he speaks, sometimes smiling to himself as though recalling a half-forgotten story."
+                            placeholderTextColor={theme.icon}
+                            value={characterData.characteristics}
+                            onChangeText={(text) => setCharacterData({ ...characterData, characteristics: text })}
+                            multiline
+                            numberOfLines={8}
+                            returnKeyType="done"
+                            blurOnSubmit={true}
+                            onSubmitEditing={handleNext}
+                        />
                     </View>
                 );
 
@@ -1132,11 +1156,11 @@ export default function CreateCharacterScreen() {
                 return (
                     <View style={styles.stepContainer}>
                         <ThemedText type="title" style={styles.stepTitle}>
-                            Review your ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist
+                            Review your <ThemedText type="defaultSemiBold">ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist</ThemedText>
                         </ThemedText>
                         <ThemedText style={styles.stepDescription}>
                             {formComplete
-                                ? 'Everything looks good! Ready to create your ai.therapist.'
+                                ? <ThemedText style={styles.stepDescription}>Everything looks good! Ready to create your <ThemedText type="defaultSemiBold">ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist</ThemedText>.</ThemedText>
                                 : `Please complete: ${missingFields.join(', ')}`
                             }
                         </ThemedText>
