@@ -590,7 +590,7 @@ export default function HomeScreen() {
             <View style={{ flexDirection: 'row', gap: 12, width: '100%', alignItems: 'center', marginTop: 16 }}>
               <View style={[styles.linkContainer, { backgroundColor: theme.background, flex: 1 }]}>
                 <ThemedText style={styles.linkText} numberOfLines={1}>
-                  https://ai.therapy/c/{shareCharacter.id}
+                  https://ai.therapy.free/c/{shareCharacter.id}
                 </ThemedText>
               </View>
               <TouchableOpacity style={styles.copyButton} onPress={() => handleCopyLink(shareCharacter.id)}>

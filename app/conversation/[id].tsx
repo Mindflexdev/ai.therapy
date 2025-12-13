@@ -569,15 +569,21 @@ export default function ConversationScreen() {
         );
     }, [isTyping, character?.image, theme]);
 
-    // Disclaimer Header for FlatList
-    const disclaimerHeader = useMemo(() => (
-        <View style={styles.disclaimerBanner}>
-            <IconSymbol name="exclamationmark.triangle" size={18} color="#666" style={{ marginRight: 12, marginTop: 2 }} />
-            <ThemedText style={styles.disclaimerText}>
-                Disclaimer: ai.therapy is a creative mental-wellness platform and not a therapeutic service. All ai.therapists are fictional AI characters. Their role titles (“Therapist,” “Psychologist,” “Dr.,” “Coach,” etc.) are used solely for imaginative portrayal and have no professional, clinical, or medical meaning. The therapeutic approaches and modalities mentioned on the platform (e.g., CBT, ACT, DBT, Psychodynamic, Schema, Gestalt, MBCT, etc.) are used exclusively for inspired, model-like purposes and do not constitute real therapeutic application. Neither the ai.therapy platform nor its AI characters hold qualifications or licenses to practice medicine or psychotherapy. No promise of healing is made. Everything they say is intended for inspiration, reflection, and everyday support—not for diagnosis, treatment, or therapy.
-            </ThemedText>
-        </View>
-    ), []);
+    // Character Description Header (Bio Card)
+    const descriptionHeader = useMemo(() => {
+        if (!character?.description) return null;
+        return (
+            <View style={styles.bioCardContainer}>
+                <View style={[styles.bioCard, { backgroundColor: theme.card }]}>
+                    <ThemedText style={styles.bioText}>
+                        {character.description}
+                    </ThemedText>
+                </View>
+            </View>
+        );
+    }, [character?.description, theme.card]);
+
+    // ... (rest of the file)
 
     // ... (rest of the file)
 
@@ -705,6 +711,7 @@ export default function ConversationScreen() {
                     contentContainerStyle={styles.messagesList}
                     showsVerticalScrollIndicator={false}
                     ListFooterComponent={typingIndicator}
+                    ListHeaderComponent={descriptionHeader}
                     removeClippedSubviews={true}
                     maxToRenderPerBatch={10}
                     updateCellsBatchingPeriod={50}
@@ -993,5 +1000,22 @@ const styles = StyleSheet.create({
         borderRadius: 24,
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    bioCardContainer: {
+        paddingHorizontal: 24,
+        paddingVertical: 16,
+        alignItems: 'center',
+    },
+    bioCard: {
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        borderRadius: 16,
+        maxWidth: '100%',
+    },
+    bioText: {
+        fontSize: 13,
+        lineHeight: 18,
+        textAlign: 'center',
+        opacity: 0.7,
     },
 });
