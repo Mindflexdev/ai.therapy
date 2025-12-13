@@ -80,74 +80,85 @@ export default function HomeScreen() {
   useFocusEffect(
     useCallback(() => {
       const loadEverything = async () => {
-        console.log('🏠 Home tab focused - loading data...');
-        setIsLoading(true);
+        console.log('🏠 Home tab focused - progressive loading...');
+
+        // Phase 1: Immediate Local Load (Created Section)
         try {
-          // 1. Get Session (non-blocking)
-          const { data: { session } } = await supabase.auth.getSession();
-
-          let finalSortedTopics = TOPICS;
-
-          if (session) {
-            const { data } = await supabase
-              .from('users')
-              .select('user_goals')
-              .eq('id', session.user.id)
-              .single();
-
-            if (data?.user_goals && data.user_goals.length > 0) {
-              setUserGoals(data.user_goals);
-
-              // Sort topics: user's goals first, then others
-              const userGoalTopics = TOPICS.filter(topic =>
-                data.user_goals.some((goal: string) =>
-                  topic.id.toLowerCase() === goal.toLowerCase() ||
-                  topic.title.toLowerCase() === goal.toLowerCase()
-                )
-              );
-              const otherTopics = TOPICS.filter(topic =>
-                !data.user_goals.some((goal: string) =>
-                  topic.id.toLowerCase() === goal.toLowerCase() ||
-                  topic.title.toLowerCase() === goal.toLowerCase()
-                )
-              );
-              finalSortedTopics = [...userGoalTopics, ...otherTopics];
-              setSortedTopics(finalSortedTopics);
-            }
-          }
-
-          // 2. Load characters using the sorted topics (Use Cache!)
-          console.log('📦 Fetching grouped characters...');
-          const groupedData = await getAllCharactersGroupedByTopic(false); // false = try cache first
-          console.log('📦 Got grouped data:', groupedData.length, 'topics');
-
-          // Get user's created public characters
           const userChars = await getUserCharacters();
           const publicUserChars = userChars.filter(c => c.isPublic);
+          const initialSections: TopicSection[] = [];
 
-          const allSections: TopicSection[] = [];
-
-          // Add "Created" section if user has public characters
           if (publicUserChars.length > 0) {
             setHasCreatedCharacters(true);
-            allSections.push({
+            initialSections.push({
               id: 'created',
               title: 'Created',
               characters: publicUserChars
             });
+            // FLASH: Show Created immediately
+            setSections(initialSections);
+          } else {
+            setHasCreatedCharacters(false);
+            // If no created chars, we might want to show a skeleton or just wait, 
+            // but let's clear sections to be safe or keep empty if it was empty.
+            setSections([]);
           }
 
-          // Map the Supabase data to our Topic structure, using sorted topics
-          const mappedSections: TopicSection[] = finalSortedTopics.map(topic => {
-            const foundGroup = groupedData.find(g => g.topicId === topic.id);
-            return {
-              id: topic.id,
-              title: topic.title,
-              characters: foundGroup ? foundGroup.characters : []
-            };
-          }).filter(section => section.characters.length > 0); // Only show topics with characters
+          // Phase 2: Background Network Fetch
+          setIsLoading(initialSections.length === 0); // Only show spinner if we have NOTHING to show
 
-          setSections([...allSections, ...mappedSections]);
+          const { data: { session } } = await supabase.auth.getSession();
+          let finalSortedTopics = TOPICS;
+
+          if (session) {
+            // Parallel fetch: Goals + Grouped Data
+            const [userGoalsData, groupedData] = await Promise.all([
+              supabase.from('users').select('user_goals').eq('id', session.user.id).single(),
+              getAllCharactersGroupedByTopic(false)
+            ]);
+
+            // Process Goals & Sorting
+            if (userGoalsData.data?.user_goals && userGoalsData.data.user_goals.length > 0) {
+              const goals = userGoalsData.data.user_goals;
+              setUserGoals(goals);
+
+              const userGoalTopics = TOPICS.filter(topic =>
+                goals.some((goal: string) => topic.id.toLowerCase() === goal.toLowerCase() || topic.title.toLowerCase() === goal.toLowerCase())
+              );
+              const otherTopics = TOPICS.filter(topic =>
+                !goals.some((goal: string) => topic.id.toLowerCase() === goal.toLowerCase() || topic.title.toLowerCase() === goal.toLowerCase())
+              );
+              finalSortedTopics = [...userGoalTopics, ...otherTopics];
+              setSortedTopics(finalSortedTopics); // Update header chips
+            }
+
+            // Map Topics
+            const mappedSections: TopicSection[] = finalSortedTopics.map(topic => {
+              const foundGroup = groupedData.find(g => g.topicId === topic.id);
+              return {
+                id: topic.id,
+                title: topic.title,
+                characters: foundGroup ? foundGroup.characters : []
+              };
+            }).filter(section => section.characters.length > 0);
+
+            // Phase 3: Merge & Update
+            // We re-fetch userChars to be purely safe if something changed in split second, 
+            // but usually we just append mappedSections to the initialSections.
+
+            // To be robust: Re-construct the full list
+            const allSections: TopicSection[] = [];
+            if (publicUserChars.length > 0) {
+              allSections.push({
+                id: 'created',
+                title: 'Created',
+                characters: publicUserChars
+              });
+            }
+
+            setSections([...allSections, ...mappedSections]);
+          }
+
         } catch (error) {
           console.error('❌ Error loading characters:', error);
         } finally {

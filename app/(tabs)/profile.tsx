@@ -46,6 +46,13 @@ interface AnalyticsData {
     sub_dimensions?: any[]; // For detail view
 }
 
+const CACHE_KEYS = {
+    ANALYTICS: 'profile_analytics_cache',
+    USER_DATA: 'profile_user_data_cache',
+    LAST_FETCH: 'profile_last_fetch_timestamp'
+};
+const STALE_TIME_MS = 5 * 60 * 1000; // 5 minutes
+
 export default function ProfileScreen() {
     const router = useRouter();
     const colorScheme = useColorScheme();
@@ -63,15 +70,40 @@ export default function ProfileScreen() {
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
     const [selectedLanguage, setSelectedLanguage] = useState<'en' | 'de'>('en');
 
-    // Preload from session immediately on mount
+    const lastFetchTime = useRef<number>(0);
+
+    // Load Cache on Mount
     useEffect(() => {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            if (session?.user?.user_metadata) {
-                const meta = session.user.user_metadata;
-                if (meta.full_name || meta.name) setUserName(meta.full_name || meta.name);
-                if (meta.avatar_url || meta.picture) setAvatarUrl(meta.avatar_url || meta.picture);
+        const loadCache = async () => {
+            try {
+                // Load Analytics
+                const cachedAnalytics = await AsyncStorage.getItem(CACHE_KEYS.ANALYTICS);
+                if (cachedAnalytics) {
+                    const parsed = JSON.parse(cachedAnalytics);
+                    setAnalyticsData(parsed.data);
+                    setDailyInsight(parsed.insight);
+                    if (parsed.lastUpdated) setLastUpdated(new Date(parsed.lastUpdated));
+                }
+
+                // Load User Data
+                const cachedUser = await AsyncStorage.getItem(CACHE_KEYS.USER_DATA);
+                if (cachedUser) {
+                    const parsed = JSON.parse(cachedUser);
+                    setUserName(parsed.userName);
+                    setAvatarUrl(parsed.avatarUrl);
+                    setMessageCount(parsed.messageCount);
+                    if (parsed.language) setSelectedLanguage(parsed.language);
+                }
+
+                // Load last fetch time
+                const lastFetch = await AsyncStorage.getItem(CACHE_KEYS.LAST_FETCH);
+                if (lastFetch) lastFetchTime.current = parseInt(lastFetch, 10);
+
+            } catch (e) {
+                console.log('Failed to load profile cache', e);
             }
-        });
+        };
+        loadCache();
     }, []);
 
     // Countdown animation state
@@ -150,6 +182,13 @@ export default function ProfileScreen() {
                     setAnalyticsData(dataWithTrends);
                     setDailyInsight(insight);
                     setLastUpdated(updatedAt);
+
+                    // Cache Analytics
+                    AsyncStorage.setItem(CACHE_KEYS.ANALYTICS, JSON.stringify({
+                        data: dataWithTrends,
+                        insight: insight,
+                        lastUpdated: updatedAt.toISOString()
+                    }));
                 }
 
                 // If cache is fresh (< 24h) and we are not forcing, STOP here.
@@ -196,8 +235,15 @@ export default function ProfileScreen() {
                         // Store data but keep analyzing=true until animation completes
                         setAnalyticsData(result.tracking_data);
                         setDailyInsight(result.daily_insight || "Here is your daily analysis.");
-                        setLastUpdated(new Date());
-                        // Don't set analyzing=false here - let the AnalysisLoading component call onComplete after 60s
+                        const now = new Date();
+                        setLastUpdated(now);
+
+                        // Cache Analytics
+                        AsyncStorage.setItem(CACHE_KEYS.ANALYTICS, JSON.stringify({
+                            data: result.tracking_data,
+                            insight: result.daily_insight,
+                            lastUpdated: now.toISOString()
+                        }));
                     }
                 } else {
                     console.error("[Profile] All n8n analytics attempts failed.", error || response?.status);
@@ -215,7 +261,17 @@ export default function ProfileScreen() {
 
     useFocusEffect(
         useCallback(() => {
+            const now = Date.now();
+            const shouldFetch = now - lastFetchTime.current > STALE_TIME_MS;
+
+            if (!shouldFetch) {
+                console.log("Profile data is fresh, skipping fetch.");
+                return;
+            }
+
             console.log("Profile Screen Focused - Fetching Data");
+            lastFetchTime.current = now;
+            AsyncStorage.setItem(CACHE_KEYS.LAST_FETCH, now.toString());
 
             // Fetch message count and user data
             const fetchUserData = async () => {
@@ -235,6 +291,14 @@ export default function ProfileScreen() {
                     if (data.preferred_language) {
                         setSelectedLanguage(data.preferred_language);
                     }
+
+                    // Cache User Data
+                    AsyncStorage.setItem(CACHE_KEYS.USER_DATA, JSON.stringify({
+                        messageCount: data.message_count || 0,
+                        userName: data.full_name || session.user.email || 'User',
+                        avatarUrl: data.avatar_url,
+                        language: data.preferred_language
+                    }));
                 }
             };
 
