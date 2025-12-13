@@ -287,7 +287,13 @@ export default function HomeScreen() {
         console.log('Opening conversation with:', item.id);
         router.push(`/conversation/${item.id}` as any);
       }}>
-      <Image source={{ uri: item.image }} style={styles.characterImage} contentFit="cover" />
+      <Image
+        source={{ uri: item.image }}
+        style={styles.characterImage}
+        contentFit="cover"
+        cachePolicy="memory-disk"
+        transition={300}
+      />
       {sectionId === 'created' && (
         <View style={{ position: 'absolute', top: 8, right: 8, zIndex: 10 }}>
           <TouchableOpacity
@@ -438,6 +444,11 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={VIEWABILITY_CONFIG}
+        // Performance Tuning
+        initialNumToRender={2}
+        windowSize={3}
+        maxToRenderPerBatch={2}
+        removeClippedSubviews={Platform.OS === 'android'}
         ListEmptyComponent={
           isLoading ? (
             <View style={{ padding: 20, alignItems: 'center' }}>
