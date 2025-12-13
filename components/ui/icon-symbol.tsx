@@ -55,6 +55,7 @@ const MAPPING = {
   'ticket.fill': 'confirmation-number',
   'bolt.fill': 'bolt',
   'timer.fill': 'timer',
+  'exclamationmark.circle.fill': 'error',
 } as IconMapping;
 
 /**

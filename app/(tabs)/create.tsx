@@ -24,7 +24,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { generateCharacterImage } from '@/lib/webhooks';
 import { supabase } from '@/lib/supabase';
 
-type Step = 'goal' | 'name' | 'characteristics' | 'therapyStyle' | 'imageDescription' | 'imageGeneration' | 'greeting' | 'visibility' | 'review';
+type Step = 'goal' | 'name' | 'characteristics' | 'therapyStyle' | 'imageGeneration' | 'greeting' | 'visibility' | 'review';
 
 import { ALL_THERAPY_OPTIONS, STYLE_ABBREVIATIONS } from '@/constants/therapy';
 
@@ -505,6 +505,67 @@ const craftingStyles = StyleSheet.create({
     },
 });
 
+const ErrorModal = ({ visible, message, onClose, theme }: { visible: boolean; message: string; onClose: () => void; theme: typeof Colors.light }) => {
+    if (!visible) return null;
+    return (
+        <View style={errorModalStyles.overlay}>
+            <View style={[errorModalStyles.container, { backgroundColor: theme.card }]}>
+                <IconSymbol name="exclamationmark.circle.fill" size={48} color={theme.primary} />
+                <ThemedText style={[errorModalStyles.message, { color: theme.text }]}>{message}</ThemedText>
+                <TouchableOpacity style={[errorModalStyles.button, { backgroundColor: theme.primary }]} onPress={onClose}>
+                    <ThemedText style={errorModalStyles.buttonText}>I understand</ThemedText>
+                </TouchableOpacity>
+            </View>
+        </View>
+    );
+};
+
+const errorModalStyles = StyleSheet.create({
+    overlay: {
+        position: 'absolute',
+        top: 0, bottom: 0, left: 0, right: 0,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 2000,
+    },
+    container: {
+        width: '85%',
+        padding: 32,
+        borderRadius: 24,
+        alignItems: 'center',
+        gap: 20,
+        shadowColor: "#000",
+        shadowOffset: {
+            width: 0,
+            height: 4,
+        },
+        shadowOpacity: 0.3,
+        shadowRadius: 4.65,
+        elevation: 8,
+    },
+    message: {
+        textAlign: 'center',
+        fontSize: 17,
+        fontWeight: '500',
+        lineHeight: 24,
+    },
+    button: {
+        paddingVertical: 14,
+        paddingHorizontal: 32,
+        borderRadius: 30,
+        marginTop: 8,
+        width: '100%',
+        alignItems: 'center',
+    },
+    buttonText: {
+        color: 'white',
+        fontWeight: '600',
+        fontSize: 16,
+    }
+});
+
+
 export default function CreateCharacterScreen() {
     const router = useRouter();
     const colorScheme = useColorScheme();
@@ -516,7 +577,6 @@ export default function CreateCharacterScreen() {
         name: '',
         characteristics: '',
         therapyStyles: ['Integrative Therapy (AI decides)'] as string[], // Preselect Integrative
-        imageDescription: '',
         greeting: '',
         isPublic: true,
     });
@@ -524,6 +584,10 @@ export default function CreateCharacterScreen() {
     const [isGeneratingImage, setIsGeneratingImage] = useState(false);
     const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
     const [supabaseCharacterId, setSupabaseCharacterId] = useState<string | null>(null); // UUID from Supabase
+
+    // Error modal state
+    const [errorModalVisible, setErrorModalVisible] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
 
     const params = useLocalSearchParams();
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -538,7 +602,6 @@ export default function CreateCharacterScreen() {
                     name: charData.name,
                     characteristics: charData.description,
                     therapyStyles: charData.therapyStyles || [],
-                    imageDescription: charData.imageDescription || '',
                     greeting: charData.greeting || '',
                     isPublic: charData.isPublic || false,
                 });
@@ -558,11 +621,19 @@ export default function CreateCharacterScreen() {
     }, [currentStep, generatedImageUrl]);
 
     const handleNext = async () => {
-        const steps: Step[] = ['goal', 'name', 'greeting', 'therapyStyle', 'visibility', 'characteristics', 'imageDescription', 'imageGeneration', 'review'];
-        const currentIndex = steps.indexOf(currentStep);
+        const steps: Step[] = ['goal', 'name', 'greeting', 'characteristics', 'therapyStyle', 'visibility', 'imageGeneration', 'review'];
+        // Re-ordering steps based on requested flow: Goal -> Name -> Greeting -> Characteristics -> Therapy Style -> Visibility -> Image Gen -> Review
+        // The user originally asked for: Goal -> Name -> Greeting -> Therapy Style -> Visibility -> Characteristics -> Image Description -> Image Generation -> Review (previous flow)
+        // Wait, checking previous 'steps' array in handleNext: ['goal', 'name', 'greeting', 'therapyStyle', 'visibility', 'characteristics', 'imageDescription', 'imageGeneration', 'review']
+        // Actually, let's keep the existing flow but remove imageDescription.
+        // Current: ['goal', 'name', 'greeting', 'therapyStyle', 'visibility', 'characteristics', 'imageDescription', 'imageGeneration', 'review']
+        // New: ['goal', 'name', 'greeting', 'therapyStyle', 'visibility', 'characteristics', 'imageGeneration', 'review']
 
-        // Auto-generate image when moving from imageDescription to imageGeneration
-        if (currentStep === 'imageDescription' && characterData.imageDescription.trim()) {
+        const currentStepsList: Step[] = ['goal', 'name', 'greeting', 'therapyStyle', 'visibility', 'characteristics', 'imageGeneration', 'review'];
+        const currentIndex = currentStepsList.indexOf(currentStep);
+
+        // Auto-generate image when moving from characteristics to imageGeneration
+        if (currentStep === 'characteristics' && characterData.characteristics.trim()) {
             setCurrentStep('imageGeneration');
             setIsGeneratingImage(true);
             try {
@@ -573,7 +644,7 @@ export default function CreateCharacterScreen() {
                 const userId = user?.id;
 
                 const result = await generateCharacterImage({
-                    description: characterData.imageDescription,
+                    description: characterData.characteristics, // Using characteristics as the description
                     characterName: characterData.name,
                     greeting: characterData.greeting,
                     therapyStyles: characterData.therapyStyles,
@@ -593,30 +664,50 @@ export default function CreateCharacterScreen() {
                     }
                     console.log('✅ Image URL set:', result.imageUrl);
                     console.log('✅ Character ID:', result.characterId);
+
+                    // Automatically move to review after successful generation if desired, 
+                    // or just stay on imageGeneration (which usually shows the image + continue button).
+                    // The existing code for 'imageGeneration' step likely shows the image.
                 } else {
                     console.error('❌ Image generation failed:', result.error);
-                    // Show the actual error message from the server
-                    Alert.alert(
-                        'Unable to Create Character',
-                        result.error || 'Could not generate image. Please try again.'
-                    );
+
+                    const errorMsg = result.error || '';
+                    if (errorMsg.includes('inappropriate content')) {
+                        setErrorMessage('The ai.therapists description contains inappropriate content. Please revise your character to be appropriate!');
+                        setErrorModalVisible(true);
+                        // Go back to characteristics to let them fix it
+                        setCurrentStep('characteristics');
+                    } else if (errorMsg.includes('More detail is needed')) {
+                        setErrorMessage('More detail is needed. Please revise your character to be more specific.');
+                        setErrorModalVisible(true);
+                        // Go back to characteristics
+                        setCurrentStep('characteristics');
+                    } else {
+                        Alert.alert(
+                            'Unable to Create Character',
+                            result.error || 'Could not generate image. Please try again.'
+                        );
+                        // Go back to characteristics
+                        setCurrentStep('characteristics');
+                    }
                 }
             } catch (error) {
                 console.error('❌ Error generating image:', error);
                 Alert.alert('Error', 'Failed to generate image. Please try again.');
+                setCurrentStep('characteristics');
             } finally {
                 setIsGeneratingImage(false);
             }
-            return; // Don't proceed to next step automatically, we already moved to imageGeneration
+            return;
         }
 
-        if (currentIndex < steps.length - 1) {
-            setCurrentStep(steps[currentIndex + 1]);
+        if (currentIndex < currentStepsList.length - 1) {
+            setCurrentStep(currentStepsList[currentIndex + 1]);
         }
     };
 
     const handleBack = () => {
-        const steps: Step[] = ['goal', 'name', 'greeting', 'therapyStyle', 'visibility', 'characteristics', 'imageDescription', 'imageGeneration', 'review'];
+        const steps: Step[] = ['goal', 'name', 'greeting', 'therapyStyle', 'visibility', 'characteristics', 'imageGeneration', 'review'];
         const currentIndex = steps.indexOf(currentStep);
         if (currentIndex > 0) {
             setCurrentStep(steps[currentIndex - 1]);
@@ -626,561 +717,552 @@ export default function CreateCharacterScreen() {
         }
     };
 
-    const handleGenerateImage = async () => {
-        if (!characterData.imageDescription.trim()) {
-            Alert.alert('Missing Description', 'Please describe how your character looks first.');
-            return;
-        }
 
-        setIsGeneratingImage(true);
-        setGeneratedImageUrl(''); // Clear previous image
-        try {
-            // Get authenticated user ID
-            const { data: { user } } = await supabase.auth.getUser();
-            const userId = user?.id;
 
-            const result = await generateCharacterImage({
-                description: characterData.imageDescription,
-                characterName: characterData.name,
-                greeting: characterData.greeting,
-                therapyStyles: characterData.therapyStyles,
-                goal: characterData.goal,
-                characteristics: characterData.characteristics,
-                isPublic: characterData.isPublic,
-                userId: userId,
-            });
+    if (currentStep === 'characteristics') {
+        return characterData.characteristics.trim() !== '';
+    }
 
-            if (result.success && result.imageUrl) {
-                // Preload image before showing
-                await Image.prefetch(result.imageUrl);
-                setGeneratedImageUrl(result.imageUrl);
-            } else {
-                Alert.alert(
-                    'Unable to Create Character',
-                    result.error || 'Could not generate image. Please try again.'
-                );
-            }
-        } catch (error) {
-            console.error('Error generating image:', error);
-            Alert.alert('Error', 'Failed to generate image. Please check your connection and try again.');
-        } finally {
-            setIsGeneratingImage(false);
-        }
-    };
+    // Default check (mostly relied on disabled/UI state, but good for validation)
+    return true;
+};
 
-    // Helper function to check if all required fields are filled
-    const isFormComplete = () => {
-        return (
-            characterData.name.trim() !== '' &&
-            characterData.goal.trim() !== '' &&
-            characterData.characteristics.trim() !== '' &&
-            characterData.greeting.trim() !== '' &&
-            characterData.therapyStyles.length > 0 &&
-            generatedImageUrl !== null && generatedImageUrl !== ''
-        );
-    };
+const handleCreate = async () => {
+    if (isCreating) return;
 
-    const handleCreate = async () => {
-        if (isCreating) return;
+    // Validate all required fields
+    if (!characterData.name.trim()) {
+        Alert.alert('Missing Name', 'Please give your ai.therapist a name.');
+        return;
+    }
+    if (!characterData.characteristics.trim()) {
+        Alert.alert('Missing Characteristics', 'Please describe your ai.therapist.');
+        return;
+    }
+    if (!characterData.greeting.trim()) {
+        Alert.alert('Missing Greeting', 'Please add a greeting message.');
+        return;
+    }
+    if (!characterData.goal.trim()) {
+        Alert.alert('Missing Goal', 'Please describe your goal for this ai.therapist.');
+        return;
+    }
+    if (!characterData.therapyStyles || characterData.therapyStyles.length === 0) {
+        Alert.alert('Missing Therapy Style', 'Please select at least one therapy style.');
+        return;
+    }
+    if (!generatedImageUrl) {
+        Alert.alert('Missing Image', 'Please generate an image for your ai.therapist first.');
+        return;
+    }
 
-        // Validate all required fields
-        if (!characterData.name.trim()) {
-            Alert.alert('Missing Name', 'Please give your ai.therapist a name.');
-            return;
-        }
-        if (!characterData.characteristics.trim()) {
-            Alert.alert('Missing Description', 'Please describe who your ai.therapist is.');
-            return;
-        }
-        if (!characterData.greeting.trim()) {
-            Alert.alert('Missing Greeting', 'Please add a greeting message.');
-            return;
-        }
-        if (!characterData.goal.trim()) {
-            Alert.alert('Missing Goal', 'Please describe your goal for this ai.therapist.');
-            return;
-        }
-        if (!characterData.therapyStyles || characterData.therapyStyles.length === 0) {
-            Alert.alert('Missing Therapy Style', 'Please select at least one therapy style.');
-            return;
-        }
-        if (!generatedImageUrl) {
-            Alert.alert('Missing Image', 'Please generate an image for your ai.therapist first.');
-            return;
-        }
+    setIsCreating(true);
+    try {
+        // Use Supabase character ID if available, otherwise generate local ID
+        const characterId = supabaseCharacterId || editingId || `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-        setIsCreating(true);
-        try {
-            // Use Supabase character ID if available, otherwise generate local ID
-            const characterId = supabaseCharacterId || editingId || `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        // Create character object
+        const newCharacter: UserCharacter = {
+            id: characterId,
+            name: characterData.name,
+            image: generatedImageUrl || '/characters/athena.jpg', // Placeholder until AI generates image
+            description: characterData.characteristics,
+            goal: characterData.goal,
+            therapyStyles: characterData.therapyStyles,
+            type: 'human', // Default type
+            createdAt: editingId ? (JSON.parse(params.characterData as string).createdAt) : new Date().toISOString(),
+            isPublic: characterData.isPublic,
+            greeting: characterData.greeting,
+        };
 
-            // Create character object
-            const newCharacter: UserCharacter = {
-                id: characterId,
-                name: characterData.name,
-                image: generatedImageUrl || '/characters/athena.jpg', // Placeholder until AI generates image
-                imageDescription: characterData.imageDescription,
-                description: characterData.characteristics,
-                goal: characterData.goal,
-                therapyStyles: characterData.therapyStyles,
-                type: 'human', // Default type
-                createdAt: editingId ? (JSON.parse(params.characterData as string).createdAt) : new Date().toISOString(),
-                isPublic: characterData.isPublic,
-                greeting: characterData.greeting,
+        // Save to storage (includes Supabase sync)
+        await saveCharacter(newCharacter);
+
+        // Replace navigation (not push) so back button goes to home, not Create tab
+        router.replace(`/conversation/${characterId}`);
+    } catch (error) {
+        console.error('Error creating character:', error);
+        Alert.alert('Error', 'Failed to create character. Please try again.');
+    } finally {
+        setIsCreating(false);
+    }
+};
+
+// Helper function to check if the current step is valid
+const isStepValid = (step: Step) => {
+    switch (step) {
+        case 'goal':
+            return characterData.goal.trim() !== '';
+        case 'name':
+            return characterData.name.trim() !== '';
+        case 'greeting':
+            return characterData.greeting.trim() !== '';
+        case 'characteristics':
+            return characterData.characteristics.trim() !== '';
+        default:
+            return true;
+    }
+};
+
+const renderStepContent = () => {
+    switch (currentStep) {
+        case 'goal':
+            return (
+                <View style={styles.stepContainer}>
+                    <ThemedText type="title" style={styles.stepTitle}>
+                        What's your goal?
+                    </ThemedText>
+                    <ThemedText style={styles.stepDescription}>
+                        Tell us what you'd like to work on or achieve with your ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist
+                    </ThemedText>
+                    <TextInput
+                        style={[styles.textArea, { backgroundColor: theme.card, color: theme.text }]}
+                        placeholder="e.g., I want to manage my anxiety better, improve my relationships, build confidence..."
+                        placeholderTextColor={theme.icon}
+                        value={characterData.goal}
+                        onChangeText={(text) => setCharacterData({ ...characterData, goal: text })}
+                        multiline
+                        numberOfLines={4}
+                    />
+                    <ThemedText style={styles.disclaimerText}>
+                        Disclaimer: ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapy is a creative mental-wellness platform and not a therapeutic service. All ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapists are fictional AI characters. Their role titles ("Therapist," "Psychologist," "Dr.," "Coach," etc.) are used solely for imaginative portrayal and have no professional, clinical, or medical meaning. The therapeutic approaches and modalities mentioned on the platform (e.g., CBT, ACT, DBT, Psychodynamic, Schema, Gestalt, MBCT, etc.) are used exclusively for inspired, model-like purposes and do not constitute real therapeutic application. Neither the ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapy platform nor its AI characters hold qualifications or licenses to practice medicine or psychotherapy. No promise of healing is made. Everything they say is intended for inspiration, reflection, and everyday support—not for diagnosis, treatment, or therapy.
+                    </ThemedText>
+                </View>
+            );
+
+        case 'name':
+            return (
+                <View style={styles.stepContainer}>
+                    <ThemedText type="title" style={styles.stepTitle}>
+                        Name your ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist
+                    </ThemedText>
+                    <ThemedText style={styles.stepDescription}>
+                        What should we call your ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist?
+                    </ThemedText>
+                    <TextInput
+                        style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
+                        placeholder="ai.therapist"
+                        placeholderTextColor={theme.icon}
+                        value={characterData.name}
+                        onChangeText={(text) => setCharacterData({ ...characterData, name: text })}
+                    />
+                </View>
+            );
+
+        case 'characteristics':
+            return (
+                <View style={styles.stepContainer}>
+                    <ThemedText type="title" style={styles.stepTitle}>
+                        Who is {characterData.name || 'your ai.therapist'}?
+                    </ThemedText>
+                    <ThemedText style={styles.stepDescription}>
+                        Describe their personality, expertise, characteristics and appearance
+                    </ThemedText>
+                    <TextInput
+                        style={[styles.textArea, { backgroundColor: theme.card, color: theme.text }]}
+                        placeholder="e.g., A wise and patient therapist specializing in anxiety and stress management..."
+                        placeholderTextColor={theme.icon}
+                        value={characterData.characteristics}
+                        onChangeText={(text) => setCharacterData({ ...characterData, characteristics: text })}
+                        multiline
+                        numberOfLines={6}
+                    />
+                </View>
+            );
+
+        case 'therapyStyle':
+            const toggleTherapyStyle = (styleName: string) => {
+                const integrativeName = 'Integrative Therapy (AI decides)';
+
+                if (characterData.therapyStyles.includes(styleName)) {
+                    // Deselecting a style
+                    const newStyles = characterData.therapyStyles.filter(s => s !== styleName);
+                    // If no styles left, revert to Integrative
+                    setCharacterData({
+                        ...characterData,
+                        therapyStyles: newStyles.length === 0 ? [integrativeName] : newStyles
+                    });
+                } else {
+                    // Selecting a new style
+                    if (styleName === integrativeName) {
+                        // If selecting Integrative, clear all others
+                        setCharacterData({ ...characterData, therapyStyles: [integrativeName] });
+                    } else {
+                        // If selecting any other style, remove Integrative and add the new one
+                        const newStyles = characterData.therapyStyles
+                            .filter(s => s !== integrativeName)
+                            .concat(styleName);
+                        setCharacterData({ ...characterData, therapyStyles: newStyles });
+                    }
+                }
             };
 
-            // Save to storage (includes Supabase sync)
-            await saveCharacter(newCharacter);
+            const isAutomatic = characterData.therapyStyles.length === 0;
 
-            // Replace navigation (not push) so back button goes to home, not Create tab
-            router.replace(`/conversation/${characterId}`);
-        } catch (error) {
-            console.error('Error creating character:', error);
-            Alert.alert('Error', 'Failed to create character. Please try again.');
-        } finally {
-            setIsCreating(false);
-        }
-    };
+            return (
+                <View style={styles.stepContainer}>
+                    <ThemedText type="title" style={styles.stepTitle}>
+                        What's {characterData.name || 'your ai.therapist'}'s style?
+                    </ThemedText>
 
-    const renderStepContent = () => {
-        switch (currentStep) {
-            case 'goal':
-                return (
-                    <View style={styles.stepContainer}>
-                        <ThemedText type="title" style={styles.stepTitle}>
-                            What's your goal?
-                        </ThemedText>
-                        <ThemedText style={styles.stepDescription}>
-                            Tell us what you'd like to work on or achieve with your ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist
-                        </ThemedText>
-                        <TextInput
-                            style={[styles.textArea, { backgroundColor: theme.card, color: theme.text }]}
-                            placeholder="e.g., I want to manage my anxiety better, improve my relationships, build confidence..."
-                            placeholderTextColor={theme.icon}
-                            value={characterData.goal}
-                            onChangeText={(text) => setCharacterData({ ...characterData, goal: text })}
-                            multiline
-                            numberOfLines={4}
-                        />
-                        <ThemedText style={styles.disclaimerText}>
-                            Disclaimer: ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapy is a creative mental-wellness platform and not a therapeutic service. All ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapists are fictional AI characters. Their role titles ("Therapist," "Psychologist," "Dr.," "Coach," etc.) are used solely for imaginative portrayal and have no professional, clinical, or medical meaning. The therapeutic approaches and modalities mentioned on the platform (e.g., CBT, ACT, DBT, Psychodynamic, Schema, Gestalt, MBCT, etc.) are used exclusively for inspired, model-like purposes and do not constitute real therapeutic application. Neither the ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapy platform nor its AI characters hold qualifications or licenses to practice medicine or psychotherapy. No promise of healing is made. Everything they say is intended for inspiration, reflection, and everyday support—not for diagnosis, treatment, or therapy.
-                        </ThemedText>
-                    </View>
-                );
+                    <View style={styles.therapyStylesContainer}>
+                        {ALL_THERAPY_OPTIONS.map((category) => (
+                            <View key={category.category} style={styles.categorySection}>
+                                <ThemedText type="defaultSemiBold" style={styles.categoryTitle}>
+                                    {category.category}
+                                </ThemedText>
+                                {category.styles.map((style) => {
+                                    const isSelected = characterData.therapyStyles.includes(style.name);
+                                    return (
+                                        <TouchableOpacity
+                                            key={style.name}
+                                            style={[
+                                                styles.therapyStyleButton,
+                                                {
+                                                    backgroundColor: isSelected ? theme.primary : theme.card,
+                                                    borderColor: isSelected ? theme.primary : theme.icon
+                                                }
+                                            ]}
+                                            onPress={() => toggleTherapyStyle(style.name)}
+                                        >
+                                            <View style={styles.therapyStyleContent}>
+                                                <ThemedText style={[
+                                                    styles.therapyStyleName,
+                                                    { color: isSelected ? '#fff' : theme.text, marginBottom: 4 }
+                                                ]}>
+                                                    {style.name}
+                                                </ThemedText>
 
-            case 'name':
-                return (
-                    <View style={styles.stepContainer}>
-                        <ThemedText type="title" style={styles.stepTitle}>
-                            Name your ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist
-                        </ThemedText>
-                        <ThemedText style={styles.stepDescription}>
-                            What should we call your ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist?
-                        </ThemedText>
-                        <TextInput
-                            style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
-                            placeholder="ai.therapist"
-                            placeholderTextColor={theme.icon}
-                            value={characterData.name}
-                            onChangeText={(text) => setCharacterData({ ...characterData, name: text })}
-                        />
-                    </View>
-                );
+                                                <ThemedText style={[
+                                                    styles.therapyStyleDescription,
+                                                    { color: isSelected ? 'rgba(255,255,255,0.9)' : theme.icon, marginBottom: 6 }
+                                                ]}>
+                                                    {style.description}
+                                                </ThemedText>
 
-            case 'characteristics':
-                return (
-                    <View style={styles.stepContainer}>
-                        <ThemedText type="title" style={styles.stepTitle}>
-                            Who is {characterData.name || 'your ai.therapist'}?
-                        </ThemedText>
-                        <ThemedText style={styles.stepDescription}>
-                            Describe their personality, expertise, and characteristics
-                        </ThemedText>
-                        <TextInput
-                            style={[styles.textArea, { backgroundColor: theme.card, color: theme.text }]}
-                            placeholder="e.g., A wise and patient therapist specializing in anxiety and stress management..."
-                            placeholderTextColor={theme.icon}
-                            value={characterData.characteristics}
-                            onChangeText={(text) => setCharacterData({ ...characterData, characteristics: text })}
-                            multiline
-                            numberOfLines={6}
-                        />
-                    </View>
-                );
-
-            case 'therapyStyle':
-                const toggleTherapyStyle = (styleName: string) => {
-                    const integrativeName = 'Integrative Therapy (AI decides)';
-
-                    if (characterData.therapyStyles.includes(styleName)) {
-                        // Deselecting a style
-                        const newStyles = characterData.therapyStyles.filter(s => s !== styleName);
-                        // If no styles left, revert to Integrative
-                        setCharacterData({
-                            ...characterData,
-                            therapyStyles: newStyles.length === 0 ? [integrativeName] : newStyles
-                        });
-                    } else {
-                        // Selecting a new style
-                        if (styleName === integrativeName) {
-                            // If selecting Integrative, clear all others
-                            setCharacterData({ ...characterData, therapyStyles: [integrativeName] });
-                        } else {
-                            // If selecting any other style, remove Integrative and add the new one
-                            const newStyles = characterData.therapyStyles
-                                .filter(s => s !== integrativeName)
-                                .concat(styleName);
-                            setCharacterData({ ...characterData, therapyStyles: newStyles });
-                        }
-                    }
-                };
-
-                const isAutomatic = characterData.therapyStyles.length === 0;
-
-                return (
-                    <View style={styles.stepContainer}>
-                        <ThemedText type="title" style={styles.stepTitle}>
-                            What's {characterData.name || 'your ai.therapist'}'s style?
-                        </ThemedText>
-
-                        <View style={styles.therapyStylesContainer}>
-                            {ALL_THERAPY_OPTIONS.map((category) => (
-                                <View key={category.category} style={styles.categorySection}>
-                                    <ThemedText type="defaultSemiBold" style={styles.categoryTitle}>
-                                        {category.category}
-                                    </ThemedText>
-                                    {category.styles.map((style) => {
-                                        const isSelected = characterData.therapyStyles.includes(style.name);
-                                        return (
-                                            <TouchableOpacity
-                                                key={style.name}
-                                                style={[
-                                                    styles.therapyStyleButton,
-                                                    {
-                                                        backgroundColor: isSelected ? theme.primary : theme.card,
-                                                        borderColor: isSelected ? theme.primary : theme.icon
-                                                    }
-                                                ]}
-                                                onPress={() => toggleTherapyStyle(style.name)}
-                                            >
-                                                <View style={styles.therapyStyleContent}>
-                                                    <ThemedText style={[
-                                                        styles.therapyStyleName,
-                                                        { color: isSelected ? '#fff' : theme.text, marginBottom: 4 }
-                                                    ]}>
-                                                        {style.name}
-                                                    </ThemedText>
-
-                                                    <ThemedText style={[
-                                                        styles.therapyStyleDescription,
-                                                        { color: isSelected ? 'rgba(255,255,255,0.9)' : theme.icon, marginBottom: 6 }
-                                                    ]}>
-                                                        {style.description}
-                                                    </ThemedText>
-
-                                                    <TouchableOpacity
-                                                        style={[styles.learnMoreButton, { backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : theme.tint + '15' }]}
-                                                        onPress={(e) => {
-                                                            e.stopPropagation();
-                                                            router.push({ pathname: '/therapy-detail-modal', params: { name: style.name } });
-                                                        }}
-                                                    >
-                                                        <IconSymbol name="info.circle" size={14} color={isSelected ? '#fff' : theme.tint} />
-                                                        <ThemedText style={[styles.learnMoreText, { color: isSelected ? '#fff' : theme.tint }]}>Learn more</ThemedText>
-                                                    </TouchableOpacity>
+                                                <TouchableOpacity
+                                                    style={[styles.learnMoreButton, { backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : theme.tint + '15' }]}
+                                                    onPress={(e) => {
+                                                        e.stopPropagation();
+                                                        router.push({ pathname: '/therapy-detail-modal', params: { name: style.name } });
+                                                    }}
+                                                >
+                                                    <IconSymbol name="info.circle" size={14} color={isSelected ? '#fff' : theme.tint} />
+                                                    <ThemedText style={[styles.learnMoreText, { color: isSelected ? '#fff' : theme.tint }]}>Learn more</ThemedText>
+                                                </TouchableOpacity>
+                                            </View>
+                                            {isSelected && (
+                                                <View style={styles.checkmarkContainer}>
+                                                    <IconSymbol name="checkmark.circle.fill" size={24} color="#fff" />
                                                 </View>
-                                                {isSelected && (
-                                                    <View style={styles.checkmarkContainer}>
-                                                        <IconSymbol name="checkmark.circle.fill" size={24} color="#fff" />
-                                                    </View>
-                                                )}
-                                            </TouchableOpacity>
-                                        );
-                                    })}
+                                            )}
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                            </View>
+                        ))}
+                    </View>
+                </View>
+            );
+
+        case 'imageDescription':
+            return (
+                <View style={styles.stepContainer}>
+                    <ThemedText type="title" style={styles.stepTitle}>
+                        Describe {characterData.name || 'your ai.therapist'}'s appearance
+                    </ThemedText>
+                    <ThemedText style={styles.stepDescription}>
+                        💡 The more detailed your description, the better the AI-generated image will be!
+                    </ThemedText>
+                    <TextInput
+                        style={[styles.textArea, { backgroundColor: theme.card, color: theme.text }]}
+                        placeholder="e.g., A warm, middle-aged woman with kind eyes, wearing professional attire..."
+                        placeholderTextColor={theme.icon}
+                        value={characterData.imageDescription}
+                        onChangeText={(text) => setCharacterData({ ...characterData, imageDescription: text })}
+                        multiline
+                        numberOfLines={4}
+                    />
+                </View>
+            );
+
+        case 'imageGeneration':
+            return (
+                <View style={styles.stepContainer}>
+                    {/* Title and description */}
+                    <ThemedText type="title" style={styles.stepTitle}>
+                        {generatedImageUrl
+                            ? `Meet ${characterData.name || 'your ai.therapist'}!`
+                            : 'Image generation failed'}
+                    </ThemedText>
+                    <ThemedText style={styles.stepDescription}>
+                        {generatedImageUrl
+                            ? 'Looking good! Continue to the next step, or regenerate if you\'d like a different look.'
+                            : 'Something went wrong. Please try again.'}
+                    </ThemedText>
+
+                    {/* Large character image showcase */}
+                    <View style={styles.characterShowcase}>
+                        <View style={[styles.characterShowcaseImage, { backgroundColor: theme.card, borderColor: theme.primary }]}>
+                            {generatedImageUrl ? (
+                                <Image
+                                    source={{ uri: generatedImageUrl }}
+                                    style={styles.imagePreview}
+                                    contentFit="cover"
+                                />
+                            ) : (
+                                <View style={styles.emptyImageState}>
+                                    <IconSymbol name="sparkles" size={64} color={theme.primary} />
+                                    <ThemedText style={[styles.emptyImageText, { color: theme.icon }]}>No image yet</ThemedText>
                                 </View>
-                            ))}
+                            )}
                         </View>
                     </View>
-                );
+                </View>
+            );
 
-            case 'imageDescription':
-                return (
-                    <View style={styles.stepContainer}>
-                        <ThemedText type="title" style={styles.stepTitle}>
-                            Describe {characterData.name || 'your ai.therapist'}'s appearance
-                        </ThemedText>
-                        <ThemedText style={styles.stepDescription}>
-                            💡 The more detailed your description, the better the AI-generated image will be!
-                        </ThemedText>
-                        <TextInput
-                            style={[styles.textArea, { backgroundColor: theme.card, color: theme.text }]}
-                            placeholder="e.g., A warm, middle-aged woman with kind eyes, wearing professional attire..."
-                            placeholderTextColor={theme.icon}
-                            value={characterData.imageDescription}
-                            onChangeText={(text) => setCharacterData({ ...characterData, imageDescription: text })}
-                            multiline
-                            numberOfLines={4}
+        case 'greeting':
+            return (
+                <View style={styles.stepContainer}>
+                    <ThemedText type="title" style={styles.stepTitle}>
+                        How does {characterData.name} greet you?
+                    </ThemedText>
+                    <ThemedText style={styles.stepDescription}>
+                        Write the first message your character will send
+                    </ThemedText>
+                    <TextInput
+                        style={[styles.textArea, { backgroundColor: theme.card, color: theme.text }]}
+                        placeholder={`e.g., Hello! I'm ${characterData.name || 'your character'}. I'm here to help you...`}
+                        placeholderTextColor={theme.icon}
+                        value={characterData.greeting}
+                        onChangeText={(text) => setCharacterData({ ...characterData, greeting: text })}
+                        multiline
+                        numberOfLines={6}
+                    />
+                </View>
+            );
+
+        case 'visibility':
+            return (
+                <View style={styles.stepContainer}>
+                    <ThemedText type="title" style={styles.stepTitle}>
+                        Who can chat with {characterData.name}?
+                    </ThemedText>
+                    <ThemedText style={styles.stepDescription}>
+                        Choose the visibility of your character
+                    </ThemedText>
+                    <TouchableOpacity
+                        style={[
+                            styles.visibilityOption,
+                            { backgroundColor: theme.card, borderColor: characterData.isPublic ? theme.primary : 'transparent' },
+                        ]}
+                        onPress={() => setCharacterData({ ...characterData, isPublic: true })}>
+                        <View style={styles.visibilityContent}>
+                            <IconSymbol name="house.fill" size={32} color={theme.text} />
+                            <View style={styles.visibilityText}>
+                                <ThemedText type="defaultSemiBold">Public</ThemedText>
+                                <ThemedText style={styles.visibilityDescription}>
+                                    Anyone can find and chat with this character
+                                </ThemedText>
+                            </View>
+                        </View>
+                        {characterData.isPublic && (
+                            <IconSymbol name="chevron.right" size={24} color={theme.primary} />
+                        )}
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[
+                            styles.visibilityOption,
+                            { backgroundColor: theme.card, borderColor: !characterData.isPublic ? theme.primary : 'transparent' },
+                        ]}
+                        onPress={() => setCharacterData({ ...characterData, isPublic: false })}>
+                        <View style={styles.visibilityContent}>
+                            <IconSymbol name="person" size={32} color={theme.text} />
+                            <View style={styles.visibilityText}>
+                                <ThemedText type="defaultSemiBold">Private</ThemedText>
+                                <ThemedText style={styles.visibilityDescription}>
+                                    Only you can chat with this character
+                                </ThemedText>
+                            </View>
+                        </View>
+                        {!characterData.isPublic && (
+                            <IconSymbol name="chevron.right" size={24} color={theme.primary} />
+                        )}
+                    </TouchableOpacity>
+                </View>
+            );
+
+        case 'review':
+            const formComplete = isFormComplete();
+            const missingFields = [];
+            if (!characterData.name.trim()) missingFields.push('Name');
+            if (!characterData.goal.trim()) missingFields.push('Goal');
+            if (!characterData.characteristics.trim()) missingFields.push('Description');
+            if (!characterData.greeting.trim()) missingFields.push('Greeting');
+            if (!characterData.therapyStyles.length) missingFields.push('Therapy Style');
+            if (!generatedImageUrl) missingFields.push('Image');
+
+            return (
+                <View style={styles.stepContainer}>
+                    <ThemedText type="title" style={styles.stepTitle}>
+                        Review your ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist
+                    </ThemedText>
+                    <ThemedText style={styles.stepDescription}>
+                        {formComplete
+                            ? 'Everything looks good! Ready to create your ai.therapist.'
+                            : `Please complete: ${missingFields.join(', ')}`
+                        }
+                    </ThemedText>
+
+                    <View style={styles.reviewImageContainer}>
+                        <Image
+                            source={{ uri: generatedImageUrl || '/characters/athena.jpg' }}
+                            style={[styles.reviewImage, { borderColor: theme.primary }]}
+                            contentFit="cover"
                         />
                     </View>
-                );
 
-            case 'imageGeneration':
-                return (
-                    <View style={styles.stepContainer}>
-                        {/* Title and description */}
-                        <ThemedText type="title" style={styles.stepTitle}>
-                            {generatedImageUrl
-                                ? `Meet ${characterData.name || 'your ai.therapist'}!`
-                                : 'Image generation failed'}
-                        </ThemedText>
-                        <ThemedText style={styles.stepDescription}>
-                            {generatedImageUrl
-                                ? 'Looking good! Continue to the next step, or regenerate if you\'d like a different look.'
-                                : 'Something went wrong. Please try again.'}
-                        </ThemedText>
-
-                        {/* Large character image showcase */}
-                        <View style={styles.characterShowcase}>
-                            <View style={[styles.characterShowcaseImage, { backgroundColor: theme.card, borderColor: theme.primary }]}>
-                                {generatedImageUrl ? (
-                                    <Image
-                                        source={{ uri: generatedImageUrl }}
-                                        style={styles.imagePreview}
-                                        contentFit="cover"
-                                    />
-                                ) : (
-                                    <View style={styles.emptyImageState}>
-                                        <IconSymbol name="sparkles" size={64} color={theme.primary} />
-                                        <ThemedText style={[styles.emptyImageText, { color: theme.icon }]}>No image yet</ThemedText>
-                                    </View>
-                                )}
-                            </View>
-                        </View>
-                    </View>
-                );
-
-            case 'greeting':
-                return (
-                    <View style={styles.stepContainer}>
-                        <ThemedText type="title" style={styles.stepTitle}>
-                            How does {characterData.name} greet you?
-                        </ThemedText>
-                        <ThemedText style={styles.stepDescription}>
-                            Write the first message your character will send
-                        </ThemedText>
-                        <TextInput
-                            style={[styles.textArea, { backgroundColor: theme.card, color: theme.text }]}
-                            placeholder={`e.g., Hello! I'm ${characterData.name || 'your character'}. I'm here to help you...`}
-                            placeholderTextColor={theme.icon}
-                            value={characterData.greeting}
-                            onChangeText={(text) => setCharacterData({ ...characterData, greeting: text })}
-                            multiline
-                            numberOfLines={6}
-                        />
-                    </View>
-                );
-
-            case 'visibility':
-                return (
-                    <View style={styles.stepContainer}>
-                        <ThemedText type="title" style={styles.stepTitle}>
-                            Who can chat with {characterData.name}?
-                        </ThemedText>
-                        <ThemedText style={styles.stepDescription}>
-                            Choose the visibility of your character
-                        </ThemedText>
-                        <TouchableOpacity
-                            style={[
-                                styles.visibilityOption,
-                                { backgroundColor: theme.card, borderColor: characterData.isPublic ? theme.primary : 'transparent' },
-                            ]}
-                            onPress={() => setCharacterData({ ...characterData, isPublic: true })}>
-                            <View style={styles.visibilityContent}>
-                                <IconSymbol name="house.fill" size={32} color={theme.text} />
-                                <View style={styles.visibilityText}>
-                                    <ThemedText type="defaultSemiBold">Public</ThemedText>
-                                    <ThemedText style={styles.visibilityDescription}>
-                                        Anyone can find and chat with this character
-                                    </ThemedText>
-                                </View>
-                            </View>
-                            {characterData.isPublic && (
-                                <IconSymbol name="chevron.right" size={24} color={theme.primary} />
-                            )}
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={[
-                                styles.visibilityOption,
-                                { backgroundColor: theme.card, borderColor: !characterData.isPublic ? theme.primary : 'transparent' },
-                            ]}
-                            onPress={() => setCharacterData({ ...characterData, isPublic: false })}>
-                            <View style={styles.visibilityContent}>
-                                <IconSymbol name="person" size={32} color={theme.text} />
-                                <View style={styles.visibilityText}>
-                                    <ThemedText type="defaultSemiBold">Private</ThemedText>
-                                    <ThemedText style={styles.visibilityDescription}>
-                                        Only you can chat with this character
-                                    </ThemedText>
-                                </View>
-                            </View>
-                            {!characterData.isPublic && (
-                                <IconSymbol name="chevron.right" size={24} color={theme.primary} />
-                            )}
-                        </TouchableOpacity>
-                    </View>
-                );
-
-            case 'review':
-                const formComplete = isFormComplete();
-                const missingFields = [];
-                if (!characterData.name.trim()) missingFields.push('Name');
-                if (!characterData.goal.trim()) missingFields.push('Goal');
-                if (!characterData.characteristics.trim()) missingFields.push('Description');
-                if (!characterData.greeting.trim()) missingFields.push('Greeting');
-                if (!characterData.therapyStyles.length) missingFields.push('Therapy Style');
-                if (!generatedImageUrl) missingFields.push('Image');
-
-                return (
-                    <View style={styles.stepContainer}>
-                        <ThemedText type="title" style={styles.stepTitle}>
-                            Review your ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist
-                        </ThemedText>
-                        <ThemedText style={styles.stepDescription}>
-                            {formComplete
-                                ? 'Everything looks good! Ready to create your ai.therapist.'
-                                : `Please complete: ${missingFields.join(', ')}`
-                            }
-                        </ThemedText>
-
-                        <View style={styles.reviewImageContainer}>
-                            <Image
-                                source={{ uri: generatedImageUrl || '/characters/athena.jpg' }}
-                                style={[styles.reviewImage, { borderColor: theme.primary }]}
-                                contentFit="cover"
-                            />
-                        </View>
-
-                        <View style={[styles.reviewCard, { backgroundColor: theme.card }]}>
-                            <View style={styles.reviewRow}>
-                                <ThemedText style={styles.reviewLabel}>Name:</ThemedText>
-                                <ThemedText type="defaultSemiBold" style={{ opacity: characterData.name.trim() ? 1 : 0.4 }}>
-                                    {characterData.name.trim() || '(Not set)'}
-                                </ThemedText>
-                            </View>
-                            <View style={styles.reviewRow}>
-                                <ThemedText style={styles.reviewLabel}>Goal:</ThemedText>
-                                <ThemedText style={[styles.reviewValue, { opacity: characterData.goal.trim() ? 1 : 0.4 }]}>
-                                    {characterData.goal.trim() || '(Not set)'}
-                                </ThemedText>
-                            </View>
-                            <View style={styles.reviewRow}>
-                                <ThemedText style={styles.reviewLabel}>Characteristics:</ThemedText>
-                                <ThemedText style={[styles.reviewValue, { opacity: characterData.characteristics.trim() ? 1 : 0.4 }]}>
-                                    {characterData.characteristics.trim() || '(Not set)'}
-                                </ThemedText>
-                            </View>
-                            <View style={styles.reviewRow}>
-                                <ThemedText style={styles.reviewLabel}>Greeting:</ThemedText>
-                                <ThemedText style={[styles.reviewValue, { opacity: characterData.greeting.trim() ? 1 : 0.4 }]}>
-                                    {characterData.greeting.trim() || '(Not set)'}
-                                </ThemedText>
-                            </View>
-                            <View style={styles.reviewRow}>
-                                <ThemedText style={styles.reviewLabel}>Therapy Styles:</ThemedText>
-                                <ThemedText style={styles.reviewValue}>
-                                    {characterData.therapyStyles.length > 0
-                                        ? characterData.therapyStyles.map(s => STYLE_ABBREVIATIONS[s] || s).join(', ')
-                                        : 'Integrative'}
-                                </ThemedText>
-                            </View>
-                            <View style={styles.reviewRow}>
-                                <ThemedText style={styles.reviewLabel}>Image:</ThemedText>
-                                <ThemedText type="defaultSemiBold" style={{ opacity: generatedImageUrl ? 1 : 0.4 }}>
-                                    {generatedImageUrl ? '✓ Generated' : '(Not generated)'}
-                                </ThemedText>
-                            </View>
-                            <View style={styles.reviewRow}>
-                                <ThemedText style={styles.reviewLabel}>Visibility:</ThemedText>
-                                <ThemedText type="defaultSemiBold">
-                                    {characterData.isPublic ? 'Public' : 'Private'}
-                                </ThemedText>
-                            </View>
-                        </View>
-                    </View>
-                );
-
-            default:
-                return null;
-        }
-    };
-
-    return (
-        <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
-            {/* Fullscreen crafting overlay */}
-            {isGeneratingImage && (
-                <FullscreenCraftingOverlay theme={theme} characterName={characterData.name} />
-            )}
-
-            <View style={[styles.header, { borderBottomColor: theme.icon }]}>
-                <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-                    <IconSymbol name="chevron.right" size={24} color={theme.text} style={{ transform: [{ rotate: '180deg' }] }} />
-                </TouchableOpacity>
-                <ThemedText type="defaultSemiBold" style={styles.headerTitle}>
-                    {editingId ? 'Edit ai.therapist' : 'Create ai.therapist'}
-                </ThemedText>
-                <View style={{ width: 40 }} />
-            </View>
-
-            <KeyboardAvoidingView
-                style={styles.flex}
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-                <ScrollView
-                    contentContainerStyle={styles.scrollContent}
-                    showsVerticalScrollIndicator={false}>
-                    {renderStepContent()}
-                </ScrollView>
-
-                <View style={[styles.footer, { backgroundColor: theme.background, borderTopColor: theme.icon }]}>
-                    {/* Show selected therapy styles when on therapy style step */}
-                    {currentStep === 'therapyStyle' && characterData.therapyStyles.length > 0 && (
-                        <View style={styles.selectedStylesPreviewSimple}>
-                            <ThemedText style={[styles.selectedStylesPreviewTextSimple, { color: theme.text }]}>
-                                Selected: <ThemedText type="defaultSemiBold">{characterData.therapyStyles.map(s => STYLE_ABBREVIATIONS[s] || s).join(', ')}</ThemedText>
+                    <View style={[styles.reviewCard, { backgroundColor: theme.card }]}>
+                        <View style={styles.reviewRow}>
+                            <ThemedText style={styles.reviewLabel}>Name:</ThemedText>
+                            <ThemedText type="defaultSemiBold" style={{ opacity: characterData.name.trim() ? 1 : 0.4 }}>
+                                {characterData.name.trim() || '(Not set)'}
                             </ThemedText>
                         </View>
-                    )}
-
-                    {currentStep === 'review' ? (
-                        <TouchableOpacity
-                            style={[
-                                styles.button,
-                                {
-                                    backgroundColor: !isFormComplete() || isCreating
-                                        ? theme.icon + '40'
-                                        : theme.primary
-                                }
-                            ]}
-                            onPress={handleCreate}
-                            disabled={isCreating || !isFormComplete()}
-                        >
-                            <ThemedText style={styles.buttonText}>{editingId ? 'Save Changes' : 'Create!'}</ThemedText>
-                        </TouchableOpacity>
-                    ) : currentStep === 'imageGeneration' && isGeneratingImage ? (
-                        <View style={[styles.button, { backgroundColor: theme.card }]}>
-                            <ThemedText style={[styles.buttonText, { color: theme.icon }]}>Please wait...</ThemedText>
+                        <View style={styles.reviewRow}>
+                            <ThemedText style={styles.reviewLabel}>Goal:</ThemedText>
+                            <ThemedText style={[styles.reviewValue, { opacity: characterData.goal.trim() ? 1 : 0.4 }]}>
+                                {characterData.goal.trim() || '(Not set)'}
+                            </ThemedText>
                         </View>
-                    ) : (
-                        <TouchableOpacity
-                            style={[styles.button, { backgroundColor: theme.primary }]}
-                            onPress={handleNext}>
-                            <ThemedText style={styles.buttonText}>Continue</ThemedText>
-                        </TouchableOpacity>
-                    )}
+                        <View style={styles.reviewRow}>
+                            <ThemedText style={styles.reviewLabel}>Characteristics:</ThemedText>
+                            <ThemedText style={[styles.reviewValue, { opacity: characterData.characteristics.trim() ? 1 : 0.4 }]}>
+                                {characterData.characteristics.trim() || '(Not set)'}
+                            </ThemedText>
+                        </View>
+                        <View style={styles.reviewRow}>
+                            <ThemedText style={styles.reviewLabel}>Greeting:</ThemedText>
+                            <ThemedText style={[styles.reviewValue, { opacity: characterData.greeting.trim() ? 1 : 0.4 }]}>
+                                {characterData.greeting.trim() || '(Not set)'}
+                            </ThemedText>
+                        </View>
+                        <View style={styles.reviewRow}>
+                            <ThemedText style={styles.reviewLabel}>Therapy Styles:</ThemedText>
+                            <ThemedText style={styles.reviewValue}>
+                                {characterData.therapyStyles.length > 0
+                                    ? characterData.therapyStyles.map(s => STYLE_ABBREVIATIONS[s] || s).join(', ')
+                                    : 'Integrative'}
+                            </ThemedText>
+                        </View>
+                        <View style={styles.reviewRow}>
+                            <ThemedText style={styles.reviewLabel}>Image:</ThemedText>
+                            <ThemedText type="defaultSemiBold" style={{ opacity: generatedImageUrl ? 1 : 0.4 }}>
+                                {generatedImageUrl ? '✓ Generated' : '(Not generated)'}
+                            </ThemedText>
+                        </View>
+                        <View style={styles.reviewRow}>
+                            <ThemedText style={styles.reviewLabel}>Visibility:</ThemedText>
+                            <ThemedText type="defaultSemiBold">
+                                {characterData.isPublic ? 'Public' : 'Private'}
+                            </ThemedText>
+                        </View>
+                    </View>
                 </View>
-            </KeyboardAvoidingView>
-        </SafeAreaView>
-    );
+            );
+
+        default:
+            return null;
+    }
+};
+
+return (
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
+        {/* Fullscreen crafting overlay */}
+        {isGeneratingImage && (
+            <FullscreenCraftingOverlay theme={theme} characterName={characterData.name} />
+        )}
+
+        <View style={[styles.header, { borderBottomColor: theme.icon }]}>
+            <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+                <IconSymbol name="chevron.right" size={24} color={theme.text} style={{ transform: [{ rotate: '180deg' }] }} />
+            </TouchableOpacity>
+            <ThemedText type="defaultSemiBold" style={styles.headerTitle}>
+                {editingId ? 'Edit ai.therapist' : 'Create ai.therapist'}
+            </ThemedText>
+            <View style={{ width: 40 }} />
+        </View>
+
+        <KeyboardAvoidingView
+            style={styles.flex}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+            <ScrollView
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}>
+                {renderStepContent()}
+            </ScrollView>
+
+            <View style={[styles.footer, { backgroundColor: theme.background, borderTopColor: theme.icon }]}>
+                {/* Show selected therapy styles when on therapy style step */}
+                {currentStep === 'therapyStyle' && characterData.therapyStyles.length > 0 && (
+                    <View style={styles.selectedStylesPreviewSimple}>
+                        <ThemedText style={[styles.selectedStylesPreviewTextSimple, { color: theme.text }]}>
+                            Selected: <ThemedText type="defaultSemiBold">{characterData.therapyStyles.map(s => STYLE_ABBREVIATIONS[s] || s).join(', ')}</ThemedText>
+                        </ThemedText>
+                    </View>
+                )}
+
+                {currentStep === 'review' ? (
+                    <TouchableOpacity
+                        style={[
+                            styles.button,
+                            {
+                                backgroundColor: !isFormComplete() || isCreating
+                                    ? theme.icon + '40'
+                                    : theme.primary
+                            }
+                        ]}
+                        onPress={handleCreate}
+                        disabled={isCreating || !isFormComplete()}
+                    >
+                        <ThemedText style={styles.buttonText}>{editingId ? 'Save Changes' : 'Create!'}</ThemedText>
+                    </TouchableOpacity>
+                ) : currentStep === 'imageGeneration' && isGeneratingImage ? (
+                    <View style={[styles.button, { backgroundColor: theme.card }]}>
+                        <ThemedText style={[styles.buttonText, { color: theme.icon }]}>Please wait...</ThemedText>
+                    </View>
+                ) : (
+                    <TouchableOpacity
+                        style={[
+                            styles.button,
+                            {
+                                backgroundColor: isStepValid(currentStep)
+                                    ? theme.primary
+                                    : theme.icon + '40' // Disabled state color (faded icon color)
+                            }
+                        ]}
+                        onPress={handleNext}
+                        disabled={!isStepValid(currentStep)}
+                    >
+                        <ThemedText style={[
+                            styles.buttonText,
+                            { opacity: isStepValid(currentStep) ? 1 : 0.7 }
+                        ]}>
+                            Continue
+                        </ThemedText>
+                    </TouchableOpacity>
+                )}
+            </View>
+        </KeyboardAvoidingView>
+        <ErrorModal
+            visible={errorModalVisible}
+            message={errorMessage}
+            onClose={() => setErrorModalVisible(false)}
+            theme={theme}
+        />
+    </SafeAreaView >
+);
 }
 
 const styles = StyleSheet.create({

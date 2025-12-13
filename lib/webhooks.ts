@@ -38,7 +38,6 @@ export async function generateCharacterImage(
 
         const requestBody = {
             description: request.characteristics || request.description, // Character description for n8n
-            appearance: request.description, // Visual appearance for image generation
             characterName: request.characterName,
             userId: request.userId,
             greeting: request.greeting,
