@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Dimensions, FlatList, Platform, Pressable, StyleSheet, TextInput, TouchableOpacity, View, ViewToken } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { LogoWithDots } from '@/components/logo-with-dots';
 import { OnboardingModal } from '@/components/onboarding-modal';
@@ -279,60 +280,64 @@ export default function HomeScreen() {
     }
   };
 
-  const renderCharacterCard = useCallback((item: Character, sectionId?: string) => (
-    <TouchableOpacity
+  const renderCharacterCard = useCallback((item: Character, index: number, sectionId?: string) => (
+    <Animated.View
       key={item.id}
-      style={[styles.characterCard, { backgroundColor: theme.card }]}
-      onPress={() => {
-        console.log('Opening conversation with:', item.id);
-        router.push(`/conversation/${item.id}` as any);
-      }}>
-      <Image
-        source={{ uri: item.image }}
-        style={styles.characterImage}
-        contentFit="cover"
-        cachePolicy="memory-disk"
-        transition={300}
-      />
-      {sectionId === 'created' && (
-        <View style={{ position: 'absolute', top: 8, right: 8, zIndex: 10 }}>
-          <TouchableOpacity
-            style={styles.menuButton}
-            onPress={(e) => {
-              e.stopPropagation();
-              setActiveMenuId(activeMenuId === item.id ? null : item.id);
-            }}
-          >
-            <IconSymbol name="ellipsis.vertical" size={20} color="#fff" />
-          </TouchableOpacity>
+      entering={FadeInDown.delay(index * 100).springify().damping(12)}
+    >
+      <TouchableOpacity
+        style={[styles.characterCard, { backgroundColor: theme.card }]}
+        onPress={() => {
+          console.log('Opening conversation with:', item.id);
+          router.push(`/conversation/${item.id}` as any);
+        }}>
+        <Image
+          source={{ uri: item.image }}
+          style={styles.characterImage}
+          contentFit="cover"
+          cachePolicy="memory-disk"
+          transition={300}
+        />
+        {sectionId === 'created' && (
+          <View style={{ position: 'absolute', top: 8, right: 8, zIndex: 10 }}>
+            <TouchableOpacity
+              style={styles.menuButton}
+              onPress={(e) => {
+                e.stopPropagation();
+                setActiveMenuId(activeMenuId === item.id ? null : item.id);
+              }}
+            >
+              <IconSymbol name="ellipsis.vertical" size={20} color="#fff" />
+            </TouchableOpacity>
 
-          {activeMenuId === item.id && (
-            <View style={[styles.menuDropdown, { backgroundColor: theme.card }]}>
-              <TouchableOpacity style={styles.menuItem} onPress={(e) => { e.stopPropagation(); handleShare(item); }}>
-                <IconSymbol name="square.and.arrow.up" size={16} color={theme.text} />
-                <ThemedText style={styles.menuText}>Share</ThemedText>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.menuItem} onPress={(e) => { e.stopPropagation(); handleEdit(item); }}>
-                <IconSymbol name="pencil" size={16} color={theme.text} />
-                <ThemedText style={styles.menuText}>Edit</ThemedText>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.menuItem, { borderBottomWidth: 0 }]} onPress={(e) => { e.stopPropagation(); handleDeleteRequest(item); }}>
-                <IconSymbol name="trash" size={16} color="#FF3B30" />
-                <ThemedText style={[styles.menuText, { color: '#FF3B30' }]}>Delete</ThemedText>
-              </TouchableOpacity>
-            </View>
-          )}
+            {activeMenuId === item.id && (
+              <View style={[styles.menuDropdown, { backgroundColor: theme.card }]}>
+                <TouchableOpacity style={styles.menuItem} onPress={(e) => { e.stopPropagation(); handleShare(item); }}>
+                  <IconSymbol name="square.and.arrow.up" size={16} color={theme.text} />
+                  <ThemedText style={styles.menuText}>Share</ThemedText>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.menuItem} onPress={(e) => { e.stopPropagation(); handleEdit(item); }}>
+                  <IconSymbol name="pencil" size={16} color={theme.text} />
+                  <ThemedText style={styles.menuText}>Edit</ThemedText>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.menuItem, { borderBottomWidth: 0 }]} onPress={(e) => { e.stopPropagation(); handleDeleteRequest(item); }}>
+                  <IconSymbol name="trash" size={16} color="#FF3B30" />
+                  <ThemedText style={[styles.menuText, { color: '#FF3B30' }]}>Delete</ThemedText>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        )}
+        <View style={styles.characterInfo}>
+          <ThemedText type="defaultSemiBold" style={styles.characterName}>
+            {item.name}
+          </ThemedText>
+          <ThemedText style={styles.characterDesc} numberOfLines={2}>
+            {item.description}
+          </ThemedText>
         </View>
-      )}
-      <View style={styles.characterInfo}>
-        <ThemedText type="defaultSemiBold" style={styles.characterName}>
-          {item.name}
-        </ThemedText>
-        <ThemedText style={styles.characterDesc} numberOfLines={2}>
-          {item.description}
-        </ThemedText>
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+    </Animated.View>
   ), [theme, router, activeMenuId]);
 
   const renderSection = useCallback(({ item }: { item: TopicSection }) => {
@@ -340,7 +345,7 @@ export default function HomeScreen() {
       <View style={styles.sectionContainer}>
         <ThemedText type="subtitle" style={styles.sectionTitle}>{item.title}</ThemedText>
         <View style={styles.gridContainer}>
-          {item.characters.map(char => renderCharacterCard(char, item.id))}
+          {item.characters.map((char, index) => renderCharacterCard(char, index, item.id))}
         </View>
       </View>
     );
@@ -349,47 +354,15 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.header}>
-        {!isSearchMode ? (
-          <>
-            <View style={styles.headerLeft}>
-              <LogoWithDots fontSize={24} />
-              <TouchableOpacity
-                style={styles.premiumButton}
-                onPress={() => router.push('/subscribe' as any)}>
-                <ThemedText style={styles.premiumButtonText}>Get ai.therapy +</ThemedText>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.headerRight}>
-              <TouchableOpacity
-                style={styles.searchButton}
-                onPress={() => setIsSearchMode(true)}>
-                <IconSymbol name="magnifyingglass" size={24} color={theme.text} />
-              </TouchableOpacity>
-            </View>
-          </>
-        ) : (
-          <View style={styles.searchContainer}>
-            <IconSymbol name="magnifyingglass" size={20} color={theme.icon} style={styles.searchIcon} />
-            <TextInput
-              style={[styles.searchInput, { color: theme.text }]}
-              placeholder="Search characters..."
-              placeholderTextColor={theme.icon}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              autoFocus
-              returnKeyType="search"
-            />
-            <TouchableOpacity
-              onPress={() => {
-                setIsSearchMode(false);
-                setSearchQuery('');
-              }}
-              style={styles.searchCloseButton}
-            >
-              <ThemedText style={{ color: theme.primary, fontWeight: '600' }}>Cancel</ThemedText>
-            </TouchableOpacity>
-          </View>
-        )}
+        <View style={styles.headerLeft}>
+          <LogoWithDots fontSize={24} />
+          <TouchableOpacity
+            style={styles.premiumButton}
+            onPress={() => router.push('/subscribe' as any)}>
+            <ThemedText style={styles.premiumButtonText}>Get ai.therapy +</ThemedText>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.headerRight} />
       </View>
 
       <View style={styles.topicsRow}>

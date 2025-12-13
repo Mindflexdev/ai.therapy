@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -10,6 +10,8 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { supabase } from '@/lib/supabase';
 import { useFocusEffect } from '@react-navigation/native';
+
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Define the Session type matching our new DB table
 interface ChatSession {
@@ -22,6 +24,8 @@ interface ChatSession {
     active_therapy_styles?: string[];
 }
 
+const CACHE_KEY = 'chat_sessions_cache';
+
 export default function ChatScreen() {
     const router = useRouter();
     const colorScheme = useColorScheme();
@@ -31,47 +35,55 @@ export default function ChatScreen() {
     const [isLoading, setIsLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
+    // Load cached sessions on mount
+    useEffect(() => {
+        const loadCache = async () => {
+            try {
+                const cached = await AsyncStorage.getItem(CACHE_KEY);
+                if (cached) {
+                    setSessions(JSON.parse(cached));
+                    setIsLoading(false); // Show cached data immediately
+                }
+            } catch (e) {
+                console.log('Failed to load cache', e);
+            }
+        };
+        loadCache();
+    }, []);
+
     // Fetch sessions from Supabase
     const fetchSessions = async () => {
         try {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) return;
 
+            // Optimised query: Join with characters table
+            // Assumes foreign key on character_id -> characters.id
             const { data, error } = await supabase
                 .from('chat_sessions')
-                .select('*')
+                .select('*, characters:character_id(name, image)')
                 .eq('user_id', session.user.id)
                 .order('last_message_at', { ascending: false });
 
             if (error) throw error;
 
-            // Enrich sessions with character data (name/image) 
-            // Since we store character_id, we need to fetch their details or join.
-            // For now, let's fetch characters separately or assume we have a cache.
-            // Optimization: In a real app, use a Join. Here, we'll fetch characters.
-            const characterIds = [...new Set(data.map(s => s.character_id))];
-            let characterMap: Record<string, any> = {};
+            console.log('Fetched data:', data);
 
-            if (characterIds.length > 0) {
-                const { data: chars } = await supabase
-                    .from('characters')
-                    .select('id, name, image')
-                    .in('id', characterIds);
-
-                if (chars) {
-                    chars.forEach(c => { characterMap[c.id] = c; });
-                }
-            }
-
-            const enrichedSessions = data.map(s => ({
+            const enrichedSessions = data.map((s: any) => ({
                 ...s,
-                character_name: characterMap[s.character_id]?.name || 'Unknown Character',
-                character_image: characterMap[s.character_id]?.image,
+                // Handle joined data which comes as an object/array property
+                character_name: s.characters?.name || 'Unknown Character',
+                character_image: s.characters?.image,
             }));
 
             setSessions(enrichedSessions);
+
+            // Update cache
+            await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(enrichedSessions));
+
         } catch (error) {
             console.error('Error fetching chats:', error);
+            // On error, we might still have cached data, so we don't necessarily clear sessions
         } finally {
             setIsLoading(false);
             setRefreshing(false);
