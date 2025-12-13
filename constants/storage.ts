@@ -148,13 +148,27 @@ export const getCharactersByTopic = async (topicId: string): Promise<UserCharact
 
 // Get all characters grouped by topic from Supabase
 // Get all characters grouped by topic from Supabase
-export const getAllCharactersGroupedByTopic = async (): Promise<{ topicId: string, characters: UserCharacter[] }[]> => {
+// Get all characters grouped by topic from Supabase
+export const getAllCharactersGroupedByTopic = async (forceRefresh: boolean = false): Promise<{ topicId: string, characters: UserCharacter[] }[]> => {
     const CACHE_KEY = '@therapy_ai_grouped_characters';
+
+    // 1. Try Cache First (if not forcing refresh)
+    if (!forceRefresh) {
+        try {
+            const cachedData = await AsyncStorage.getItem(CACHE_KEY);
+            if (cachedData) {
+                console.log('✅ Loaded characters from cache');
+                return JSON.parse(cachedData);
+            }
+        } catch (e) {
+            console.warn('Error reading character cache:', e);
+        }
+    }
 
     try {
         console.log('Fetching characters from Supabase...');
 
-        // 1. Fetch fresh data from Supabase with 3s timeout
+        // 2. Fetch fresh data from Supabase with 3s timeout
         const fetchPromise = supabase
             .from('characters')
             .select('*') // Select all fields to ensure we have greeting, etc.
@@ -171,7 +185,7 @@ export const getAllCharactersGroupedByTopic = async (): Promise<{ topicId: strin
             throw error;
         }
 
-        // 2. Group by topic
+        // 3. Group by topic
         const grouped: Record<string, UserCharacter[]> = {};
         data?.forEach((char: any) => {
             const topic = char.topic || 'other'; // Default to 'other' if no topic
@@ -181,22 +195,22 @@ export const getAllCharactersGroupedByTopic = async (): Promise<{ topicId: strin
             grouped[topic].push(char);
         });
 
-        // 3. Convert to array format
+        // 4. Convert to array format
         const result = Object.keys(grouped).map(topicId => ({
             topicId,
             characters: grouped[topicId]
         }));
 
-        // 4. Update cache
+        // 5. Update cache
         await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(result));
         console.log('Characters fetched and cached successfully');
 
         return result;
 
     } catch (error) {
-        console.error('Error fetching characters from Supabase, falling back to cache:', error);
+        console.error('Error fetching characters from Supabase:', error);
 
-        // Fallback to cache
+        // Fallback to cache if we tried to fetch (forceRefresh=true case, or cache was empty)
         try {
             const cachedData = await AsyncStorage.getItem(CACHE_KEY);
             if (cachedData) {
