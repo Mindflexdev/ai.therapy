@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, Linking, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Animated, Linking, ScrollView, StyleSheet, TouchableOpacity, View, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AnalysisLoading } from '@/components/analysis-loading';
@@ -468,7 +468,27 @@ export default function ProfileScreen() {
                         </View>
                     </View>
 
-                    {analyzing ? (
+                    {/* Non-blocking Analysis Indicator */}
+                    {analyzing && analyticsData.length > 0 && (
+                        <View style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            backgroundColor: `${theme.primary}15`,
+                            paddingVertical: 8,
+                            paddingHorizontal: 16,
+                            borderRadius: 20,
+                            marginBottom: 16,
+                            gap: 8
+                        }}>
+                            <ActivityIndicator size="small" color={theme.primary} />
+                            <ThemedText style={{ color: theme.primary, fontWeight: '600', fontSize: 13 }}>
+                                AI is analyzing new insights...
+                            </ThemedText>
+                        </View>
+                    )}
+
+                    {analyzing && analyticsData.length === 0 ? (
                         <AnalysisLoading
                             theme={theme}
                             errorCode={analysisError}

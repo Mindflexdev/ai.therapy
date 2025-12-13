@@ -15,6 +15,7 @@ import { deleteCharacter, getAllCharactersGroupedByTopic, getUserCharacters, Use
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { supabase } from '@/lib/supabase';
+import { ProfileService } from '@/lib/profile-service';
 
 const { width } = Dimensions.get('window');
 // Calculate card width: ensure 2 per row, max 200px each
@@ -38,6 +39,11 @@ export default function HomeScreen() {
   const theme = Colors[colorScheme ?? 'light'];
   const [selectedTopicId, setSelectedTopicId] = useState<string>(TOPICS[0].id);
   const [sections, setSections] = useState<TopicSection[]>([]);
+
+  // Lazy Loading State
+  const allSectionsRef = useRef<TopicSection[]>([]);
+  const renderedCountRef = useRef(0);
+
   const [isLoading, setIsLoading] = useState(false);
   const [hasCreatedCharacters, setHasCreatedCharacters] = useState(false);
   const [isSearchMode, setIsSearchMode] = useState(false);
@@ -76,6 +82,23 @@ export default function HomeScreen() {
     checkOnboarding();
   }, []);
 
+  const loadMoreSections = useCallback(() => {
+    if (searchQuery.trim() !== '') return;
+
+    const total = allSectionsRef.current.length;
+    const current = renderedCountRef.current;
+
+    if (current >= total) return;
+
+    // Load next batch
+    const nextBatchSize = 2;
+    const nextSections = allSectionsRef.current.slice(0, current + nextBatchSize);
+
+    renderedCountRef.current = nextSections.length;
+    setSections(nextSections);
+    console.log(`📜 Lazy loaded: ${current} -> ${nextSections.length} sections`);
+  }, [searchQuery]);
+
   // Load user goals, sort topics, and load characters - reload when tab becomes active
   useFocusEffect(
     useCallback(() => {
@@ -105,9 +128,16 @@ export default function HomeScreen() {
           }
 
           // Phase 2: Background Network Fetch
-          setIsLoading(initialSections.length === 0); // Only show spinner if we have NOTHING to show
+          setIsLoading(initialSections.length === 0);
 
           const { data: { session } } = await supabase.auth.getSession();
+
+          // Strategy 2: Eager Prefetch Profile Data (Fire and Forget)
+          if (session) {
+            console.log('🚀 Eagerly prefetching profile data...');
+            ProfileService.fetchUserData(true); // Silent prefetch
+          }
+
           let finalSortedTopics = TOPICS;
 
           if (session) {
@@ -129,7 +159,7 @@ export default function HomeScreen() {
                 !goals.some((goal: string) => topic.id.toLowerCase() === goal.toLowerCase() || topic.title.toLowerCase() === goal.toLowerCase())
               );
               finalSortedTopics = [...userGoalTopics, ...otherTopics];
-              setSortedTopics(finalSortedTopics); // Update header chips
+              setSortedTopics(finalSortedTopics);
             }
 
             // Map Topics
@@ -142,11 +172,7 @@ export default function HomeScreen() {
               };
             }).filter(section => section.characters.length > 0);
 
-            // Phase 3: Merge & Update
-            // We re-fetch userChars to be purely safe if something changed in split second, 
-            // but usually we just append mappedSections to the initialSections.
-
-            // To be robust: Re-construct the full list
+            // Phase 3: Construct Full List but Lazy Render
             const allSections: TopicSection[] = [];
             if (publicUserChars.length > 0) {
               allSections.push({
@@ -155,8 +181,17 @@ export default function HomeScreen() {
                 characters: publicUserChars
               });
             }
+            allSections.push(...mappedSections);
 
-            setSections([...allSections, ...mappedSections]);
+            // Store full list in ref
+            allSectionsRef.current = allSections;
+
+            // Render Created + Top 2 Sections
+            const MIN_RENDER_COUNT = (publicUserChars.length > 0 ? 1 : 0) + 2;
+            const initialBatch = allSections.slice(0, MIN_RENDER_COUNT);
+
+            setSections(initialBatch);
+            renderedCountRef.current = initialBatch.length;
           }
 
         } catch (error) {
@@ -205,9 +240,30 @@ export default function HomeScreen() {
     isManualScroll.current = true;
     setSelectedTopicId(topicId);
 
-    const index = sections.findIndex(s => s.id === topicId);
-    if (index !== -1 && mainListRef.current) {
-      mainListRef.current.scrollToIndex({ index, animated: true, viewPosition: 0 });
+    // Check if section is currently rendered
+    let index = sections.findIndex(s => s.id === topicId);
+
+    if (index === -1) {
+      // Not rendered yet! Force render.
+      const fullIndex = allSectionsRef.current.findIndex(s => s.id === topicId);
+      if (fullIndex !== -1) {
+        console.log(`⚡ Jumping to hidden topic: ${topicId}`);
+        // Render everything up to this topic + 1 buffer
+        const newBatch = allSectionsRef.current.slice(0, fullIndex + 2);
+        renderedCountRef.current = newBatch.length;
+        setSections(newBatch);
+
+        // Wait for render cycle then scroll
+        setTimeout(() => {
+          if (mainListRef.current) {
+            mainListRef.current.scrollToIndex({ index: fullIndex, animated: true, viewPosition: 0 });
+          }
+        }, 50);
+      }
+    } else {
+      if (mainListRef.current) {
+        mainListRef.current.scrollToIndex({ index, animated: true, viewPosition: 0 });
+      }
     }
 
     // Reset manual scroll flag after animation
@@ -428,6 +484,10 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={VIEWABILITY_CONFIG}
+        // Lazy Loading / Infinite Scroll
+        onEndReached={loadMoreSections}
+        onEndReachedThreshold={0.5}
+
         // Performance Tuning
         initialNumToRender={2}
         windowSize={3}
