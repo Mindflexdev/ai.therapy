@@ -186,10 +186,396 @@ export default function ConversationScreen() {
             router.replace('/(tabs)');
         } catch (error) {
             console.error('Error deleting character:', error);
-            // Even if error, go home
             router.replace('/(tabs)');
         }
     };
+
+    // Load messages from "memory" table on mount (Session Persistence)
+    useEffect(() => {
+        const loadHistory = async () => {
+            if (!session?.user?.id || !character) return;
+
+            setIsLoading(true);
+            const sessionId = generateSessionId(session.user.id, character.id); // Use Character ID for stability
+
+            // 1. Fetch Chat History from 'memory' (n8n writes here)
+            // n8n memory format: { session_id, message: "JSON_STRING" }
+            const { data: memoryData, error } = await supabase
+                .from('memory')
+                .select('*')
+                .eq('session_id', sessionId)
+                .order('created_at', { ascending: true });
+
+            if (error) {
+                console.error('Error fetching memory:', error);
+            }
+
+            if (memoryData && memoryData.length > 0) {
+                const parsedMessages = memoryData.map((row: any) => {
+                    try {
+                        let msgContent;
+                        if (typeof row.message === 'string') {
+                            msgContent = JSON.parse(row.message);
+                        } else {
+                            msgContent = row.message; // Already an object (jsonb)
+                        }
+
+                        // LangChain format: { type: 'human' | 'ai', content: 'text' }
+                        return {
+                            id: row.id.toString(),
+                            text: msgContent.content || '',
+                            isUser: msgContent.type === 'human',
+                            timestamp: new Date(row.created_at),
+                        };
+                    } catch (e) {
+                        console.error('Parse error for row:', row.id, e);
+                        return null;
+                    }
+                }).filter((msg: any) => msg !== null && msg.text); // Filter out bad parses
+
+                // Bulletproof message cleaning - multiple methods
+                const cleanMessages = parsedMessages.map((msg: Message) => {
+                    let cleanText = msg.text;
+
+                    // Method 1: Extract everything after "Message:" if present
+                    if (cleanText.includes('Message:')) {
+                        cleanText = cleanText.split('Message:').slice(1).join('Message:');
+                    }
+
+                    // Method 2: Remove any remaining metadata patterns
+                    cleanText = cleanText.replace(/^=?Talking to:[^M]*Message:/gi, '');
+                    cleanText = cleanText.replace(/^=?\(Talking to[^)]*\)\s*/gi, '');
+
+                    // Method 3: Remove any leading "=Talking" patterns
+                    cleanText = cleanText.replace(/^=?Talking[^:]*:[^:]*:/gi, '');
+
+                    // Method 4: Remove any orphaned closing parenthesis
+                    cleanText = cleanText.replace(/^\)\s*/g, '');
+
+                    return {
+                        ...msg,
+                        text: cleanText.trim()
+                    };
+                });
+
+                // Prepare greeting (without roleplay description)
+                const greetingText = character.greeting ||
+                    `Hello! I'm ${character.name}. ${character.description} I'm here to support you on your journey. How are you feeling today?`;
+
+                const greetingMsg: Message = {
+                    id: '0', // Consistent ID for greeting
+                    text: greetingText,
+                    isUser: false,
+                    timestamp: new Date(0), // Oldest
+                };
+
+                // Combine: [Greeting, ...History]
+                // We map history to ensure no duplicates if n8n saved the greeting (unlikely)
+                setMessages([greetingMsg, ...cleanMessages]);
+            } else {
+                // No history? Set initial greeting (without roleplay description)
+                const greeting = character.greeting ||
+                    `Hello! I'm ${character.name}. ${character.description} I'm here to support you on your journey. How are you feeling today?`;
+
+                setMessages([{
+                    id: '1',
+                    text: greeting,
+                    isUser: false,
+                    timestamp: new Date(),
+                }]);
+            }
+
+            // 2. Determine Active Therapy Styles
+            // Priority: Last user message metadata > character.therapyStyles > Integrative
+            let detectedStyle: string[] | null = null;
+
+            // Try to extract style from last user message metadata
+            if (memoryData && memoryData.length > 0) {
+                // Find last human message (in reverse order)
+                for (let i = memoryData.length - 1; i >= 0; i--) {
+                    try {
+                        let msgContent;
+                        if (typeof memoryData[i].message === 'string') {
+                            msgContent = JSON.parse(memoryData[i].message);
+                        } else {
+                            msgContent = memoryData[i].message;
+                        }
+
+                        if (msgContent.type === 'human' && msgContent.content) {
+                            // Look for style in metadata: "Style: CBT" or "Style: CBT, ACT"
+                            const styleMatch = msgContent.content.match(/Style:\s*([^)]+)\)/i);
+                            if (styleMatch && styleMatch[1]) {
+                                // Parse comma-separated styles and convert abbreviations to full names
+                                const rawStyles = styleMatch[1].split(',').map((s: string) => s.trim()).filter((s: string) => s);
+                                const fullStyles = rawStyles.map((s: string) => {
+                                    // Check if it's an abbreviation and convert to full name
+                                    return ABBREVIATION_TO_FULL[s] || s;
+                                });
+                                if (fullStyles.length > 0) {
+                                    detectedStyle = fullStyles;
+                                    console.log('🎯 Detected therapy style from last message:', detectedStyle);
+                                }
+                            }
+                            break; // Stop after finding last human message
+                        }
+                    } catch (e) {
+                        // Continue to next message
+                    }
+                }
+            }
+
+            // Apply detected style or fallback
+            if (activeTherapyStyles.includes('Integrative Therapy (AI decides)')) {
+                if (detectedStyle && detectedStyle.length > 0) {
+                    setActiveTherapyStyles(detectedStyle);
+                } else if (character.therapyStyles && character.therapyStyles.length > 0) {
+                    // Fallback to character's default therapy styles
+                    console.log('🎯 Using character default therapy style:', character.therapyStyles);
+                    setActiveTherapyStyles(character.therapyStyles);
+                }
+            }
+
+            setIsLoading(false);
+        };
+
+        loadHistory();
+    }, [session, character]);
+
+    // Memoized scroll function
+    const scrollToBottom = useCallback(() => {
+        setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+    }, []);
+
+    const startRecording = async () => {
+        try {
+            console.log('Starting recording..');
+            if (!audioRecorder.isRecording) {
+                await audioRecorder.recordAsync();
+                setIsRecording(true);
+            }
+        } catch (err) {
+            console.error('Failed to start recording', err);
+            alert('Could not start recording. Check permissions.');
+        }
+    };
+
+    const stopRecording = async () => {
+        if (!isRecording) return;
+
+        console.log('Stopping recording..');
+        setIsRecording(false);
+        try {
+            await audioRecorder.stopAsync();
+        } catch (error) {
+            // Ignore errors if already stopped
+        }
+
+        const uri = audioRecorder.uri;
+        console.log('Recording stopped and stored at', uri);
+
+        if (uri) {
+            uploadAudio(uri);
+        }
+    };
+
+    const uploadAudio = async (uri: string) => {
+        // Stubbed
+    };
+
+    const cancelRecording = async () => {
+        if (!isRecording) return;
+        setIsRecording(false);
+        try {
+            await audioRecorder.stopAsync();
+        } catch (error) { }
+    };
+
+    // Memoized send message function
+    const sendMessage = useCallback(async (textOverride?: string) => {
+        const textToSend = typeof textOverride === 'string' ? textOverride : inputText;
+        if (textToSend.trim() === '' || isTyping) return;
+
+        const userMsgText = textToSend.trim();
+        const newMessage: Message = {
+            id: Date.now().toString(),
+            text: userMsgText,
+            isUser: true,
+            timestamp: new Date(),
+        };
+
+        setMessages((prev) => [...prev, newMessage]);
+        setInputText('');
+        setIsTyping(true);
+        scrollToBottom();
+
+        try {
+            const currentUserId = session?.user?.id || 'anonymous';
+
+            // Check message count limit (100 messages)
+            if (session?.user?.id) {
+                const { data: userData } = await supabase
+                    .from('users')
+                    .select('message_count')
+                    .eq('id', session.user.id)
+                    .single();
+
+                if (userData && userData.message_count >= 100) {
+                    // Show upgrade message instead of calling webhook
+                    const upgradeMessage: Message = {
+                        id: (Date.now() + 1).toString(),
+                        text: "We made it to 100 messages! I'll pause here for now.\nCheck your Profile tab to activate your Psychological Analysis.\nIf you want to support us and help build ai.therapy together, your feedback is welcome — and you can continue anytime with \"Get ai.therapy+\".",
+                        isUser: false,
+                        timestamp: new Date(),
+                    };
+                    setMessages((prev) => [...prev, upgradeMessage]);
+                    setIsTyping(false);
+                    scrollToBottom();
+                    return; // Don't call webhook
+                }
+            }
+
+            const response = await fetch(WEBHOOK_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session?.access_token}`,
+                },
+                body: JSON.stringify({
+                    message: userMsgText,
+                    characterName: character?.name,
+                    characterDescription: activeTherapyStyles.includes('Integrative Therapy (AI decides)')
+                        ? `${character?.description}\n\n[IMPORTANT: Conduct this session using an integrative approach. You have access to all therapy styles and should adapt your approach based on the user's needs and the conversation context.]`
+                        : `${character?.description}\n\n[IMPORTANT: Conduct this session using ${activeTherapyStyles.join(', ')} style(s).]`,
+                    therapyStyle: activeTherapyStyles.join(', '),
+                    ...(activeTherapyStyles.includes('Integrative Therapy (AI decides)')
+                        ? {
+                            therapyStyles: ALL_THERAPY_OPTIONS
+                                .flatMap(c => c.styles.map(s => s.name))
+                                .join(', ')
+                        }
+                        : { therapyStyles: activeTherapyStyles.join(', ') }),
+                    sessionId: generateSessionId(currentUserId, character?.id || ''), // New Session Logic
+                    user: userData || { id: currentUserId },
+                    timestamp: new Date().toISOString(),
+                }),
+            });
+
+            // Sync with 'chat_sessions' table for the list view
+            if (session?.user) {
+                const { error: upsertError } = await supabase
+                    .from('chat_sessions')
+                    .upsert({
+                        user_id: session.user.id,
+                        character_id: character?.id,
+                        last_message: userMsgText,
+                        last_message_at: new Date().toISOString(),
+                        active_therapy_styles: activeTherapyStyles
+                    }, { onConflict: 'user_id, character_id' });
+
+                if (upsertError) console.error("Error updating chat list:", upsertError);
+            }
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Webhook error: ${response.status} ${response.statusText}. ${errorText}`);
+            }
+
+            const data = await response.json();
+            const aiText = data.output || data.text || data.response || data.message || "I'm listening...";
+
+            const aiResponse: Message = {
+                id: (Date.now() + 1).toString(),
+                text: typeof aiText === 'string' ? aiText : JSON.stringify(aiText),
+                isUser: false,
+                timestamp: new Date(),
+            };
+
+            setMessages((prev) => [...prev, aiResponse]);
+        } catch (error: any) {
+            console.error('Error sending message:', error);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const fallbackResponse: Message = {
+                id: (Date.now() + 1).toString(),
+                text: `I'm having trouble connecting right now. Debug Error: ${errorMessage}`,
+                isUser: false,
+                timestamp: new Date(),
+            };
+            setMessages((prev) => [...prev, fallbackResponse]);
+        } finally {
+            setIsTyping(false);
+            scrollToBottom();
+        }
+    }, [inputText, isTyping, character, activeTherapyStyles, scrollToBottom, session, userData]);
+
+    // Memoized render function
+    const renderMessage = useCallback(({ item }: { item: Message }) => (
+        <MessageBubble
+            text={item.text}
+            isUser={item.isUser}
+            avatarUri={!item.isUser ? character?.image : undefined}
+            theme={theme}
+        />
+    ), [character?.image, theme]);
+
+    // Memoized key extractor
+    const keyExtractor = useCallback((item: Message) => item.id, []);
+
+    // Memoized callbacks
+    const handleStyleModalClose = useCallback(() => setIsStyleModalVisible(false), []);
+    const handleStyleModalOpen = useCallback(() => setIsStyleModalVisible(true), []);
+
+    // DEFINED EARLY to prevent ReferenceErrors
+    const handleBack = useCallback(() => {
+        // Navigate to home tab instead of router.back() to handle cases where there's no history
+        router.push('/(tabs)');
+    }, [router]);
+
+    const handleFeedback = useCallback(() => router.push('/feedback'), [router]);
+
+    // Open the detail popup (this will show on top of style modal if both are open)
+    const handleLearnMore = useCallback((styleName: string) => {
+        setDetailStyleName(styleName);
+    }, []);
+
+    const handleDetailPopupClose = useCallback(() => {
+        setDetailStyleName(null);
+    }, []);
+
+    // Memoized key press handler
+    const handleKeyPress = useCallback((e: any) => {
+        if (Platform.OS === 'web' && e.nativeEvent.key === 'Enter' && !(e.nativeEvent as any).shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    }, [sendMessage]);
+
+    // Memoized typing indicator
+    const typingIndicator = useMemo(() => {
+        if (!isTyping) return null;
+        return (
+            <View style={styles.aiMessageContainer}>
+                <Image
+                    source={{ uri: character?.image }}
+                    style={styles.messageAvatar}
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                />
+                <View style={[styles.aiMessageBubble, { backgroundColor: theme.card, padding: 16 }]}>
+                    <ActivityIndicator size="small" color={theme.text} />
+                </View>
+            </View>
+        );
+    }, [isTyping, character?.image, theme]);
+
+    // Disclaimer Header for FlatList
+    const disclaimerHeader = useMemo(() => (
+        <View style={styles.disclaimerBanner}>
+            <IconSymbol name="exclamationmark.triangle" size={18} color="#666" style={{ marginRight: 12, marginTop: 2 }} />
+            <ThemedText style={styles.disclaimerText}>
+                Disclaimer: ai.therapy is a creative mental-wellness platform and not a therapeutic service. All ai.therapists are fictional AI characters. Their role titles (“Therapist,” “Psychologist,” “Dr.,” “Coach,” etc.) are used solely for imaginative portrayal and have no professional, clinical, or medical meaning. The therapeutic approaches and modalities mentioned on the platform (e.g., CBT, ACT, DBT, Psychodynamic, Schema, Gestalt, MBCT, etc.) are used exclusively for inspired, model-like purposes and do not constitute real therapeutic application. Neither the ai.therapy platform nor its AI characters hold qualifications or licenses to practice medicine or psychotherapy. No promise of healing is made. Everything they say is intended for inspiration, reflection, and everyday support—not for diagnosis, treatment, or therapy.
+            </ThemedText>
+        </View>
+    ), []);
 
     // ... (rest of the file)
 

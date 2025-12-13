@@ -68,13 +68,42 @@ export const saveCharacter = async (character: UserCharacter): Promise<void> => 
     }
 };
 
-// Get all user's characters (both public and private)
+// Get all user's characters (synced with Supabase)
 export const getUserCharacters = async (): Promise<UserCharacter[]> => {
     try {
-        const data = await AsyncStorage.getItem(STORAGE_KEYS.USER_CHARACTERS);
-        return data ? JSON.parse(data) : [];
-    } catch (error) {
-        console.error('Error getting user characters:', error);
+        const jsonValue = await AsyncStorage.getItem(STORAGE_KEYS.USER_CHARACTERS);
+        const localChars = jsonValue != null ? JSON.parse(jsonValue) : [];
+
+        // Also fetch from Supabase to sync (for this user)
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+            const { data: supabaseChars, error } = await supabase
+                .from('characters')
+                .select('*')
+                .eq('user_id', session.user.id);
+
+            if (!error && supabaseChars) {
+                // Map snake_case to camelCase
+                const mappedSupabaseChars = supabaseChars.map(char => ({
+                    ...char,
+                    isPublic: char.is_public,
+                    therapyStyles: char.therapy_styles,
+                    imageDescription: char.image_description,
+                    createdAt: char.created_at
+                }));
+
+                const combined = [...localChars];
+                for (const sChar of mappedSupabaseChars) {
+                    if (!combined.find(c => c.id === sChar.id)) {
+                        combined.push(sChar);
+                    }
+                }
+                return combined;
+            }
+        }
+        return localChars;
+    } catch (e) {
+        console.error('Failed to fetch user characters', e);
         return [];
     }
 };
