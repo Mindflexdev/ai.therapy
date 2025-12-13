@@ -267,19 +267,52 @@ export default function ConversationScreen() {
                 }]);
             }
 
-            // 2. Fetch Active Therapy Styles from 'chat_sessions'
-            const { data: sessionData } = await supabase
-                .from('chat_sessions')
-                .select('active_therapy_styles')
-                .eq('user_id', session.user.id)
-                .eq('character_id', character.id)
-                .single();
+            // 2. Determine Active Therapy Styles
+            // Priority: Last user message metadata > character.therapyStyles > Integrative
+            let detectedStyle: string[] | null = null;
 
-            if (sessionData?.active_therapy_styles) {
-                setActiveTherapyStyles(sessionData.active_therapy_styles);
-            } else if (character.therapyStyles && character.therapyStyles.length > 0 && messages.length === 0) {
-                // Default handling only if new chat
+            // Try to extract style from last user message metadata
+            if (memoryData && memoryData.length > 0) {
+                // Find last human message (in reverse order)
+                for (let i = memoryData.length - 1; i >= 0; i--) {
+                    try {
+                        let msgContent;
+                        if (typeof memoryData[i].message === 'string') {
+                            msgContent = JSON.parse(memoryData[i].message);
+                        } else {
+                            msgContent = memoryData[i].message;
+                        }
+
+                        if (msgContent.type === 'human' && msgContent.content) {
+                            // Look for style in metadata: "Style: CBT" or "Style: CBT, ACT"
+                            const styleMatch = msgContent.content.match(/Style:\s*([^)]+)\)/i);
+                            if (styleMatch && styleMatch[1]) {
+                                // Parse comma-separated styles
+                                const styles = styleMatch[1].split(',').map((s: string) => s.trim()).filter((s: string) => s);
+                                if (styles.length > 0) {
+                                    detectedStyle = styles;
+                                    console.log('🎯 Detected therapy style from last message:', detectedStyle);
+                                }
+                            }
+                            break; // Stop after finding last human message
+                        }
+                    } catch (e) {
+                        // Continue to next message
+                    }
+                }
+            }
+
+            // Apply detected style or fallback
+            if (detectedStyle && detectedStyle.length > 0) {
+                setActiveTherapyStyles(detectedStyle);
+            } else if (character.therapyStyles && character.therapyStyles.length > 0) {
+                // Fallback to character's default therapy styles
+                console.log('🎯 Using character default therapy style:', character.therapyStyles);
                 setActiveTherapyStyles(character.therapyStyles);
+            } else {
+                // Final fallback to Integrative
+                console.log('🎯 Using Integrative as fallback');
+                setActiveTherapyStyles(['Integrative Therapy (AI decides)']);
             }
 
             setIsLoading(false);
