@@ -376,7 +376,7 @@ export default function MindGymScreen() {
                     <ThemedText type="title" style={styles.overlayTitle}>Meditate</ThemedText>
                     <View style={styles.overlayTextContainer}>
                         <ThemedText style={styles.overlayText}>
-                            Guided meditations with your favourite ai.therapists coming soon.
+                            In 2026: Unlock guided meditations based on your chats!
                         </ThemedText>
                     </View>
                 </View>

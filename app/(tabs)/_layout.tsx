@@ -45,7 +45,7 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="mindgym"
+        name="meditate"
         options={{
           title: 'Meditate',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="brain" color={color} />,
