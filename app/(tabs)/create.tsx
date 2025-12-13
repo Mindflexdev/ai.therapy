@@ -774,7 +774,8 @@ export default function CreateCharacterScreen() {
         setIsCreating(true);
         try {
             // Use Supabase character ID if available, otherwise generate local ID
-            const characterId = supabaseCharacterId || editingId || `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+            // PRIORITIZE editingId so we don't lose history on edit!
+            const characterId = editingId || supabaseCharacterId || `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
             // Create character object
             const newCharacter: UserCharacter = {
