@@ -361,49 +361,62 @@
             transform: translateY(-2px);
         }
 
-        /* CTA Section - Light version */
-        .cta-section {
-            text-align: center;
-            padding: 4rem 2rem;
-            background: rgba(255, 255, 255, 0.95);
-            border: 1px solid rgba(0, 114, 255, 0.1);
-            border-radius: 30px;
-            margin: 4rem auto;
-            max-width: 1000px;
+        /* Sticky CTA Footer */
+        .sticky-cta {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(26, 26, 46, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+            z-index: 999;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .cta-section h2 {
-            font-family: var(--font-display);
-            font-size: clamp(1.5rem, 3vw, 2rem);
-            margin-bottom: 1rem;
-            color: #1a1a2e;
+        .sticky-cta p {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1rem;
+            margin: 0;
         }
 
-        .cta-section p {
-            color: var(--text-secondary);
-            margin-bottom: 2rem;
-        }
-
-        .cta-btn {
+        .sticky-cta .cta-btn {
             display: inline-block;
-            padding: 1rem 2.5rem;
+            padding: 0.75rem 1.5rem;
             background: linear-gradient(135deg, #20E2D7 0%, #0072FF 100%);
             border-radius: 30px;
             color: white;
             text-decoration: none;
             font-weight: 600;
+            font-size: 0.95rem;
             transition: transform 0.3s, box-shadow 0.3s;
         }
 
-        .cta-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 40px rgba(32, 226, 215, 0.4);
+        .sticky-cta .cta-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(32, 226, 215, 0.4);
+        }
+
+        @media (max-width: 600px) {
+            .sticky-cta {
+                flex-direction: column;
+                gap: 0.75rem;
+                padding: 0.75rem 1rem;
+            }
+
+            .sticky-cta p {
+                font-size: 0.9rem;
+            }
         }
 
         /* Footer - Only dark element */
         .footer {
             background: #1a1a2e;
-            padding: 3rem 2rem;
+            padding: 3rem 2rem 5rem;
             text-align: center;
             color: rgba(255, 255, 255, 0.7);
         }
@@ -575,14 +588,11 @@
         </div>
     </section>
 
-    <!-- CTA - Light version -->
-    <section class="section">
-        <div class="cta-section animate-in delay-3">
-            <h2>Ready to Start Your Journey?</h2>
-            <p>Experience personalized mental wellness support today.</p>
-            <a href="/app" class="cta-btn">Start ai.therapy Free</a>
-        </div>
-    </section>
+    <!-- Sticky CTA Footer -->
+    <div class="sticky-cta">
+        <p>Ready to start your journey?</p>
+        <a href="/app" class="cta-btn">Start ai.therapy Free</a>
+    </div>
 
     <!-- Footer - Only dark element -->
     <footer class="footer">
