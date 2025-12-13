@@ -597,21 +597,25 @@ export default function CreateCharacterScreen() {
         if (params.editMode === 'true' && params.characterData) {
             try {
                 const charData = JSON.parse(params.characterData as string) as UserCharacter;
-                setCharacterData({
-                    goal: charData.goal || '',
-                    name: charData.name,
-                    characteristics: charData.description,
-                    therapyStyles: charData.therapyStyles || [],
-                    greeting: charData.greeting || '',
-                    isPublic: charData.isPublic || false,
-                });
-                setGeneratedImageUrl(charData.image);
-                setEditingId(charData.id);
+
+                // Only initialize if we haven't already (or if switching to a different character)
+                if (editingId !== charData.id) {
+                    setCharacterData({
+                        goal: charData.goal || '',
+                        name: charData.name,
+                        characteristics: charData.description,
+                        therapyStyles: charData.therapyStyles || [],
+                        greeting: charData.greeting || '',
+                        isPublic: charData.isPublic || false,
+                    });
+                    setGeneratedImageUrl(charData.image);
+                    setEditingId(charData.id);
+                }
             } catch (e) {
                 console.error("Failed to parse character data for editing", e);
             }
         }
-    }, [params]);
+    }, [params, editingId]);
 
     // Preload image when entering review step
     React.useEffect(() => {
