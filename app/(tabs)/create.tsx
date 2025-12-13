@@ -828,7 +828,7 @@ export default function CreateCharacterScreen() {
                             What's your goal?
                         </ThemedText>
                         <ThemedText style={styles.stepDescription}>
-                            Tell us what you'd like to work on or achieve with your <ThemedText type="defaultSemiBold">ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist</ThemedText>
+                            Tell us what you'd like to work on or achieve with your ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist
                         </ThemedText>
                         <TextInput
                             style={[styles.textArea, { backgroundColor: theme.card, color: theme.text }]}
@@ -852,10 +852,10 @@ export default function CreateCharacterScreen() {
                 return (
                     <View style={styles.stepContainer}>
                         <ThemedText type="title" style={styles.stepTitle}>
-                            Name your <ThemedText type="title">ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist</ThemedText>
+                            Name your ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist
                         </ThemedText>
                         <ThemedText style={styles.stepDescription}>
-                            What should we call your <ThemedText type="defaultSemiBold">ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist</ThemedText>?
+                            What should we call your ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist?
                         </ThemedText>
                         <TextInput
                             style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
@@ -878,7 +878,7 @@ export default function CreateCharacterScreen() {
                             Who can chat with {characterData.name}?
                         </ThemedText>
                         <ThemedText style={styles.stepDescription}>
-                            Choose the visibility of your <ThemedText type="defaultSemiBold">ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist</ThemedText>
+                            Choose the visibility of your ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist
                         </ThemedText>
                         <TouchableOpacity
                             style={[
@@ -954,7 +954,7 @@ export default function CreateCharacterScreen() {
                 return (
                     <View style={styles.stepContainer}>
                         <ThemedText type="title" style={styles.stepTitle}>
-                            What's {characterData.name || <ThemedText type="title">your ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist</ThemedText>}'s style?
+                            What's {characterData.name || 'your ai.therapist'}'s style?
                         </ThemedText>
 
                         <View style={styles.therapyStylesContainer}>
@@ -1025,7 +1025,7 @@ export default function CreateCharacterScreen() {
                         {/* Title and description */}
                         <ThemedText type="title" style={styles.stepTitle}>
                             {generatedImageUrl
-                                ? <ThemedText type="title">Meet {characterData.name || <ThemedText type="title" style={{ fontWeight: 'bold' }}>your ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist</ThemedText>}!</ThemedText>
+                                ? `Meet ${characterData.name || 'your ai.therapist'}!`
                                 : 'Image generation failed'}
                         </ThemedText>
                         <ThemedText style={styles.stepDescription}>
@@ -1061,7 +1061,7 @@ export default function CreateCharacterScreen() {
                             How does {characterData.name} greet you?
                         </ThemedText>
                         <ThemedText style={styles.stepDescription}>
-                            Write the first message your <ThemedText type="defaultSemiBold">ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist</ThemedText> will send
+                            Write the first message your ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist will send
                         </ThemedText>
                         <TextInput
                             style={[styles.textArea, { backgroundColor: theme.card, color: theme.text }]}
@@ -1082,7 +1082,7 @@ export default function CreateCharacterScreen() {
                 return (
                     <View style={styles.stepContainer}>
                         <ThemedText type="title" style={styles.stepTitle}>
-                            Who is {characterData.name || <ThemedText type="title">your ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist</ThemedText>}?
+                            Who is {characterData.name || 'your ai.therapist'}?
                         </ThemedText>
                         <ThemedText style={styles.stepDescription}>
                             Describe the character’s appearance, small habits, and overall presence.
@@ -1115,11 +1115,11 @@ export default function CreateCharacterScreen() {
                 return (
                     <View style={styles.stepContainer}>
                         <ThemedText type="title" style={styles.stepTitle}>
-                            Review your <ThemedText type="title">ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist</ThemedText>
+                            Review your ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist
                         </ThemedText>
                         <ThemedText style={styles.stepDescription}>
                             {formComplete
-                                ? <ThemedText style={styles.stepDescription}>Everything looks good! Ready to create your <ThemedText type="defaultSemiBold">ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist</ThemedText>.</ThemedText>
+                                ? <ThemedText style={styles.stepDescription}>Everything looks good! Ready to create your ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapist.</ThemedText>
                                 : `Please complete: ${missingFields.join(', ')}`
                             }
                         </ThemedText>
