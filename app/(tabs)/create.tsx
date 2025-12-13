@@ -638,21 +638,28 @@ export default function CreateCharacterScreen() {
             setIsGeneratingImage(true);
             try {
                 console.log('🎨 Starting automatic image generation...');
+                console.log('👤 User ID:', userId);
 
-                // Get authenticated user ID
-                const { data: { user } } = await supabase.auth.getUser();
-                const userId = user?.id;
-
-                const result = await generateCharacterImage({
-                    description: characterData.characteristics, // Using characteristics as the description
-                    characterName: characterData.name,
-                    greeting: characterData.greeting,
-                    therapyStyles: characterData.therapyStyles,
-                    goal: characterData.goal,
-                    characteristics: characterData.characteristics,
-                    isPublic: characterData.isPublic,
-                    userId: userId,
+                // Create a timeout promise to reject after 30 seconds
+                const timeoutPromise = new Promise<{ timeout: true }>((_, reject) => {
+                    setTimeout(() => reject(new Error('TIMEOUT')), 30000);
                 });
+
+                // Race the generation against the timeout
+                const result = await Promise.race([
+                    generateCharacterImage({
+                        description: characterData.characteristics, // Using characteristics as the description
+                        characterName: characterData.name,
+                        greeting: characterData.greeting,
+                        therapyStyles: characterData.therapyStyles,
+                        goal: characterData.goal,
+                        characteristics: characterData.characteristics,
+                        isPublic: characterData.isPublic,
+                        userId: userId,
+                    }),
+                    timeoutPromise
+                ]) as GenerateImageResponse; // Cast to expected response type (timeout throws error so safe to cast)
+
                 console.log('🎨 Image generation result:', result);
                 if (result.success && result.imageUrl) {
                     // Preload image before showing
@@ -691,9 +698,15 @@ export default function CreateCharacterScreen() {
                         setCurrentStep('characteristics');
                     }
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error('❌ Error generating image:', error);
-                Alert.alert('Error', 'Failed to generate image. Please try again.');
+
+                if (error.message === 'TIMEOUT') {
+                    setErrorMessage("We're experiencing technical difficulties connecting to our AI imagination engine. Please try again in a moment. If this persists, let us know via the Feedback button in your Profile.");
+                    setErrorModalVisible(true);
+                } else {
+                    Alert.alert('Error', 'Failed to generate image. Please try again.');
+                }
                 setCurrentStep('characteristics');
             } finally {
                 setIsGeneratingImage(false);
@@ -826,6 +839,9 @@ export default function CreateCharacterScreen() {
                             onChangeText={(text) => setCharacterData({ ...characterData, goal: text })}
                             multiline
                             numberOfLines={4}
+                            returnKeyType="done"
+                            blurOnSubmit={true} // Add this to dismiss keyboard on Enter
+                            onSubmitEditing={handleNext} // Add this to allow Enter to submit
                         />
                         <ThemedText style={styles.disclaimerText}>
                             Disclaimer: ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapy is a creative mental-wellness platform and not a therapeutic service. All ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapists are fictional AI characters. Their role titles ("Therapist," "Psychologist," "Dr.," "Coach," etc.) are used solely for imaginative portrayal and have no professional, clinical, or medical meaning. The therapeutic approaches and modalities mentioned on the platform (e.g., CBT, ACT, DBT, Psychodynamic, Schema, Gestalt, MBCT, etc.) are used exclusively for inspired, model-like purposes and do not constitute real therapeutic application. Neither the ai<ThemedText style={{ color: '#5B8FD9' }}>.</ThemedText>therapy platform nor its AI characters hold qualifications or licenses to practice medicine or psychotherapy. No promise of healing is made. Everything they say is intended for inspiration, reflection, and everyday support—not for diagnosis, treatment, or therapy.
@@ -848,6 +864,8 @@ export default function CreateCharacterScreen() {
                             placeholderTextColor={theme.icon}
                             value={characterData.name}
                             onChangeText={(text) => setCharacterData({ ...characterData, name: text })}
+                            returnKeyType="done"
+                            onSubmitEditing={handleNext}
                         />
                     </View>
                 );
@@ -863,12 +881,15 @@ export default function CreateCharacterScreen() {
                         </ThemedText>
                         <TextInput
                             style={[styles.textArea, { backgroundColor: theme.card, color: theme.text }]}
-                            placeholder="e.g., A wise and patient therapist specializing in anxiety and stress management..."
+                            placeholder="e.g., Compassionate, direct, philosophical, humorous, tough-love..."
                             placeholderTextColor={theme.icon}
                             value={characterData.characteristics}
                             onChangeText={(text) => setCharacterData({ ...characterData, characteristics: text })}
                             multiline
-                            numberOfLines={6}
+                            numberOfLines={4}
+                            returnKeyType="done"
+                            blurOnSubmit={true}
+                            onSubmitEditing={handleNext}
                         />
                     </View>
                 );
@@ -1041,6 +1062,9 @@ export default function CreateCharacterScreen() {
                             onChangeText={(text) => setCharacterData({ ...characterData, greeting: text })}
                             multiline
                             numberOfLines={6}
+                            returnKeyType="done"
+                            blurOnSubmit={true}
+                            onSubmitEditing={handleNext}
                         />
                     </View>
                 );
