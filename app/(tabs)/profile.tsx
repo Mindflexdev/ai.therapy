@@ -58,9 +58,21 @@ export default function ProfileScreen() {
     const [dailyInsight, setDailyInsight] = useState<string>("Analyzing your latest conversations...");
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
     const [messageCount, setMessageCount] = useState(0);
+    // Initialize with "User" but try to grab session metadata immediately if possible
     const [userName, setUserName] = useState('User');
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
     const [selectedLanguage, setSelectedLanguage] = useState<'en' | 'de'>('en');
+
+    // Preload from session immediately on mount
+    useEffect(() => {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session?.user?.user_metadata) {
+                const meta = session.user.user_metadata;
+                if (meta.full_name || meta.name) setUserName(meta.full_name || meta.name);
+                if (meta.avatar_url || meta.picture) setAvatarUrl(meta.avatar_url || meta.picture);
+            }
+        });
+    }, []);
 
     // Countdown animation state
     const [countdown, setCountdown] = useState(60);
