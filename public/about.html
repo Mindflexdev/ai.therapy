@@ -361,56 +361,44 @@
             transform: translateY(-2px);
         }
 
-        /* Sticky CTA Footer */
-        .sticky-cta {
+        /* Fixed Bottom CTA Bar - Same as main page */
+        .fixed-bottom-cta {
             position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
-            background: rgba(26, 26, 46, 0.95);
-            backdrop-filter: blur(20px);
-            padding: 1rem 2rem;
+            z-index: 1000;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 1.5rem;
-            z-index: 999;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .sticky-cta p {
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 1rem;
-            margin: 0;
-        }
-
-        .sticky-cta .cta-btn {
-            display: inline-block;
-            padding: 0.75rem 1.5rem;
-            background: linear-gradient(135deg, #20E2D7 0%, #0072FF 100%);
-            border-radius: 30px;
-            color: white;
+            gap: 12px;
+            padding: 18px 24px;
+            background: linear-gradient(135deg, #5B8FD8 0%, #4A7BC8 100%);
+            color: #fff;
             text-decoration: none;
+            font-family: var(--font-body);
+            font-size: 16px;
             font-weight: 600;
-            font-size: 0.95rem;
-            transition: transform 0.3s, box-shadow 0.3s;
+            letter-spacing: 0.5px;
+            box-shadow: 0 -4px 20px rgba(91, 143, 216, 0.4);
+            transition: all 0.3s ease;
         }
 
-        .sticky-cta .cta-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(32, 226, 215, 0.4);
+        .fixed-bottom-cta:hover {
+            background: linear-gradient(135deg, #6A9FE8 0%, #5A8BD8 100%);
+            box-shadow: 0 -4px 30px rgba(91, 143, 216, 0.6);
         }
 
-        @media (max-width: 600px) {
-            .sticky-cta {
-                flex-direction: column;
-                gap: 0.75rem;
-                padding: 0.75rem 1rem;
-            }
+        .fixed-bottom-cta svg {
+            transition: transform 0.3s ease;
+        }
 
-            .sticky-cta p {
-                font-size: 0.9rem;
-            }
+        .fixed-bottom-cta:hover svg {
+            transform: translateX(4px);
+        }
+
+        .logo-dot {
+            color: #5B8FD9;
         }
 
         /* Footer - Only dark element */
@@ -588,11 +576,13 @@
         </div>
     </section>
 
-    <!-- Sticky CTA Footer -->
-    <div class="sticky-cta">
-        <p>Ready to start your journey?</p>
-        <a href="/app" class="cta-btn">Start ai.therapy Free</a>
-    </div>
+    <!-- Fixed Bottom CTA Button -->
+    <a href="/app" class="fixed-bottom-cta">
+        <span>Start ai<span class="logo-dot">.</span>therapy</span>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M5 12h14M12 5l7 7-7 7" />
+        </svg>
+    </a>
 
     <!-- Footer - Only dark element -->
     <footer class="footer">
