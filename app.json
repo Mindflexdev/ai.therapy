@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "ai.therapy",
+    "slug": "ai-therapy",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#141413"
+    },
+    "scheme": "ai-therapy",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.ai.therapy.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#141413"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.ai.therapy.app"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
