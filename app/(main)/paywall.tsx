@@ -2,11 +2,19 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Switch, Image } from 'react-native';
 import { Theme } from '../../src/constants/Theme';
 import { X, Check } from 'lucide-react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 
 export default function PaywallScreen() {
     const router = useRouter();
+    const { name, image } = useLocalSearchParams();
     const [isTrialEnabled, setIsTrialEnabled] = useState(false);
+
+    const handleContinue = () => {
+        router.push({
+            pathname: '/(main)/chat',
+            params: { name, image }
+        });
+    };
 
     const FeatureRow = ({ label, free, pro }: any) => (
         <View style={styles.featureRow}>
@@ -22,7 +30,7 @@ export default function PaywallScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
+            <TouchableOpacity onPress={handleContinue} style={styles.closeButton}>
                 <X size={24} color={Theme.colors.text.muted} />
             </TouchableOpacity>
 
@@ -59,7 +67,7 @@ export default function PaywallScreen() {
 
                 <View style={styles.ctaSection}>
                     <Text style={styles.priceInfo}>Subscribe to Pro for just <Text style={styles.price}>€9.99/week</Text></Text>
-                    <TouchableOpacity style={styles.continueBtn} onPress={() => router.push('/(main)/chat')}>
+                    <TouchableOpacity style={styles.continueBtn} onPress={handleContinue}>
                         <Text style={styles.continueText}>Continue</Text>
                     </TouchableOpacity>
                 </View>

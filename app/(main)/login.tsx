@@ -3,10 +3,20 @@ import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, Aler
 import { Theme } from '../../src/constants/Theme';
 import { ChevronLeft } from 'lucide-react-native';
 import Svg, { Path } from 'react-native-svg';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 
 export default function LoginScreen() {
     const router = useRouter();
+
+    const { name, image } = useLocalSearchParams();
+
+    const handleContinue = () => {
+        // Navigate to paywall first, passing along the therapist info if present
+        router.push({
+            pathname: '/(main)/paywall',
+            params: { name, image }
+        });
+    };
 
     const showComingSoon = () => {
         Alert.alert('Coming Soon', 'Social login will be available in the next update.');
@@ -65,7 +75,7 @@ export default function LoginScreen() {
                         autoCapitalize="none"
                     />
 
-                    <TouchableOpacity style={styles.primaryBtn} onPress={() => router.push('/(main)/chat')}>
+                    <TouchableOpacity style={styles.primaryBtn} onPress={handleContinue}>
                         <Text style={styles.primaryBtnText}>Continue with Email</Text>
                     </TouchableOpacity>
 
