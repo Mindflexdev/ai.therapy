@@ -3,13 +3,16 @@ import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Swi
 import { Theme } from '../../src/constants/Theme';
 import { X, Check } from 'lucide-react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useAuth } from '../../src/context/AuthContext';
 
 export default function PaywallScreen() {
     const router = useRouter();
     const { name, image } = useLocalSearchParams();
     const [isTrialEnabled, setIsTrialEnabled] = useState(false);
+    const { login } = useAuth();
 
     const handleContinue = () => {
+        login();
         router.push({
             pathname: '/(main)/chat',
             params: { name, image }

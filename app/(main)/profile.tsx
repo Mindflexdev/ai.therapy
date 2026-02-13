@@ -2,10 +2,25 @@ import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView, Image, TouchableOpacity, ScrollView } from 'react-native';
 import { Theme } from '../../src/constants/Theme';
 import { ChevronLeft, Phone, Video, Search, Image as ImageIcon, Star, Bell, Lock, Share2 } from 'lucide-react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 
 export default function ProfileScreen() {
     const router = useRouter();
+    const { name, image } = useLocalSearchParams();
+
+    // Parse the image parameter correctly
+    let therapistImage: any = null;
+    if (typeof image === 'string') {
+        if (!isNaN(Number(image))) {
+            therapistImage = Number(image);
+        } else {
+            therapistImage = { uri: image };
+        }
+    } else {
+        therapistImage = image;
+    }
+
+    const therapistName = name || 'Marcus';
 
     return (
         <SafeAreaView style={styles.container}>
@@ -24,12 +39,12 @@ export default function ProfileScreen() {
                     <View style={styles.haloWrapper}>
                         <View style={styles.halo} />
                         <Image
-                            source={null}
+                            source={therapistImage}
                             style={styles.largeAvatar}
                             defaultSource={require('../../assets/adaptive-icon.png')}
                         />
                     </View>
-                    <Text style={styles.name}>Marcus Thorne</Text>
+                    <Text style={styles.name}>{therapistName}</Text>
                     <Text style={styles.details}>Available for 24/7 Support</Text>
                     <Text style={styles.quote}>"Human connection is the first step toward healing, even in the digital age."</Text>
                 </View>

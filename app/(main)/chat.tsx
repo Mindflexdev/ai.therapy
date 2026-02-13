@@ -112,9 +112,6 @@ export default function ChatScreen() {
                     </TouchableOpacity>
 
                     <View style={styles.headerRight}>
-                        <TouchableOpacity onPress={showComingSoon} style={styles.iconButton}>
-                            <Video size={22} color={Theme.colors.text.primary} />
-                        </TouchableOpacity>
                         <TouchableOpacity onPress={() => navigation.navigate('call', { name: therapistName, image: therapistImage })} style={styles.iconButton}>
                             <Phone size={22} color={Theme.colors.text.primary} />
                         </TouchableOpacity>

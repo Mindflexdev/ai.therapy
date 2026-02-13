@@ -11,8 +11,19 @@ const THERAPISTS = [
     { id: '4', name: 'Emily', image: require('../../assets/characters/emily.jpg') },
 ];
 
+import { useAuth } from '../context/AuthContext';
+import { Lock } from 'lucide-react-native';
+
 export const CustomDrawer = (props: DrawerContentComponentProps) => {
-    const isLoggedIn = false; // Placeholder for login state
+    const { isLoggedIn } = useAuth();
+
+    const handleTherapistPress = (t: any) => {
+        if (isLoggedIn) {
+            props.navigation.navigate('chat', { name: t.name, image: t.image });
+        } else {
+            props.navigation.navigate('paywall', { name: t.name, image: t.image });
+        }
+    };
 
     return (
         <SafeAreaView style={styles.container}>
@@ -21,17 +32,29 @@ export const CustomDrawer = (props: DrawerContentComponentProps) => {
             </View>
 
             <DrawerContentScrollView {...props} contentContainerStyle={styles.scrollContent}>
-                <Text style={styles.sectionTitle}>Also online</Text>
+                <Text style={styles.sectionTitle}>Available</Text>
                 <View style={styles.section}>
                     {THERAPISTS.map((t) => (
-                        <TouchableOpacity key={t.id} style={styles.therapistItem} onPress={() => props.navigation.navigate('paywall', { name: t.name, image: t.image })}>
+                        <TouchableOpacity key={t.id} style={styles.therapistItem} onPress={() => handleTherapistPress(t)}>
                             <View style={styles.avatarWrapper}>
-                                <Image source={t.image} style={styles.avatar} defaultSource={require('../../assets/adaptive-icon.png')} />
-                                <View style={styles.proBadge}>
-                                    <Crown size={10} color={Theme.colors.background} />
+                                <Image source={t.image} style={[styles.avatar, !isLoggedIn && styles.lockedAvatar]} defaultSource={require('../../assets/adaptive-icon.png')} />
+                                {isLoggedIn ? (
+                                    <View style={styles.proBadge}>
+                                        <Crown size={10} color={Theme.colors.background} />
+                                    </View>
+                                ) : (
+                                    <View style={styles.lockOverlay}>
+                                        <Lock size={12} color="#FFF" />
+                                    </View>
+                                )}
+                            </View>
+                            <View>
+                                <Text style={[styles.therapistName, !isLoggedIn && styles.lockedText]} numberOfLines={1}>{t.name}</Text>
+                                <View style={styles.statusRow}>
+                                    <View style={styles.statusDot} />
+                                    <Text style={styles.statusText}>online</Text>
                                 </View>
                             </View>
-                            <Text style={styles.therapistName} numberOfLines={1}>{t.name}</Text>
                         </TouchableOpacity>
                     ))}
                 </View>
@@ -127,10 +150,41 @@ const styles = StyleSheet.create({
         borderRadius: 6,
         padding: 2,
     },
+    lockOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        borderRadius: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    lockedAvatar: {
+        opacity: 0.5,
+    },
+    lockedText: {
+        color: Theme.colors.text.muted,
+    },
     therapistName: {
         color: Theme.colors.text.primary,
         marginLeft: Theme.spacing.m,
         fontSize: 15,
+        fontFamily: 'Inter-Regular',
+        lineHeight: 20,
+    },
+    statusRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginLeft: Theme.spacing.m,
+    },
+    statusDot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: Theme.colors.success,
+        marginRight: 4,
+    },
+    statusText: {
+        color: Theme.colors.success,
+        fontSize: 12,
         fontFamily: 'Inter-Regular',
     },
     allChats: {

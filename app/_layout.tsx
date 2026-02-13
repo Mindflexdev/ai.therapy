@@ -39,19 +39,23 @@ export default function RootLayout() {
     return <RootLayoutNav />;
 }
 
+import { AuthProvider } from '../src/context/AuthContext';
+
 function RootLayoutNav() {
     return (
-        <ThemeProvider value={DarkTheme}>
-            <Stack
-                screenOptions={{
-                    headerShown: false,
-                    contentStyle: { backgroundColor: Theme.colors.background },
-                }}
-            >
-                <Stack.Screen name="index" options={{ headerShown: false }} />
-                <Stack.Screen name="(main)" options={{ presentation: 'transparentModal', headerShown: false }} />
-            </Stack>
-            <StatusBar style="light" />
-        </ThemeProvider>
+        <AuthProvider>
+            <ThemeProvider value={DarkTheme}>
+                <Stack
+                    screenOptions={{
+                        headerShown: false,
+                        contentStyle: { backgroundColor: Theme.colors.background },
+                    }}
+                >
+                    <Stack.Screen name="index" options={{ headerShown: false }} />
+                    <Stack.Screen name="(main)" options={{ presentation: 'transparentModal', headerShown: false }} />
+                </Stack>
+                <StatusBar style="light" />
+            </ThemeProvider>
+        </AuthProvider>
     );
 }
