@@ -28,11 +28,11 @@ export default function ChatScreen() {
             setIsTyping(false);
             setMessages([{
                 id: '1',
-                text: `Hello, I am ${therapistName}. How can I support you today?`,
+                text: `Hi, I'm ${therapistName}! \n\nAlthough I'm not a therapist, I was developed by psychologists – as a companion for your mental health who understands you and adapts to your needs. Unlike ChatGPT, I use various psychological approaches to support you more specifically. The first session with me is currently free. This project lives from people like you. If it helps you, I would be happy about your support. Your trust is important to me: Everything you write here remains private & encrypted.\n\nWhat do you want support with?`,
                 isUser: false,
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             }]);
-        }, 2000);
+        }, 1500); // Slightly shorter delay for better UX
         return () => clearTimeout(timer);
     }, []);
 
