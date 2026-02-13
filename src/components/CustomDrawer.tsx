@@ -5,10 +5,10 @@ import { Theme } from '../constants/Theme';
 import { MessageSquare, Folder, Archive, Settings, LogIn, Crown } from 'lucide-react-native';
 
 const THERAPISTS = [
-    { id: '1', name: 'Marcus Thorne', image: null },
-    { id: '2', name: 'Sarah Jenkins', image: null },
-    { id: '3', name: 'Liam O\'Connor', image: null },
-    { id: '4', name: 'Emily Vance', image: null },
+    { id: '1', name: 'Marcus', image: require('../../assets/characters/marcus.jpg') },
+    { id: '2', name: 'Sarah', image: require('../../assets/characters/sarah.jpg') },
+    { id: '3', name: 'Liam', image: require('../../assets/characters/liam.jpg') },
+    { id: '4', name: 'Emily', image: require('../../assets/characters/emily.jpg') },
 ];
 
 export const CustomDrawer = (props: DrawerContentComponentProps) => {

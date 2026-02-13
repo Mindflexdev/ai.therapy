@@ -3,17 +3,49 @@ import { View, Text, StyleSheet, SafeAreaView, FlatList, TextInput, TouchableOpa
 import { Theme } from '../../src/constants/Theme';
 import { ChatBubble } from '../../src/components/ChatBubble';
 import { Menu, Phone, Video, Plus, Camera, Mic, ChevronLeft } from 'lucide-react-native';
-import { useNavigation } from 'expo-router';
+import { useNavigation, useLocalSearchParams } from 'expo-router';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 
 const INITIAL_MESSAGES = [
-    { id: '1', text: 'Hello, I am Marcus. How can I support you today?', isUser: false, time: '14:20' },
+    { id: '1', text: 'Hello, I am [Name]. How can I support you today?', isUser: false, time: '14:20' },
 ];
 
+
 export default function ChatScreen() {
-    const [messages, setMessages] = useState(INITIAL_MESSAGES);
+    const { name, image } = useLocalSearchParams();
+    const therapistName = (name as string) || 'Marcus';
+
+    // Parse the image parameter correctly
+    let therapistImage: any = null;
+    if (typeof image === 'string') {
+        // If passed as a number/string ID through router
+        if (!isNaN(Number(image))) {
+            therapistImage = Number(image);
+        } else {
+            // If it's a URI string (rare with require)
+            therapistImage = { uri: image };
+        }
+    } else {
+        therapistImage = image;
+    }
+
+    const [messages, setMessages] = useState<any[]>([]);
+    const [isTyping, setIsTyping] = useState(true);
     const [inputText, setInputText] = useState('');
     const navigation = useNavigation<DrawerNavigationProp<any>>();
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setIsTyping(false);
+            setMessages([{
+                id: '1',
+                text: `Hello, I am ${therapistName}. How can I support you today?`,
+                isUser: false,
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            }]);
+        }, 2000);
+        return () => clearTimeout(timer);
+    }, []);
 
     const handleSend = () => {
         if (inputText.trim()) {
@@ -23,7 +55,7 @@ export default function ChatScreen() {
                 isUser: true,
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             };
-            setMessages([...messages, newMessage]);
+            setMessages(prev => [...prev, newMessage]);
             setInputText('');
 
             // Navigate to login after first message as requested
@@ -36,6 +68,21 @@ export default function ChatScreen() {
     const showComingSoon = () => {
         Alert.alert('Coming Soon', 'This feature is currently under development.');
     };
+
+    const TypingBubble = () => (
+        <View style={{
+            alignSelf: 'flex-start',
+            backgroundColor: Theme.colors.bubbles.therapist,
+            borderRadius: Theme.borderRadius.l,
+            borderBottomLeftRadius: 4,
+            padding: Theme.spacing.m,
+            marginLeft: Theme.spacing.m,
+            marginBottom: Theme.spacing.m,
+            marginTop: Theme.spacing.m,
+        }}>
+            <Text style={{ color: Theme.colors.text.secondary, fontSize: 12 }}>typing...</Text>
+        </View>
+    );
 
     return (
         <SafeAreaView style={styles.container}>
@@ -50,16 +97,16 @@ export default function ChatScreen() {
                         <Menu size={24} color={Theme.colors.text.primary} />
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.profileInfo} onPress={() => navigation.navigate('profile')}>
+                    <TouchableOpacity style={styles.profileInfo} onPress={() => navigation.navigate('profile', { name: therapistName, image: therapistImage })}>
                         <View style={styles.avatarWrapper}>
                             <Image
-                                source={null}
+                                source={therapistImage}
                                 style={styles.avatar}
                                 defaultSource={require('../../assets/adaptive-icon.png')}
                             />
                         </View>
                         <View>
-                            <Text style={styles.name}>Marcus Thorne</Text>
+                            <Text style={styles.name}>{therapistName}</Text>
                             <Text style={styles.status}>online</Text>
                         </View>
                     </TouchableOpacity>
@@ -68,7 +115,7 @@ export default function ChatScreen() {
                         <TouchableOpacity onPress={showComingSoon} style={styles.iconButton}>
                             <Video size={22} color={Theme.colors.text.primary} />
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={() => navigation.navigate('call')} style={styles.iconButton}>
+                        <TouchableOpacity onPress={() => navigation.navigate('call', { name: therapistName, image: therapistImage })} style={styles.iconButton}>
                             <Phone size={22} color={Theme.colors.text.primary} />
                         </TouchableOpacity>
                     </View>
@@ -81,6 +128,7 @@ export default function ChatScreen() {
                         keyExtractor={(item) => item.id}
                         renderItem={({ item }) => <ChatBubble message={item} />}
                         contentContainerStyle={styles.messageList}
+                        ListFooterComponent={isTyping ? <TypingBubble /> : null}
                     />
                 </View>
 

@@ -2,10 +2,25 @@ import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, Image, TouchableOpacity, Animated } from 'react-native';
 import { Theme } from '../../src/constants/Theme';
 import { ChevronDown, Users, MicOff, Volume2, VideoOff, PhoneOff, MoreHorizontal } from 'lucide-react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 
 export default function CallScreen() {
     const router = useRouter();
+    const { name, image } = useLocalSearchParams();
+    const therapistName = (name as string) || 'Marcus';
+
+    // Parse the image parameter correctly
+    let therapistImage: any = null;
+    if (typeof image === 'string') {
+        if (!isNaN(Number(image))) {
+            therapistImage = Number(image);
+        } else {
+            therapistImage = { uri: image };
+        }
+    } else {
+        therapistImage = image;
+    }
+
     const scale = useRef(new Animated.Value(1)).current;
     const opacity = useRef(new Animated.Value(0.5)).current;
 
@@ -31,7 +46,7 @@ export default function CallScreen() {
                     <ChevronDown size={28} color={Theme.colors.text.primary} />
                 </TouchableOpacity>
                 <View style={styles.headerInfo}>
-                    <Text style={styles.name}>Marcus Thorne</Text>
+                    <Text style={styles.name}>{therapistName}</Text>
                     <Text style={styles.status}>Calling...</Text>
                 </View>
                 <TouchableOpacity>
@@ -44,7 +59,7 @@ export default function CallScreen() {
                     <Animated.View style={[styles.pulseHalo, { transform: [{ scale }], opacity }]} />
                     <View style={styles.staticHalo} />
                     <Image
-                        source={null}
+                        source={therapistImage}
                         style={styles.avatar}
                         defaultSource={require('../../assets/adaptive-icon.png')}
                     />

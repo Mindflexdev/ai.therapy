@@ -7,7 +7,6 @@ interface Therapist {
     id: string;
     name: string;
     image: any;
-    specialty: string;
 }
 
 interface Props {

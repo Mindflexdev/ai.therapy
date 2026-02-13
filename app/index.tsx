@@ -5,21 +5,24 @@ import { Theme } from '../src/constants/Theme';
 import { TherapistCard } from '../src/components/TherapistCard';
 
 const THERAPISTS = [
-  { id: '1', name: 'Marcus Thorne', specialty: 'CBT', image: null },
-  { id: '2', name: 'Sarah Jenkins', specialty: 'MBCT', image: null },
-  { id: '3', name: 'Liam O\'Connor', specialty: 'ACT', image: null },
-  { id: '4', name: 'Emily Vance', specialty: 'DBT', image: null },
+  { id: '1', name: 'Marcus', image: require('../assets/characters/marcus.jpg') },
+  { id: '2', name: 'Sarah', image: require('../assets/characters/sarah.jpg') },
+  { id: '3', name: 'Liam', image: require('../assets/characters/liam.jpg') },
+  { id: '4', name: 'Emily', image: require('../assets/characters/emily.jpg') },
 ];
 
 export default function Onboarding() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const router = useRouter();
 
-  const handleSelect = (id: string) => {
-    setSelectedId(id);
+  const handleSelect = (therapist: any) => {
+    setSelectedId(therapist.id);
     // Short delay for the glow effect to be visible
     setTimeout(() => {
-      router.push('/(main)/chat');
+      router.push({
+        pathname: '/(main)/chat',
+        params: { name: therapist.name, image: therapist.image }
+      });
     }, 400);
   };
 
@@ -39,7 +42,7 @@ export default function Onboarding() {
               key={t.id}
               therapist={t}
               isSelected={selectedId === t.id}
-              onSelect={() => handleSelect(t.id)}
+              onSelect={() => handleSelect(t)}
             />
           ))}
         </View>
