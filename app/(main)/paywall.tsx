@@ -66,7 +66,13 @@ export default function PaywallScreen() {
                 </View>
 
                 <View style={styles.ctaSection}>
-                    <Text style={styles.priceInfo}>Subscribe to Pro for just <Text style={styles.price}>€9.99/week</Text></Text>
+                    <Text style={styles.priceInfo}>
+                        {isTrialEnabled ? (
+                            <>Start your <Text style={styles.price}>7-day free trial</Text>, then €9.99/week</>
+                        ) : (
+                            <>Subscribe to Pro for just <Text style={styles.price}>€9.99/week</Text></>
+                        )}
+                    </Text>
                     <TouchableOpacity style={styles.continueBtn} onPress={handleContinue}>
                         <Text style={styles.continueText}>Continue</Text>
                     </TouchableOpacity>
@@ -112,11 +118,11 @@ const styles = StyleSheet.create({
         // We'll replace this with the Zen art later
     },
     title: {
-        fontSize: 28,
+        fontSize: 24,
         color: Theme.colors.text.primary,
-        fontFamily: 'Playfair-Bold',
+        fontFamily: 'Inter-Bold',
         textAlign: 'center',
-        marginBottom: Theme.spacing.xxl,
+        marginBottom: Theme.spacing.xl,
     },
     tableHeader: {
         flexDirection: 'row',
