@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
         position: 'relative',
         backgroundColor: '#1E1E1E',
         borderWidth: 0.5,
-        borderColor: 'rgba(255, 218, 176, 0.3)',
+        borderColor: 'rgba(235, 206, 128, 0.3)',
     },
     cardBackground: {
         width: '100%',

@@ -1,8 +1,15 @@
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, useWindowDimensions } from 'react-native';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import { View, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Theme } from '../src/constants/Theme';
-import { TherapistCard } from '../src/components/TherapistCard';
+import { useAuth } from '../src/context/AuthContext';
+import { LandingHeader } from '../src/components/LandingHeader';
+import { LandingDrawer } from '../src/components/LandingDrawer';
+import { HeroSection } from '../src/components/sections/HeroSection';
+import { FeaturesSection } from '../src/components/sections/FeaturesSection';
+import { PricingSection } from '../src/components/sections/PricingSection';
+import { FAQSection } from '../src/components/sections/FAQSection';
+import { Footer } from '../src/components/sections/Footer';
 
 const THERAPISTS = [
   { id: '1', name: 'Marcus', image: require('../assets/characters/marcus.jpg') },
@@ -11,20 +18,20 @@ const THERAPISTS = [
   { id: '4', name: 'Emily', image: require('../assets/characters/emily.jpg') },
 ];
 
-import { useAuth } from '../src/context/AuthContext';
-
 export default function Onboarding() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [drawerVisible, setDrawerVisible] = useState(false);
   const router = useRouter();
-  const { selectTherapist, isLoggedIn, setShowLoginModal } = useAuth();
-  const { width } = useWindowDimensions();
-  const isDesktop = width > 768;
+  const { selectTherapist } = useAuth();
+  const scrollViewRef = useRef<ScrollView>(null);
 
-  const handleSelect = (therapist: any) => {
+  // Section layout tracking
+  const [sectionLayouts, setSectionLayouts] = useState<Record<string, number>>({});
+
+  const handleSelectTherapist = (therapist: any) => {
     setSelectedId(therapist.id);
     selectTherapist(therapist.id);
 
-    // Short delay for the glow effect to be visible
     setTimeout(() => {
       router.push({
         pathname: '/(main)/chat',
@@ -33,48 +40,63 @@ export default function Onboarding() {
     }, 400);
   };
 
+  const handleNavigateToSection = (sectionId: string) => {
+    const yPosition = sectionLayouts[sectionId];
+    if (yPosition !== undefined && scrollViewRef.current) {
+      scrollViewRef.current.scrollTo({ y: yPosition, animated: true });
+    }
+  };
+
+  const handleSectionLayout = (sectionId: string, y: number) => {
+    setSectionLayouts(prev => ({ ...prev, [sectionId]: y }));
+  };
+
+  const handleFreeTrial = () => {
+    if (THERAPISTS.length > 0) {
+      handleSelectTherapist(THERAPISTS[0]);
+    }
+  };
+
+  const handleStartPro = () => {
+    router.push('/(main)/paywall');
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-        <ScrollView contentContainerStyle={[
-          styles.scrollContent,
-          isDesktop && styles.scrollContentDesktop
-        ]}>
-          <View style={[
-            styles.header,
-            isDesktop && styles.headerDesktop
-          ]}>
-            <Text style={styles.logo}>
-              <Text style={styles.logoWhite}>ai</Text>
-              <Text style={styles.logoDot}>.</Text>
-              <Text style={styles.logoWhite}>therapy</Text>
-            </Text>
-            <Text style={styles.slogan}>not real therapy</Text>
-            <Text style={styles.tagline}>When you can't talk to humans right now.</Text>
-          </View>
+      <LandingHeader onMenuPress={() => setDrawerVisible(true)} />
 
-          <View style={[
-            styles.grid,
-            isDesktop && styles.gridDesktop
-          ]}>
-            {THERAPISTS.map((t) => (
-              <TherapistCard
-                key={t.id}
-                therapist={t}
-                isSelected={selectedId === t.id}
-                onSelect={() => handleSelect(t)}
-              />
-            ))}
-          </View>
-        </ScrollView>
-
-        <View style={styles.disclaimerContainer}>
-          <Text style={styles.disclaimer}>
-            By exchanging messages with ChatGPT, an AI chatbot, you agree to our{' '}
-            <Text style={styles.link}>Terms of Use</Text> and confirm that you have read our{' '}
-            <Text style={styles.link}>Privacy Policy</Text>. See{' '}
-            <Text style={styles.link}>Cookie Preferences</Text>.
-          </Text>
+      <ScrollView ref={scrollViewRef} style={styles.scrollView}>
+        <View onLayout={(e) => handleSectionLayout('hero', e.nativeEvent.layout.y)}>
+          <HeroSection
+            therapists={THERAPISTS}
+            selectedId={selectedId}
+            onSelectTherapist={handleSelectTherapist}
+          />
         </View>
+
+        <View onLayout={(e) => handleSectionLayout('features', e.nativeEvent.layout.y)}>
+          <FeaturesSection />
+        </View>
+
+        <View onLayout={(e) => handleSectionLayout('pricing', e.nativeEvent.layout.y)}>
+          <PricingSection
+            onFreeTrial={handleFreeTrial}
+            onStartPro={handleStartPro}
+          />
+        </View>
+
+        <View onLayout={(e) => handleSectionLayout('faq', e.nativeEvent.layout.y)}>
+          <FAQSection />
+        </View>
+
+        <Footer />
+      </ScrollView>
+
+      <LandingDrawer
+        visible={drawerVisible}
+        onClose={() => setDrawerVisible(false)}
+        onNavigate={handleNavigateToSection}
+      />
     </SafeAreaView>
   );
 }
@@ -84,72 +106,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Theme.colors.background,
   },
-  scrollContent: {
-    padding: Theme.spacing.s,
-    paddingBottom: Theme.spacing.xl,
-    alignItems: 'center',
-  },
-  scrollContentDesktop: {
-    padding: Theme.spacing.m,
-  },
-  header: {
-    alignItems: 'center',
-    marginTop: Theme.spacing.xs,
-    marginBottom: Theme.spacing.m,
-  },
-  headerDesktop: {
-    marginTop: Theme.spacing.l,
-    marginBottom: Theme.spacing.xl,
-  },
-  logo: {
-    fontSize: 24,
-    fontFamily: 'Playfair-Bold',
-  },
-  logoWhite: {
-    color: Theme.colors.text.primary,
-  },
-  logoDot: {
-    color: Theme.colors.primary,
-  },
-  tagline: {
-    fontSize: 24,
-    color: Theme.colors.text.primary,
-    fontFamily: 'Playfair-Bold',
-    marginTop: Theme.spacing.l,
-    textAlign: 'center',
-  },
-  slogan: {
-    fontSize: 12,
-    color: Theme.colors.text.secondary,
-    fontFamily: 'Inter-Regular',
-    marginTop: -4,
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: Theme.spacing.m,
-    width: '100%',
-    maxWidth: 600,
-  },
-  gridDesktop: {
-    maxWidth: 700,
-    gap: Theme.spacing.m,
-  },
-  disclaimerContainer: {
-    padding: Theme.spacing.m,
-    borderTopWidth: 1,
-    borderTopColor: Theme.colors.border,
-    backgroundColor: Theme.colors.background,
-  },
-  disclaimer: {
-    fontSize: 11,
-    color: Theme.colors.text.muted,
-    textAlign: 'center',
-    lineHeight: 16,
-  },
-  link: {
-    color: Theme.colors.text.secondary,
-    textDecorationLine: 'underline',
+  scrollView: {
+    flex: 1,
   },
 });

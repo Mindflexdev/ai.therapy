@@ -40,18 +40,15 @@ export default function ChatScreen() {
         return () => clearTimeout(timer);
     }, []);
 
-    useEffect(() => {
-        // Show login modal 500ms after greeting message (2000ms delay)
-        if (!isLoggedIn) {
-            const timer = setTimeout(() => {
-                setShowLoginModal(true);
-            }, 2000);
-            return () => clearTimeout(timer);
-        }
-    }, [isLoggedIn, setShowLoginModal]);
 
     const handleSend = () => {
         if (inputText.trim()) {
+            // Check if user is logged in before sending
+            if (!isLoggedIn) {
+                setShowLoginModal(true);
+                return;
+            }
+
             const newMessage = {
                 id: Date.now().toString(),
                 text: inputText,
@@ -157,12 +154,7 @@ export default function ChatScreen() {
                 </View>
             </KeyboardAvoidingView>
 
-            {/* Blur overlay when login modal is active */}
-            {showLoginModal && (
-                <BlurView intensity={20} style={StyleSheet.absoluteFillObject} />
-            )}
-
-            {/* Login Modal - only render after delay */}
+            {/* Login Modal */}
             {showLoginModal && <LoginScreen />}
         </SafeAreaView>
     );

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, Alert, Modal, Image } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, Alert, Modal, Image, useWindowDimensions } from 'react-native';
 import { Theme } from '../../src/constants/Theme';
 import { X } from 'lucide-react-native';
 import Svg, { Path } from 'react-native-svg';
@@ -10,6 +10,8 @@ export default function LoginScreen() {
     const router = useRouter();
     const { showLoginModal, setShowLoginModal } = useAuth();
     const { name, image } = useLocalSearchParams();
+    const { height } = useWindowDimensions();
+    const isSmallScreen = height < 700;
 
     const handleContinue = () => {
         setShowLoginModal(false);
@@ -27,7 +29,7 @@ export default function LoginScreen() {
     return (
         <Modal
             visible={showLoginModal}
-            transparent={true}
+            transparent={false}
             animationType="fade"
             onRequestClose={() => setShowLoginModal(false)}
         >
@@ -46,33 +48,37 @@ export default function LoginScreen() {
                             <X size={24} color={Theme.colors.text.secondary} />
                         </TouchableOpacity>
 
-                        <View style={styles.content}>
+                        <View style={[styles.content, isSmallScreen && { paddingTop: '10%' }]}>
                 <View style={styles.logoSection}>
-                    <Text style={styles.logo}>
-                        <Text style={styles.logoWhite}>ai</Text>
-                        <Text style={styles.logoDot}>.</Text>
-                        <Text style={styles.logoWhite}>therapy</Text>
-                    </Text>
-                    <Image
-                        source={require('../../assets/logo.png')}
-                        style={styles.logoImage}
-                        resizeMode="contain"
-                    />
+                    <View style={styles.logoContainer}>
+                        <Image
+                            source={require('../../assets/logo_ai.png')}
+                            style={styles.logoImageSmall}
+                            resizeMode="contain"
+                        />
+                        <Text style={styles.logo}>
+                            <Text style={styles.logoWhite}>ai</Text>
+                            <Text style={styles.logoDot}>.</Text>
+                            <Text style={styles.logoWhite}>therapy</Text>
+                        </Text>
+                    </View>
+                    <Text style={styles.slogan}>not real therapy</Text>
+                    <Text style={styles.tagline}>When you can't talk to humans</Text>
                 </View>
 
                 <View style={styles.form}>
-                    {/* Disabled Social Buttons */}
-                    <TouchableOpacity style={styles.socialBtn} onPress={showComingSoon} activeOpacity={0.6}>
+                    {/* Apple Button */}
+                    <TouchableOpacity style={styles.appleSocialBtn} onPress={showComingSoon}>
                         <View style={styles.iconWrapper}>
-                            <Svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+                            <Svg width="20" height="20" viewBox="0 0 24 24" fill="black">
                                 <Path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.74.79 0 1.96-.71 3.28-.66 1.13.04 1.98.42 2.61.98-2.19 1.34-1.84 4.5 0 5.25-1.28 2.65-3.08 4.63-4.97 6.66zM13 5.08c-.28 1.99-1.88 3.54-3.9 3.42C8.88 6.43 10.5 4.9 13 5.08z" />
                             </Svg>
                         </View>
-                        <Text style={styles.socialText}>Continue with Apple</Text>
-                        <View style={styles.disabledOverlay} />
+                        <Text style={styles.appleBtnText}>Continue with Apple</Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.socialBtn} onPress={showComingSoon} activeOpacity={0.6}>
+                    {/* Google Button */}
+                    <TouchableOpacity style={styles.googleSocialBtn} onPress={showComingSoon}>
                         <View style={styles.iconWrapper}>
                             <Svg width="20" height="20" viewBox="0 0 24 24">
                                 <Path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -82,7 +88,6 @@ export default function LoginScreen() {
                             </Svg>
                         </View>
                         <Text style={styles.socialText}>Continue with Google</Text>
-                        <View style={styles.disabledOverlay} />
                     </TouchableOpacity>
 
                     <View style={styles.divider}>
@@ -119,17 +124,14 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
     modalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        backgroundColor: Theme.colors.background,
         justifyContent: 'center',
         alignItems: 'center',
     },
     modalContent: {
-        width: '90%',
-        maxWidth: 500,
-        maxHeight: '90%',
+        width: '100%',
+        height: '100%',
         backgroundColor: Theme.colors.background,
-        borderRadius: Theme.borderRadius.xl,
-        overflow: 'hidden',
     },
     container: {
         flex: 1,
@@ -145,15 +147,37 @@ const styles = StyleSheet.create({
     content: {
         flex: 1,
         paddingHorizontal: Theme.spacing.xl,
-        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingTop: '20%',
+        paddingBottom: Theme.spacing.xxl,
     },
     logoSection: {
         alignItems: 'center',
-        marginBottom: Theme.spacing.xxl,
+        marginBottom: 0,
+    },
+    logoContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        marginBottom: Theme.spacing.xs,
+    },
+    slogan: {
+        fontSize: 12,
+        color: Theme.colors.text.secondary,
+        fontFamily: 'Inter-Regular',
+        textAlign: 'center',
+        marginTop: Theme.spacing.xs,
+        marginBottom: Theme.spacing.s,
+    },
+    tagline: {
+        fontSize: 20,
+        color: Theme.colors.text.primary,
+        fontFamily: 'Inter-Regular',
+        textAlign: 'center',
     },
     logo: {
-        fontSize: 28,
-        fontFamily: 'Playfair-Bold',
+        fontSize: 36,
+        fontFamily: 'Inter-Bold',
     },
     logoWhite: {
         color: '#FFFFFF',
@@ -161,21 +185,37 @@ const styles = StyleSheet.create({
     logoDot: {
         color: Theme.colors.primary,
     },
-    logoImage: {
-        width: 180,
-        height: 90,
-        marginTop: Theme.spacing.m,
+    logoImageSmall: {
+        width: 48,
+        height: 48,
     },
     form: {
         width: '100%',
         alignItems: 'center',
     },
-    socialBtn: {
+    appleSocialBtn: {
+        width: '100%',
+        backgroundColor: '#FFFFFF',
+        paddingVertical: 16,
+        borderRadius: Theme.borderRadius.m,
+        flexDirection: 'row',
+        paddingHorizontal: Theme.spacing.l,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: Theme.spacing.m,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 2,
+    },
+    googleSocialBtn: {
         width: '100%',
         backgroundColor: 'rgba(255,255,255,0.05)',
         paddingVertical: 16,
         borderRadius: Theme.borderRadius.m,
-        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.2)',
         flexDirection: 'row',
         paddingHorizontal: Theme.spacing.l,
         justifyContent: 'center',
@@ -193,9 +233,10 @@ const styles = StyleSheet.create({
         fontFamily: 'Inter-Bold',
         fontSize: 16,
     },
-    disabledOverlay: {
-        ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(0,0,0,0.3)',
+    appleBtnText: {
+        color: '#000000',
+        fontFamily: 'Inter-Bold',
+        fontSize: 16,
     },
     divider: {
         flexDirection: 'row',

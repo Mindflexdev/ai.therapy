@@ -32,11 +32,21 @@ export const CustomDrawer = (props: DrawerContentComponentProps) => {
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
-                <Text style={styles.logo}>
-                    <Text style={styles.logoWhite}>ai</Text>
-                    <Text style={styles.logoDot}>.</Text>
-                    <Text style={styles.logoWhite}>therapy</Text>
-                </Text>
+                <View style={styles.brandingContainer}>
+                    <View style={styles.logoContainer}>
+                        <Image
+                            source={require('../../assets/logo_ai.png')}
+                            style={styles.logoImage}
+                            resizeMode="contain"
+                        />
+                        <Text style={styles.logo}>
+                            <Text style={styles.logoWhite}>ai</Text>
+                            <Text style={styles.logoDot}>.</Text>
+                            <Text style={styles.logoWhite}>therapy</Text>
+                        </Text>
+                    </View>
+                    <Text style={styles.slogan}>not real therapy</Text>
+                </View>
             </View>
 
             <DrawerContentScrollView {...props} contentContainerStyle={styles.scrollContent}>
@@ -72,10 +82,10 @@ export const CustomDrawer = (props: DrawerContentComponentProps) => {
 
                 <View style={styles.footerLinks}>
                     <TouchableOpacity style={styles.footerLink} onPress={() => handleLinkPress('terms')}>
-                        <Text style={styles.footerLinkText}>Nutzungsbedingungen</Text>
+                        <Text style={styles.footerLinkText}>Terms of Service</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.footerLink} onPress={() => handleLinkPress('privacy')}>
-                        <Text style={styles.footerLinkText}>Datenschutzrichtlinie</Text>
+                        <Text style={styles.footerLinkText}>Privacy Policy</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.footerLink} onPress={() => handleLinkPress('feedback')}>
                         <Text style={styles.footerLinkText}>Feedback</Text>
@@ -116,9 +126,28 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
     },
+    brandingContainer: {
+        alignItems: 'flex-start',
+    },
+    logoContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    slogan: {
+        fontSize: 10,
+        color: Theme.colors.text.secondary,
+        fontFamily: 'Inter-Regular',
+        marginTop: 2,
+        marginLeft: 32,
+    },
+    logoImage: {
+        width: 24,
+        height: 24,
+    },
     logo: {
         fontSize: 20,
-        fontFamily: 'Playfair-Bold',
+        fontFamily: 'Inter-Bold',
     },
     logoWhite: {
         color: Theme.colors.text.primary,
