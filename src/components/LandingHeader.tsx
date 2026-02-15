@@ -53,10 +53,12 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
     marginTop: 2,
     textAlign: 'center',
+    alignSelf: 'center',
   },
   logoImage: {
     width: 44,
     height: 44,
+    marginTop: 2,
   },
   logo: {
     fontSize: 24,
