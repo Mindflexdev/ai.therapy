@@ -54,6 +54,22 @@ export default function PaywallScreen() {
                     <Text style={styles.slogan}>not real therapy</Text>
                 </View>
 
+                <View style={styles.logoSection}>
+                    <View style={styles.logoContainer}>
+                        <Image
+                            source={require('../../assets/logo_ai.png')}
+                            style={styles.logoImage}
+                            resizeMode="contain"
+                        />
+                        <Text style={styles.logo}>
+                            <Text style={styles.logoWhite}>ai</Text>
+                            <Text style={styles.logoDot}>.</Text>
+                            <Text style={styles.logoWhite}>therapy</Text>
+                        </Text>
+                    </View>
+                    <Text style={styles.slogan}>not real therapy</Text>
+                </View>
+
                 <Text style={styles.title}>Unlock Full Access</Text>
 
                 <View style={styles.tableHeader}>
@@ -151,6 +167,37 @@ const styles = StyleSheet.create({
         fontFamily: 'Outfit-Regular',
         marginTop: 2,
         marginLeft: 44,
+    },
+    logoSection: {
+        alignItems: 'center',
+        marginBottom: Theme.spacing.l,
+        marginTop: Theme.spacing.m,
+    },
+    logoContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    logoImage: {
+        width: 32,
+        height: 32,
+    },
+    logo: {
+        fontSize: 24,
+        fontFamily: 'Inter-Bold',
+    },
+    logoWhite: {
+        color: Theme.colors.text.primary,
+    },
+    logoDot: {
+        color: Theme.colors.primary,
+    },
+    slogan: {
+        fontSize: 10,
+        color: Theme.colors.text.secondary,
+        fontFamily: 'Inter-Regular',
+        marginTop: 2,
+        textAlign: 'center',
     },
     title: {
         fontSize: 24,
