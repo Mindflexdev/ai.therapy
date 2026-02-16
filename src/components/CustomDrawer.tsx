@@ -4,12 +4,14 @@ import { DrawerContentComponentProps, DrawerContentScrollView } from '@react-nav
 import { Theme } from '../constants/Theme';
 import { LogIn, Crown, MessageSquare, ExternalLink } from 'lucide-react-native';
 import { THERAPISTS } from '../constants/Therapists';
+import { useRouter } from 'expo-router';
 
 import { useAuth } from '../context/AuthContext';
 import { Lock } from 'lucide-react-native';
 
 export const CustomDrawer = (props: DrawerContentComponentProps) => {
     const { isLoggedIn, selectedTherapistId } = useAuth();
+    const router = useRouter();
 
     const isUnlocked = (t: any) => {
         // Unlocked if logged in OR if it's the selected therapist
@@ -25,7 +27,11 @@ export const CustomDrawer = (props: DrawerContentComponentProps) => {
     };
 
     const handleLinkPress = (route: string) => {
-        props.navigation.navigate(route);
+        if (route === 'legal') {
+            router.push('/(main)/legal');
+        } else {
+            props.navigation.navigate(route);
+        }
     };
 
     return (
@@ -80,14 +86,8 @@ export const CustomDrawer = (props: DrawerContentComponentProps) => {
                 </View>
 
                 <View style={styles.footerLinks}>
-                    <TouchableOpacity style={styles.footerLink} onPress={() => handleLinkPress('terms')}>
-                        <Text style={styles.footerLinkText}>Terms of Service</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.footerLink} onPress={() => handleLinkPress('privacy')}>
-                        <Text style={styles.footerLinkText}>Privacy Policy</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.footerLink} onPress={() => handleLinkPress('safety')}>
-                        <Text style={styles.footerLinkText}>Safety & Legal</Text>
+                    <TouchableOpacity style={styles.footerLink} onPress={() => handleLinkPress('legal')}>
+                        <Text style={styles.footerLinkText}>Legal</Text>
                     </TouchableOpacity>
                 </View>
             </DrawerContentScrollView>
@@ -104,7 +104,10 @@ export const CustomDrawer = (props: DrawerContentComponentProps) => {
                         </View>
                     </TouchableOpacity>
                 ) : (
-                    <TouchableOpacity style={styles.loginButton} onPress={() => props.navigation.navigate('login')}>
+                    <TouchableOpacity style={styles.loginButton} onPress={() => {
+                        console.log('Login button pressed - navigating to login');
+                        router.push('/(main)/login');
+                    }}>
                         <LogIn size={20} color={Theme.colors.text.primary} />
                         <Text style={styles.loginText}>Log in</Text>
                     </TouchableOpacity>
@@ -136,18 +139,18 @@ const styles = StyleSheet.create({
     slogan: {
         fontSize: 10,
         color: Theme.colors.text.secondary,
-        fontFamily: 'Inter-Regular',
-        marginTop: 2,
+        fontFamily: 'Outfit-Regular',
+        marginTop: -4,
         marginLeft: 36,
     },
     logoImage: {
         width: 36,
         height: 36,
-        marginTop: 4,
+        marginTop: 8,
     },
     logo: {
         fontSize: 20,
-        fontFamily: 'Inter-Bold',
+        fontFamily: 'Outfit-Regular',
     },
     logoWhite: {
         color: Theme.colors.text.primary,

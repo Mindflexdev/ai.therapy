@@ -18,7 +18,7 @@ export function HeroSection({ therapists, selectedId, onSelectTherapist }: Props
   return (
     <View style={styles.section}>
       <Text style={styles.heading}>
-        when you cant talk to humans
+        when you cant talk to humans right now
       </Text>
 
       <Text style={styles.subheading}>choose one:</Text>

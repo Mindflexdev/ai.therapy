@@ -133,11 +133,11 @@ const styles = StyleSheet.create({
     logoImage: {
         width: 44,
         height: 44,
-        marginTop: 6,
+        marginTop: 10,
     },
     logo: {
         fontSize: 24,
-        fontFamily: 'Inter-Bold',
+        fontFamily: 'Outfit-Regular',
     },
     logoWhite: {
         color: Theme.colors.text.primary,
@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
     slogan: {
         fontSize: 10,
         color: Theme.colors.text.secondary,
-        fontFamily: 'Inter-Regular',
+        fontFamily: 'Outfit-Regular',
         marginTop: 2,
         marginLeft: 44,
     },

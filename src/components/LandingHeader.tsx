@@ -50,18 +50,18 @@ const styles = StyleSheet.create({
   slogan: {
     fontSize: 10,
     color: Theme.colors.text.secondary,
-    fontFamily: 'Inter-Regular',
-    marginTop: 2,
+    fontFamily: 'Outfit-Regular',
+    marginTop: -4,
     marginLeft: 44,
   },
   logoImage: {
     width: 44,
     height: 44,
-    marginTop: 4,
+    marginTop: 8,
   },
   logo: {
     fontSize: 24,
-    fontFamily: 'Inter-Bold',
+    fontFamily: 'Outfit-Regular',
   },
   logoWhite: {
     color: Theme.colors.text.primary,

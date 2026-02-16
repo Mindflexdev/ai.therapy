@@ -1,6 +1,7 @@
 import { DarkTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts, PlayfairDisplay_700Bold } from '@expo-google-fonts/playfair-display';
 import { Inter_400Regular, Inter_700Bold } from '@expo-google-fonts/inter';
+import { Outfit_400Regular, Outfit_700Bold } from '@expo-google-fonts/outfit';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
@@ -20,6 +21,8 @@ export default function RootLayout() {
         'Playfair-Bold': PlayfairDisplay_700Bold,
         'Inter-Regular': Inter_400Regular,
         'Inter-Bold': Inter_700Bold,
+        'Outfit-Regular': Outfit_400Regular,
+        'Outfit-Bold': Outfit_700Bold,
     });
 
     useEffect(() => {
