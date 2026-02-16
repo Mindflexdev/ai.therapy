@@ -5,6 +5,7 @@ import { X } from 'lucide-react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
+import { Footer } from '../../src/components/sections/Footer';
 
 export default function LoginScreen() {
     const router = useRouter();
@@ -63,7 +64,6 @@ export default function LoginScreen() {
                         </Text>
                     </View>
                     <Text style={styles.slogan}>not real therapy</Text>
-                    <Text style={styles.tagline}>When you can't talk to humans</Text>
                 </View>
 
                 <View style={styles.form}>
@@ -113,6 +113,8 @@ export default function LoginScreen() {
                         <Text style={styles.link}>Privacy Policy</Text>.
                     </Text>
                 </View>
+
+                <Footer />
             </View>
         </SafeAreaView>
                 </TouchableOpacity>
@@ -148,12 +150,12 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingHorizontal: Theme.spacing.xl,
         justifyContent: 'space-between',
-        paddingTop: '20%',
+        paddingTop: '30%',
         paddingBottom: Theme.spacing.xxl,
     },
     logoSection: {
         alignItems: 'center',
-        marginBottom: 0,
+        marginBottom: Theme.spacing.xl,
     },
     logoContainer: {
         flexDirection: 'row',
@@ -161,23 +163,18 @@ const styles = StyleSheet.create({
         gap: 12,
         marginBottom: Theme.spacing.xs,
     },
-    slogan: {
-        fontSize: 12,
-        color: Theme.colors.text.secondary,
-        fontFamily: 'Inter-Regular',
-        marginTop: Theme.spacing.xs,
-        marginBottom: Theme.spacing.l,
-        marginLeft: 48,
-    },
-    tagline: {
-        fontSize: 20,
-        color: Theme.colors.text.primary,
-        fontFamily: 'Inter-Regular',
-        textAlign: 'center',
-    },
     logo: {
-        fontSize: 36,
-        fontFamily: 'Inter-Bold',
+        fontSize: 48,
+        fontFamily: 'Outfit-Regular',
+    },
+    slogan: {
+        fontSize: 14,
+        color: Theme.colors.text.secondary,
+        fontFamily: 'Outfit-Regular',
+        textAlign: 'center',
+        width: '100%',
+        marginTop: Theme.spacing.xs,
+        marginBottom: Theme.spacing.s,
     },
     logoWhite: {
         color: '#FFFFFF',
@@ -186,13 +183,14 @@ const styles = StyleSheet.create({
         color: Theme.colors.primary,
     },
     logoImageSmall: {
-        width: 48,
-        height: 48,
-        marginTop: 6,
+        width: 64,
+        height: 64,
+        marginTop: 10,
     },
     form: {
         width: '100%',
         alignItems: 'center',
+        marginTop: 64,
     },
     appleSocialBtn: {
         width: '100%',

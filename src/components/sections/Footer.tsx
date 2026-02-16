@@ -7,10 +7,6 @@ export function Footer() {
 
   return (
     <View style={styles.footer}>
-      <Text style={styles.disclaimer}>
-        not a replacement for professional mental health care
-      </Text>
-
       <View style={styles.links}>
         <TouchableOpacity onPress={() => router.push('/(main)/terms')}>
           <Text style={styles.link}>Terms</Text>
