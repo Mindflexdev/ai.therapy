@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, Alert, Modal, Image, useWindowDimensions } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, Alert, Modal, Image, useWindowDimensions, ActivityIndicator } from 'react-native';
 import { Theme } from '../../src/constants/Theme';
 import { X } from 'lucide-react-native';
 import Svg, { Path } from 'react-native-svg';
@@ -9,18 +9,49 @@ import { Footer } from '../../src/components/sections/Footer';
 
 export default function LoginScreen() {
     const router = useRouter();
-    const { showLoginModal, setShowLoginModal } = useAuth();
+    const { showLoginModal, setShowLoginModal, loginWithOtp, loginWithGoogle, isLoggedIn, setPendingTherapist, pendingTherapist } = useAuth();
     const { name, image } = useLocalSearchParams();
     const { height } = useWindowDimensions();
     const isSmallScreen = height < 700;
+    const [email, setEmail] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
 
-    const handleContinue = () => {
-        setShowLoginModal(false);
-        // Navigate to paywall first, passing along the therapist info if present
-        router.push({
-            pathname: '/(main)/paywall',
-            params: { name, image }
-        });
+    // After successful login (email magic link), navigate to chat
+    useEffect(() => {
+        if (isLoggedIn && showLoginModal) {
+            setShowLoginModal(false);
+            router.push({
+                pathname: '/(main)/chat',
+                params: { name, image }
+            });
+        }
+    }, [isLoggedIn]);
+
+    // Save therapist info before Google OAuth redirect
+    // Preserve any existing pendingMessage (draft from chat input)
+    const handleGoogleLogin = async () => {
+        if (name) {
+            setPendingTherapist({
+                name: name as string,
+                pendingMessage: pendingTherapist?.pendingMessage,
+            });
+        }
+        await loginWithGoogle(name as string);
+    };
+
+    const handleEmailContinue = async () => {
+        if (!email.trim()) {
+            Alert.alert('Error', 'Please enter your email address.');
+            return;
+        }
+        setIsLoading(true);
+        const { error } = await loginWithOtp(email.trim());
+        setIsLoading(false);
+        if (error) {
+            Alert.alert('Error', error.message);
+        } else {
+            Alert.alert('Check your email', 'We sent you a magic link to sign in.');
+        }
     };
 
     const showComingSoon = () => {
@@ -49,7 +80,7 @@ export default function LoginScreen() {
                             <X size={24} color={Theme.colors.text.secondary} />
                         </TouchableOpacity>
 
-                        <View style={[styles.content, isSmallScreen && { paddingTop: '10%' }]}>
+                        <View style={[styles.content, isSmallScreen && { paddingTop: '5%' }]}>
                 <View style={styles.logoSection}>
                     <View style={styles.logoContainer}>
                         <Image
@@ -63,7 +94,7 @@ export default function LoginScreen() {
                             <Text style={styles.logoWhite}>therapy</Text>
                         </Text>
                     </View>
-                    <Text style={styles.slogan}>not real therapy</Text>
+                    <Text style={styles.slogan}>(not real therapy)</Text>
                 </View>
 
                 <View style={styles.form}>
@@ -78,7 +109,7 @@ export default function LoginScreen() {
                     </TouchableOpacity>
 
                     {/* Google Button */}
-                    <TouchableOpacity style={styles.googleSocialBtn} onPress={showComingSoon}>
+                    <TouchableOpacity style={styles.googleSocialBtn} onPress={handleGoogleLogin}>
                         <View style={styles.iconWrapper}>
                             <Svg width="20" height="20" viewBox="0 0 24 24">
                                 <Path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -102,10 +133,17 @@ export default function LoginScreen() {
                         placeholderTextColor={Theme.colors.text.muted}
                         keyboardType="email-address"
                         autoCapitalize="none"
+                        value={email}
+                        onChangeText={setEmail}
+                        editable={!isLoading}
                     />
 
-                    <TouchableOpacity style={styles.primaryBtn} onPress={handleContinue}>
-                        <Text style={styles.primaryBtnText}>Continue with Email</Text>
+                    <TouchableOpacity style={[styles.primaryBtn, isLoading && { opacity: 0.7 }]} onPress={handleEmailContinue} disabled={isLoading}>
+                        {isLoading ? (
+                            <ActivityIndicator color={Theme.colors.background} />
+                        ) : (
+                            <Text style={styles.primaryBtnText}>Continue with Email</Text>
+                        )}
                     </TouchableOpacity>
 
                     <Text style={styles.footerNote}>
@@ -150,12 +188,12 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingHorizontal: Theme.spacing.xl,
         justifyContent: 'space-between',
-        paddingTop: '30%',
+        paddingTop: '15%',
         paddingBottom: Theme.spacing.xxl,
     },
     logoSection: {
         alignItems: 'center',
-        marginBottom: Theme.spacing.xl,
+        marginBottom: Theme.spacing.l,
     },
     logoContainer: {
         flexDirection: 'row',
@@ -171,9 +209,8 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: Theme.colors.text.secondary,
         fontFamily: 'Outfit-Regular',
-        textAlign: 'center',
-        width: '100%',
-        marginTop: Theme.spacing.xs,
+        marginTop: -18,
+        marginLeft: 86,
         marginBottom: Theme.spacing.s,
     },
     logoWhite: {
@@ -183,14 +220,14 @@ const styles = StyleSheet.create({
         color: Theme.colors.primary,
     },
     logoImageSmall: {
-        width: 64,
-        height: 64,
-        marginTop: 10,
+        width: 86,
+        height: 86,
+        marginTop: 20,
     },
     form: {
         width: '100%',
         alignItems: 'center',
-        marginTop: 64,
+        marginTop: 32,
     },
     appleSocialBtn: {
         width: '100%',

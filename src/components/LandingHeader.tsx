@@ -18,7 +18,7 @@ export function LandingHeader({ onMenuPress }: Props) {
             <Text style={styles.logoWhite}>therapy</Text>
           </Text>
         </View>
-        <Text style={styles.slogan}>not real therapy</Text>
+        <Text style={styles.slogan}>(not real therapy)</Text>
       </View>
 
       <TouchableOpacity onPress={onMenuPress} style={styles.menuButton}>
@@ -41,6 +41,7 @@ const styles = StyleSheet.create({
   },
   brandingContainer: {
     alignItems: 'center',
+    marginTop: -10,
   },
   logoContainer: {
     flexDirection: 'row',
@@ -51,16 +52,16 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: Theme.colors.text.secondary,
     fontFamily: 'Outfit-Regular',
-    marginTop: -4,
-    marginLeft: 44,
+    marginTop: -20,
+    marginLeft: 60,
   },
   logoImage: {
-    width: 44,
-    height: 44,
-    marginTop: 8,
+    width: 60,
+    height: 60,
+    marginTop: 10,
   },
   logo: {
-    fontSize: 24,
+    fontSize: 28,
     fontFamily: 'Outfit-Regular',
   },
   logoWhite: {

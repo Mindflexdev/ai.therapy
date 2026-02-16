@@ -80,13 +80,14 @@ const styles = StyleSheet.create({
     },
     glowEffect: {
         ...StyleSheet.absoluteFillObject,
-        borderWidth: 3,
+        backgroundColor: 'rgba(235, 206, 128, 0.15)',
+        borderWidth: 1.5,
         borderColor: Theme.colors.primary,
         borderRadius: Theme.borderRadius.l,
         shadowColor: Theme.colors.primary,
         shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.8,
-        shadowRadius: 15,
+        shadowOpacity: 0.6,
+        shadowRadius: 12,
         zIndex: 2,
     },
     nameOverlay: {

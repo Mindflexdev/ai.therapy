@@ -3,16 +3,12 @@ import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Swi
 import { Theme } from '../../src/constants/Theme';
 import { X, Check } from 'lucide-react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useAuth } from '../../src/context/AuthContext';
 
 export default function PaywallScreen() {
     const router = useRouter();
     const { name, image } = useLocalSearchParams();
     const [isTrialEnabled, setIsTrialEnabled] = useState(false);
-    const { login } = useAuth();
-
     const handleContinue = () => {
-        login();
         router.push({
             pathname: '/(main)/chat',
             params: { name, image }
@@ -51,23 +47,7 @@ export default function PaywallScreen() {
                             <Text style={styles.logoWhite}>therapy</Text>
                         </Text>
                     </View>
-                    <Text style={styles.slogan}>not real therapy</Text>
-                </View>
-
-                <View style={styles.logoSection}>
-                    <View style={styles.logoContainer}>
-                        <Image
-                            source={require('../../assets/logo_ai.png')}
-                            style={styles.logoImage}
-                            resizeMode="contain"
-                        />
-                        <Text style={styles.logo}>
-                            <Text style={styles.logoWhite}>ai</Text>
-                            <Text style={styles.logoDot}>.</Text>
-                            <Text style={styles.logoWhite}>therapy</Text>
-                        </Text>
-                    </View>
-                    <Text style={styles.slogan}>not real therapy</Text>
+                    <Text style={styles.slogan}>(not real therapy)</Text>
                 </View>
 
                 <Text style={styles.title}>Unlock Full Access</Text>
@@ -110,10 +90,10 @@ export default function PaywallScreen() {
 
                 <View style={styles.footerLinks}>
                     <TouchableOpacity><Text style={styles.footerLink}>Restore Purchases</Text></TouchableOpacity>
-                    <TouchableOpacity onPress={() => router.push('/(main)/terms')}>
+                    <TouchableOpacity onPress={() => router.push({ pathname: '/(main)/legal', params: { section: 'terms' } })}>
                         <Text style={styles.footerLink}>Terms</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => router.push('/(main)/privacy')}>
+                    <TouchableOpacity onPress={() => router.push({ pathname: '/(main)/legal', params: { section: 'privacy' } })}>
                         <Text style={styles.footerLink}>Privacy</Text>
                     </TouchableOpacity>
                 </View>
@@ -147,12 +127,12 @@ const styles = StyleSheet.create({
         gap: 12,
     },
     logoImage: {
-        width: 44,
-        height: 44,
-        marginTop: 10,
+        width: 52,
+        height: 52,
+        marginTop: 14,
     },
     logo: {
-        fontSize: 24,
+        fontSize: 28,
         fontFamily: 'Outfit-Regular',
     },
     logoWhite: {
@@ -165,38 +145,7 @@ const styles = StyleSheet.create({
         fontSize: 10,
         color: Theme.colors.text.secondary,
         fontFamily: 'Outfit-Regular',
-        marginTop: 2,
-        marginLeft: 44,
-    },
-    logoSection: {
-        alignItems: 'center',
-        marginBottom: Theme.spacing.l,
-        marginTop: Theme.spacing.m,
-    },
-    logoContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
-    },
-    logoImage: {
-        width: 32,
-        height: 32,
-    },
-    logo: {
-        fontSize: 24,
-        fontFamily: 'Inter-Bold',
-    },
-    logoWhite: {
-        color: Theme.colors.text.primary,
-    },
-    logoDot: {
-        color: Theme.colors.primary,
-    },
-    slogan: {
-        fontSize: 10,
-        color: Theme.colors.text.secondary,
-        fontFamily: 'Inter-Regular',
-        marginTop: 2,
+        marginTop: -18,
         textAlign: 'center',
     },
     title: {

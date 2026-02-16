@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { View, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
+import { View, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Image, Text, Animated, Easing } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Theme } from '../src/constants/Theme';
 import { useAuth } from '../src/context/AuthContext';
@@ -21,12 +21,31 @@ const THERAPISTS = [
 export default function Onboarding() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [drawerVisible, setDrawerVisible] = useState(false);
+  const [sectionLayouts, setSectionLayouts] = useState<Record<string, number>>({});
   const router = useRouter();
-  const { selectTherapist } = useAuth();
+  const { selectTherapist, isLoggedIn, loading, pendingTherapist } = useAuth();
   const scrollViewRef = useRef<ScrollView>(null);
 
-  // Section layout tracking
-  const [sectionLayouts, setSectionLayouts] = useState<Record<string, number>>({});
+  // If returning from OAuth redirect with a pending therapist, show a loading screen
+  // while the OAuthRedirectHandler in _layout.tsx navigates to chat.
+  // Also show it while auth is still loading with a pending therapist (prevents flash of landing page).
+  if (pendingTherapist?.name && (loading || isLoggedIn)) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Image
+          source={require('../assets/logo_ai.png')}
+          style={styles.loadingLogo}
+          resizeMode="contain"
+        />
+        <Text style={styles.loadingBrand}>
+          <Text style={styles.loadingBrandWhite}>ai</Text>
+          <Text style={styles.loadingBrandGold}>.</Text>
+          <Text style={styles.loadingBrandWhite}>therapy</Text>
+        </Text>
+        <ActivityIndicator size="small" color={Theme.colors.primary} style={{ marginTop: 24 }} />
+      </View>
+    );
+  }
 
   const handleSelectTherapist = (therapist: any) => {
     setSelectedId(therapist.id);
@@ -108,5 +127,26 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: Theme.colors.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingLogo: {
+    width: 80,
+    height: 80,
+  },
+  loadingBrand: {
+    fontSize: 32,
+    fontFamily: 'Outfit-Regular',
+    marginTop: 8,
+  },
+  loadingBrandWhite: {
+    color: Theme.colors.text.primary,
+  },
+  loadingBrandGold: {
+    color: Theme.colors.primary,
   },
 });

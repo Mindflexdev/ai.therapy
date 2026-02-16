@@ -25,7 +25,26 @@ export default function ChatScreen() {
     const [isTyping, setIsTyping] = useState(true);
     const [inputText, setInputText] = useState('');
     const navigation = useNavigation<DrawerNavigationProp<any>>();
-    const { showLoginModal, setShowLoginModal, isLoggedIn } = useAuth();
+    const { showLoginModal, setShowLoginModal, isLoggedIn, setPendingTherapist, pendingTherapist, clearPendingTherapist } = useAuth();
+
+    // Restore draft message from pendingTherapist (saved before OAuth redirect)
+    // Auto-send it as a chat message so the user sees it in the conversation
+    useEffect(() => {
+        if (pendingTherapist?.pendingMessage) {
+            const draftMessage = pendingTherapist.pendingMessage;
+            clearPendingTherapist();
+            // Wait for the initial therapist greeting to load, then send the draft
+            const timer = setTimeout(() => {
+                setMessages(prev => [...prev, {
+                    id: `draft-${Date.now()}`,
+                    text: draftMessage,
+                    isUser: true,
+                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                }]);
+            }, 1800); // Slightly after the 1500ms greeting delay
+            return () => clearTimeout(timer);
+        }
+    }, []);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -45,6 +64,7 @@ export default function ChatScreen() {
         if (inputText.trim()) {
             // Check if user is logged in before sending
             if (!isLoggedIn) {
+                setPendingTherapist({ name: therapistName, pendingMessage: inputText.trim() });
                 setShowLoginModal(true);
                 return;
             }

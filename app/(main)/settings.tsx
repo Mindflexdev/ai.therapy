@@ -7,7 +7,7 @@ import { useAuth } from '../../src/context/AuthContext';
 
 export default function SettingsScreen() {
     const router = useRouter();
-    const { logout } = useAuth();
+    const { logout, user } = useAuth();
 
     const handleLogout = () => {
         logout();
@@ -39,7 +39,7 @@ export default function SettingsScreen() {
 
             <ScrollView contentContainerStyle={styles.scrollContent}>
                 <View style={styles.userCard}>
-                    <Text style={styles.email}>moritz.t@example.com</Text>
+                    <Text style={styles.email}>{user?.email || ''}</Text>
                 </View>
 
                 <View style={styles.upgradeCard}>

@@ -8,19 +8,19 @@ export function Footer() {
   return (
     <View style={styles.footer}>
       <View style={styles.links}>
-        <TouchableOpacity onPress={() => router.push('/(main)/terms')}>
+        <TouchableOpacity onPress={() => router.push({ pathname: '/(main)/legal', params: { section: 'terms' } })}>
           <Text style={styles.link}>Terms</Text>
         </TouchableOpacity>
         <Text style={styles.separator}>•</Text>
-        <TouchableOpacity onPress={() => router.push('/(main)/privacy')}>
+        <TouchableOpacity onPress={() => router.push({ pathname: '/(main)/legal', params: { section: 'privacy' } })}>
           <Text style={styles.link}>Privacy</Text>
         </TouchableOpacity>
         <Text style={styles.separator}>•</Text>
-        <TouchableOpacity onPress={() => router.push('/(main)/cookies')}>
+        <TouchableOpacity onPress={() => router.push({ pathname: '/(main)/legal', params: { section: 'cookies' } })}>
           <Text style={styles.link}>Cookies</Text>
         </TouchableOpacity>
         <Text style={styles.separator}>•</Text>
-        <TouchableOpacity onPress={() => router.push('/(main)/imprint')}>
+        <TouchableOpacity onPress={() => router.push({ pathname: '/(main)/legal', params: { section: 'imprint' } })}>
           <Text style={styles.link}>Imprint</Text>
         </TouchableOpacity>
       </View>

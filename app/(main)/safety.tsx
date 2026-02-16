@@ -7,10 +7,10 @@ import { ChevronLeft, ChevronRight, ShieldCheck, Lock, Cookie, FileText } from '
 export default function SafetyScreen() {
   const router = useRouter();
 
-  const LegalCard = ({ icon: Icon, title, description, route }: any) => (
+  const LegalCard = ({ icon: Icon, title, description, section }: any) => (
     <TouchableOpacity
       style={styles.card}
-      onPress={() => router.push(route)}
+      onPress={() => router.push({ pathname: '/(main)/legal', params: { section } })}
     >
       <View style={styles.cardLeft}>
         <View style={styles.iconContainer}>
@@ -45,28 +45,28 @@ export default function SafetyScreen() {
             icon={Lock}
             title="Privacy Policy"
             description="Learn how we collect, use, and protect your personal data"
-            route="/(main)/privacy"
+            section="privacy"
           />
 
           <LegalCard
             icon={FileText}
             title="Terms of Use"
             description="Understand the rules and guidelines for using ai.therapy"
-            route="/(main)/terms"
+            section="terms"
           />
 
           <LegalCard
             icon={Cookie}
             title="Cookie Policy"
             description="See how we use cookies and similar technologies"
-            route="/(main)/cookies"
+            section="cookies"
           />
 
           <LegalCard
             icon={ShieldCheck}
             title="Imprint"
             description="Company information and legal details"
-            route="/(main)/imprint"
+            section="imprint"
           />
         </View>
 

@@ -10,7 +10,7 @@ import { useAuth } from '../context/AuthContext';
 import { Lock } from 'lucide-react-native';
 
 export const CustomDrawer = (props: DrawerContentComponentProps) => {
-    const { isLoggedIn, selectedTherapistId } = useAuth();
+    const { isLoggedIn, selectedTherapistId, setShowLoginModal, user } = useAuth();
     const router = useRouter();
 
     const isUnlocked = (t: any) => {
@@ -50,7 +50,7 @@ export const CustomDrawer = (props: DrawerContentComponentProps) => {
                             <Text style={styles.logoWhite}>therapy</Text>
                         </Text>
                     </View>
-                    <Text style={styles.slogan}>not real therapy</Text>
+                    <Text style={styles.slogan}>(not real therapy)</Text>
                 </View>
             </View>
 
@@ -96,17 +96,17 @@ export const CustomDrawer = (props: DrawerContentComponentProps) => {
                 {isLoggedIn ? (
                     <TouchableOpacity style={styles.userProfile} onPress={() => props.navigation.navigate('settings')}>
                         <View style={styles.userAvatar}>
-                            <Text style={styles.userInitial}>M</Text>
+                            <Text style={styles.userInitial}>{user?.email?.charAt(0).toUpperCase() || '?'}</Text>
                         </View>
-                        <View>
-                            <Text style={styles.userName}>Moritz</Text>
-                            <Text style={styles.userEmail}>moritz.t@example.com</Text>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.userName} numberOfLines={1}>{user?.user_metadata?.full_name || user?.user_metadata?.name || 'User'}</Text>
+                            <Text style={styles.userEmail} numberOfLines={1}>{user?.email || ''}</Text>
                         </View>
                     </TouchableOpacity>
                 ) : (
                     <TouchableOpacity style={styles.loginButton} onPress={() => {
-                        console.log('Login button pressed - navigating to login');
-                        router.push('/(main)/login');
+                        props.navigation.closeDrawer();
+                        setShowLoginModal(true);
                     }}>
                         <LogIn size={20} color={Theme.colors.text.primary} />
                         <Text style={styles.loginText}>Log in</Text>
@@ -140,16 +140,16 @@ const styles = StyleSheet.create({
         fontSize: 10,
         color: Theme.colors.text.secondary,
         fontFamily: 'Outfit-Regular',
-        marginTop: -4,
-        marginLeft: 36,
+        marginTop: -18,
+        marginLeft: 48,
     },
     logoImage: {
-        width: 36,
-        height: 36,
-        marginTop: 8,
+        width: 48,
+        height: 48,
+        marginTop: 12,
     },
     logo: {
-        fontSize: 20,
+        fontSize: 24,
         fontFamily: 'Outfit-Regular',
     },
     logoWhite: {
