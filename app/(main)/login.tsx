@@ -6,6 +6,7 @@ import Svg, { Path } from 'react-native-svg';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
 import { Footer } from '../../src/components/sections/Footer';
+import { Logo } from '../../src/components/Logo';
 
 export default function LoginScreen() {
     const router = useRouter();
@@ -90,19 +91,7 @@ export default function LoginScreen() {
 
                         <View style={[styles.content, isSmallScreen && { paddingTop: '5%' }]}>
                             <View style={styles.logoSection}>
-                                <View style={styles.logoContainer}>
-                                    <Image
-                                        source={require('../../assets/logo_ai.png')}
-                                        style={styles.logoImageSmall}
-                                        resizeMode="contain"
-                                    />
-                                    <Text style={styles.logo}>
-                                        <Text style={styles.logoWhite}>ai</Text>
-                                        <Text style={styles.logoDot}>.</Text>
-                                        <Text style={styles.logoWhite}>therapy</Text>
-                                    </Text>
-                                </View>
-                                <Text style={styles.slogan}>(not real therapy)</Text>
+                                <Logo size="small" />
                             </View>
 
                             <View style={styles.form}>

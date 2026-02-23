@@ -28,7 +28,7 @@ const PHASE_LABELS: Record<string, string> = {
     'onboarding_sales': 'Sales Agent',
 };
 
-export const ChatBubble = ({ message, onUpgrade, onQuickReply }: Props) => {
+export const ChatBubble = React.memo(({ message, onUpgrade, onQuickReply }: Props) => {
     const agentLabel = message.agent
         ? (PHASE_LABELS[message.agent] || message.agent)
         : null;
@@ -80,7 +80,7 @@ export const ChatBubble = ({ message, onUpgrade, onQuickReply }: Props) => {
             </View>
         </View>
     );
-};
+});
 
 const styles = StyleSheet.create({
     container: {

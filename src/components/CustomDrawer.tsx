@@ -1,14 +1,13 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, SafeAreaView, Linking } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Linking } from 'react-native';
 import { DrawerContentComponentProps, DrawerContentScrollView } from '@react-navigation/drawer';
 import { Theme } from '../constants/Theme';
-import { LogIn, Crown, MessageSquare, ExternalLink, Lightbulb } from 'lucide-react-native';
+import { LogIn, Crown, MessageSquare, ExternalLink, Lightbulb, Lock } from 'lucide-react-native';
 import { THERAPISTS } from '../constants/Therapists';
 import { useRouter } from 'expo-router';
-
 import { useAuth } from '../context/AuthContext';
 import { useSubscription } from '../context/SubscriptionContext';
-import { Lock } from 'lucide-react-native';
+import { Logo } from './Logo';
 
 export const CustomDrawer = (props: DrawerContentComponentProps) => {
     const { isLoggedIn, selectedTherapistId, setShowLoginModal, user, pendingTherapist } = useAuth();
@@ -44,19 +43,7 @@ export const CustomDrawer = (props: DrawerContentComponentProps) => {
                     onPress={() => { props.navigation.closeDrawer(); router.replace('/'); }}
                     activeOpacity={0.7}
                 >
-                    <View style={styles.logoContainer}>
-                        <Image
-                            source={require('../../assets/logo_ai.png')}
-                            style={styles.logoImage}
-                            resizeMode="contain"
-                        />
-                        <Text style={styles.logo}>
-                            <Text style={styles.logoWhite}>ai</Text>
-                            <Text style={styles.logoDot}>.</Text>
-                            <Text style={styles.logoWhite}>therapy</Text>
-                        </Text>
-                    </View>
-                    <Text style={styles.slogan}>(not real therapy)</Text>
+                    <Logo size="medium" />
                 </TouchableOpacity>
             </View>
 

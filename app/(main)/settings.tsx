@@ -1,103 +1,12 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Switch, Linking, Alert, ActivityIndicator, Animated, Dimensions } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { Theme } from '../../src/constants/Theme';
-import { ChevronLeft, User, CreditCard, Sliders, Link, ShieldCheck, Bell, Globe, Lock, MessageCircle, ChevronRight, LogOut, FileText, Cookie, Building2, Trash2 } from 'lucide-react-native';
+import { ChevronLeft, CreditCard, Sliders, Link, ShieldCheck, Bell, Globe, Lock, MessageCircle, ChevronRight, LogOut, FileText, Cookie, Building2, Trash2 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
 import { useSubscription } from '../../src/context/SubscriptionContext';
 import { supabase } from '../../src/lib/supabase';
-
-// --- Delete Success Screen ---
-const DeleteSuccessScreen = ({ onDone }: { onDone: () => void }) => {
-    const scaleAnim = useRef(new Animated.Value(0)).current;
-    const fadeAnim = useRef(new Animated.Value(0)).current;
-    const textFadeAnim = useRef(new Animated.Value(0)).current;
-
-    useEffect(() => {
-        Animated.sequence([
-            Animated.parallel([
-                Animated.spring(scaleAnim, {
-                    toValue: 1,
-                    friction: 4,
-                    tension: 60,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(fadeAnim, {
-                    toValue: 1,
-                    duration: 400,
-                    useNativeDriver: true,
-                }),
-            ]),
-            Animated.timing(textFadeAnim, {
-                toValue: 1,
-                duration: 500,
-                useNativeDriver: true,
-            }),
-        ]).start();
-
-        const timer = setTimeout(onDone, 3500);
-        return () => clearTimeout(timer);
-    }, []);
-
-    return (
-        <View style={deleteSuccessStyles.container}>
-            <Animated.View style={[deleteSuccessStyles.content, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
-                <Text style={deleteSuccessStyles.checkmark}>✓</Text>
-            </Animated.View>
-
-            <Animated.View style={{ opacity: textFadeAnim, alignItems: 'center' }}>
-                <Text style={deleteSuccessStyles.title}>Account Deleted</Text>
-                <Text style={deleteSuccessStyles.subtitle}>
-                    Your account and personal data have been{'\n'}removed. Past conversations have been{'\n'}anonymized.
-                </Text>
-            </Animated.View>
-        </View>
-    );
-};
-
-const deleteSuccessStyles = StyleSheet.create({
-    container: {
-        ...StyleSheet.absoluteFillObject,
-        backgroundColor: Theme.colors.background,
-        justifyContent: 'center',
-        alignItems: 'center',
-        zIndex: 100,
-    },
-    content: {
-        width: 100,
-        height: 100,
-        borderRadius: 50,
-        backgroundColor: Theme.colors.primary,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 32,
-        shadowColor: Theme.colors.primary,
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.5,
-        shadowRadius: 20,
-        elevation: 10,
-    },
-    checkmark: {
-        fontSize: 48,
-        color: Theme.colors.background,
-        fontWeight: 'bold',
-    },
-    title: {
-        fontSize: 28,
-        color: Theme.colors.text.primary,
-        fontFamily: 'Inter-Bold',
-        marginBottom: 12,
-        textAlign: 'center',
-    },
-    subtitle: {
-        fontSize: 15,
-        color: Theme.colors.text.secondary,
-        fontFamily: 'Inter-Regular',
-        textAlign: 'center',
-        lineHeight: 22,
-        paddingHorizontal: 40,
-    },
-});
+import { SuccessOverlay } from '../../src/components/SuccessOverlay';
 
 export default function SettingsScreen() {
     const router = useRouter();
@@ -169,7 +78,13 @@ export default function SettingsScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
-            {showDeleteSuccess && <DeleteSuccessScreen onDone={handleDeleteSuccessDone} />}
+            {showDeleteSuccess && (
+                <SuccessOverlay
+                    title="Account Deleted"
+                    subtitle={"Your account and personal data have been\nremoved. Past conversations have been\nanonymized."}
+                    onDone={handleDeleteSuccessDone}
+                />
+            )}
 
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
