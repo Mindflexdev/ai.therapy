@@ -1,29 +1,242 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, ScrollView, Platform } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, ScrollView, Platform, KeyboardAvoidingView, Animated, Dimensions, Keyboard } from 'react-native';
 import { Theme } from '../../src/constants/Theme';
-import { ChevronLeft, X, Check, Circle, AlertCircle, Lightbulb, User, Settings as SettingsIcon } from 'lucide-react-native';
+import { ChevronLeft } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
 
 type FeedbackType = 'bug' | 'feature' | 'billing' | 'general';
 
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+// --- Confetti Particle ---
+const CONFETTI_COLORS = ['#FFD700', '#FF6B6B', '#7CB9FF', '#4ECCA3', '#FF9FF3', '#FECA57', '#FF6348', '#A29BFE'];
+const NUM_CONFETTI = 40;
+
+interface ConfettiPiece {
+    x: number;
+    delay: number;
+    color: string;
+    size: number;
+    rotation: number;
+}
+
+const ConfettiParticle = ({ piece, index }: { piece: ConfettiPiece; index: number }) => {
+    const fallAnim = useRef(new Animated.Value(-50)).current;
+    const fadeAnim = useRef(new Animated.Value(1)).current;
+    const rotateAnim = useRef(new Animated.Value(0)).current;
+    const swayAnim = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        const delay = piece.delay;
+        Animated.parallel([
+            Animated.timing(fallAnim, {
+                toValue: SCREEN_HEIGHT + 50,
+                duration: 2800 + Math.random() * 1200,
+                delay,
+                useNativeDriver: true,
+            }),
+            Animated.timing(fadeAnim, {
+                toValue: 0,
+                duration: 2500,
+                delay: delay + 800,
+                useNativeDriver: true,
+            }),
+            Animated.timing(rotateAnim, {
+                toValue: piece.rotation,
+                duration: 3000,
+                delay,
+                useNativeDriver: true,
+            }),
+            Animated.sequence([
+                Animated.timing(swayAnim, {
+                    toValue: 30,
+                    duration: 600,
+                    delay,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(swayAnim, {
+                    toValue: -30,
+                    duration: 600,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(swayAnim, {
+                    toValue: 15,
+                    duration: 600,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(swayAnim, {
+                    toValue: 0,
+                    duration: 600,
+                    useNativeDriver: true,
+                }),
+            ]),
+        ]).start();
+    }, []);
+
+    const spin = rotateAnim.interpolate({
+        inputRange: [0, 10],
+        outputRange: ['0deg', '3600deg'],
+    });
+
+    return (
+        <Animated.View
+            style={{
+                position: 'absolute',
+                left: piece.x,
+                top: 0,
+                width: piece.size,
+                height: piece.size * 0.6,
+                backgroundColor: piece.color,
+                borderRadius: 2,
+                opacity: fadeAnim,
+                transform: [
+                    { translateY: fallAnim },
+                    { translateX: swayAnim },
+                    { rotate: spin },
+                ],
+            }}
+        />
+    );
+};
+
+// --- Success Screen ---
+const SuccessScreen = ({ onDone }: { onDone: () => void }) => {
+    const scaleAnim = useRef(new Animated.Value(0)).current;
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const textFadeAnim = useRef(new Animated.Value(0)).current;
+
+    const confettiPieces = useRef<ConfettiPiece[]>(
+        Array.from({ length: NUM_CONFETTI }, () => ({
+            x: Math.random() * SCREEN_WIDTH,
+            delay: Math.random() * 600,
+            color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
+            size: 8 + Math.random() * 8,
+            rotation: 2 + Math.random() * 8,
+        }))
+    ).current;
+
+    useEffect(() => {
+        Animated.sequence([
+            Animated.parallel([
+                Animated.spring(scaleAnim, {
+                    toValue: 1,
+                    friction: 4,
+                    tension: 60,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(fadeAnim, {
+                    toValue: 1,
+                    duration: 400,
+                    useNativeDriver: true,
+                }),
+            ]),
+            Animated.timing(textFadeAnim, {
+                toValue: 1,
+                duration: 500,
+                useNativeDriver: true,
+            }),
+        ]).start();
+
+        const timer = setTimeout(onDone, 3500);
+        return () => clearTimeout(timer);
+    }, []);
+
+    return (
+        <View style={successStyles.container}>
+            {/* Confetti */}
+            {confettiPieces.map((piece, i) => (
+                <ConfettiParticle key={i} piece={piece} index={i} />
+            ))}
+
+            {/* Center content */}
+            <Animated.View style={[successStyles.content, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
+                <Text style={successStyles.checkmark}>✓</Text>
+            </Animated.View>
+
+            <Animated.View style={{ opacity: textFadeAnim, alignItems: 'center' }}>
+                <Text style={successStyles.title}>Thank you!</Text>
+                <Text style={successStyles.subtitle}>
+                    Your feedback means the world to us.{'\n'}
+                    You're helping shape the future of ai.therapy.
+                </Text>
+            </Animated.View>
+        </View>
+    );
+};
+
+const successStyles = StyleSheet.create({
+    container: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: Theme.colors.background,
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 100,
+    },
+    content: {
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        backgroundColor: Theme.colors.primary,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 32,
+        shadowColor: Theme.colors.primary,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.5,
+        shadowRadius: 20,
+        elevation: 10,
+    },
+    checkmark: {
+        fontSize: 48,
+        color: Theme.colors.background,
+        fontWeight: 'bold',
+    },
+    title: {
+        fontSize: 28,
+        color: Theme.colors.text.primary,
+        fontFamily: 'Inter-Bold',
+        marginBottom: 12,
+        textAlign: 'center',
+    },
+    subtitle: {
+        fontSize: 15,
+        color: Theme.colors.text.secondary,
+        fontFamily: 'Inter-Regular',
+        textAlign: 'center',
+        lineHeight: 22,
+        paddingHorizontal: 40,
+    },
+});
+
+// --- Main Feedback Screen ---
 export default function FeedbackScreen() {
     const router = useRouter();
     const { user } = useAuth();
     const [feedbackType, setFeedbackType] = useState<FeedbackType>('general');
     const [description, setDescription] = useState('');
+    const [showSuccess, setShowSuccess] = useState(false);
+    const scrollViewRef = useRef<ScrollView>(null);
 
     const feedbackTypes = [
         { id: 'bug' as FeedbackType, label: 'Bug Report', description: 'Report something that isn\'t working correctly.' },
-        { id: 'feature' as FeedbackType, label: 'Feature Request', description: 'Suggest an improvement or a new feature.' },
-        { id: 'billing' as FeedbackType, label: 'Auth and Billing', description: 'Issues with your account or payments.' },
-        { id: 'general' as FeedbackType, label: 'General Feedback', description: 'For any feedback that does not fit into the above categories.' },
+        { id: 'feature' as FeedbackType, label: 'Request', description: 'Suggest an improvement or a new feature.' },
+        { id: 'billing' as FeedbackType, label: 'Auth & Billing', description: 'Issues with your account or payments.' },
+        { id: 'general' as FeedbackType, label: 'General', description: 'For anything else not covered above.' },
     ];
 
     const handleSubmit = () => {
-        // Logic to submit feedback would go here
         // TODO: submit feedback to backend
-        router.back();
+        Keyboard.dismiss();
+        setShowSuccess(true);
+    };
+
+    const handleSuccessDone = () => {
+        if (router.canGoBack()) {
+            router.back();
+        } else {
+            router.replace('/');
+        }
     };
 
     const RadioButton = ({ selected, onPress, label }: { selected: boolean, onPress: () => void, label: string }) => (
@@ -38,6 +251,8 @@ export default function FeedbackScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
+            {showSuccess && <SuccessScreen onDone={handleSuccessDone} />}
+
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <ChevronLeft size={28} color={Theme.colors.text.primary} />
@@ -46,7 +261,11 @@ export default function FeedbackScreen() {
                 <View style={{ width: 28 }} />
             </View>
 
-            <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={{ flex: 1 }}
+            >
+            <ScrollView ref={scrollViewRef} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
                 <View style={styles.innerContainer}>
                     <Text style={styles.sectionTitle}>Feedback Type</Text>
                     <View style={styles.typesGrid}>
@@ -74,6 +293,11 @@ export default function FeedbackScreen() {
                             value={description}
                             onChangeText={setDescription}
                             textAlignVertical="top"
+                            onFocus={() => {
+                                setTimeout(() => {
+                                    scrollViewRef.current?.scrollToEnd({ animated: true });
+                                }, 300);
+                            }}
                         />
                         <Text style={styles.charCount}>{description.length}/5000</Text>
                     </View>
@@ -87,10 +311,11 @@ export default function FeedbackScreen() {
                         <Text style={[styles.submitButtonText, !description.trim() && styles.submitButtonTextDisabled]}>Submit</Text>
                     </TouchableOpacity>
                     <Text style={styles.confirmationNote}>
-                        Thanks! We’re getting on this right away and will email you if we need more details.
+                        Thanks! We're getting on this right away and will email you if we need more details.
                     </Text>
                 </View>
             </ScrollView>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 }
@@ -119,7 +344,7 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         flexGrow: 1,
-        paddingBottom: Theme.spacing.xxl,
+        paddingBottom: 120,
     },
     innerContainer: {
         maxWidth: 1000,

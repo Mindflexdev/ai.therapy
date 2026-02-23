@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, FlatList, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, Platform, Alert, Animated, Easing, Linking } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, FlatList, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, Keyboard, Platform, Alert, Animated, Easing, Linking } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BlurView } from 'expo-blur';
 import { Theme } from '../../src/constants/Theme';
@@ -22,7 +22,7 @@ try {
 } catch (e) {
     console.warn('expo-av not available, voice recording disabled');
 }
-import { useNavigation, useLocalSearchParams } from 'expo-router';
+import { useNavigation, useLocalSearchParams, useRouter } from 'expo-router';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { useAuth } from '../../src/context/AuthContext';
 import { supabase } from '../../src/lib/supabase';
@@ -142,17 +142,36 @@ export default function ChatScreen() {
     const recordingRef = useRef<Audio.Recording | null>(null);
     const [inputText, setInputText] = useState('');
     const navigation = useNavigation<DrawerNavigationProp<any>>();
+    const router = useRouter();
     const { showLoginModal, setShowLoginModal, isLoggedIn, user, setPendingTherapist, pendingTherapist, clearPendingTherapist, selectedTherapistId, selectTherapist } = useAuth();
+
+    // Keep selectedTherapistId in sync with the therapist we're actually chatting with
+    useEffect(() => {
+        const currentTherapist = THERAPISTS.find(t => t.name === therapistName);
+        if (currentTherapist && currentTherapist.id !== selectedTherapistId) {
+            selectTherapist(currentTherapist.id, true);
+        }
+    }, [therapistName]);
     const sessionId = useRef(generateSessionId());
     const lastSendTime = useRef(0);
+    const flatListRef = useRef<FlatList>(null);
 
-    // Audio metering level for waveform visualization (dBFS: -160 to 0)
-    const [meteringLevel, setMeteringLevel] = useState(-160);
+    // Audio metering: levels array drives the waveform bars directly
+    const NUM_WAVEFORM_BARS = 25;
+    const [waveformLevels, setWaveformLevels] = useState<number[]>(new Array(NUM_WAVEFORM_BARS).fill(2));
 
     // Onboarding state: new users go through the onboarding flow.
     // Once onboarding completes (paywall phase), isOnboarding becomes false.
     const [isOnboarding, setIsOnboarding] = useState(true);
     const [onboardingPhase, setOnboardingPhase] = useState('onboarding_einstellungs');
+
+    // Auto-scroll to bottom when messages change or typing indicator appears
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            flatListRef.current?.scrollToEnd({ animated: true });
+        }, 100);
+        return () => clearTimeout(timer);
+    }, [messages, isTyping]);
 
     // Load persisted session ID from AsyncStorage (or save the new one)
     useEffect(() => {
@@ -272,7 +291,8 @@ export default function ChatScreen() {
                 id: '1',
                 text: `Hi, I'm ${therapistName}! \n\nAlthough I'm not a therapist, I was developed by psychologists – as a companion for your mental health who understands you and adapts to your needs. Unlike ChatGPT, I use various psychological approaches to support you more specifically. The first session with me is currently free. This project lives from people like you. If it helps you, I would be happy about your support. Your trust is important to me: Everything you write here remains private & secure.\n\nWhat do you want support with?`,
                 isUser: false,
-                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                agent: 'Greeting',
             }]);
         }, 2500); // Increased delay by 1s as requested
         return () => clearTimeout(timer);
@@ -327,6 +347,7 @@ export default function ChatScreen() {
             setIsTyping(true);
 
             let responseText: string;
+            let agentSource: string;
 
             if (isOnboarding) {
                 // ONBOARDING FLOW: send full history to chat-onboarding edge function.
@@ -339,6 +360,7 @@ export default function ChatScreen() {
 
                 const result = await chatOnboarding(message, therapistName, history);
                 responseText = result.text;
+                agentSource = result.phase;
                 setOnboardingPhase(result.phase);
 
                 // After the paywall message, switch to sales mode (still onboarding edge fn)
@@ -357,14 +379,44 @@ export default function ChatScreen() {
                     systemPrompt,
                 }, recentHistory);
                 responseText = result.text;
+                agentSource = `${therapistName} Agent`;
+            }
+
+            // Parse *..* options from AI response into quick reply buttons
+            const parseQuickReplies = (text: string): { cleanText: string; replies: string[] } => {
+                const replies: string[] = [];
+                // Match lines that are just *text* (italic options)
+                const cleanText = text.replace(/^\*([^*]+)\*$/gm, (_, option) => {
+                    replies.push(option.trim());
+                    return '';
+                }).replace(/\n{3,}/g, '\n\n').trim();
+                return { cleanText, replies };
+            };
+
+            // Phases that use *..* quick reply buttons
+            const quickReplyPhases = ['onboarding_einstellungs', 'onboarding_problemstellung'];
+            const showUpgrade = agentSource === 'onboarding_paywall' || agentSource === 'onboarding_sales';
+
+            let displayText = responseText;
+            let quickReplies: string[] | undefined;
+
+            if (quickReplyPhases.includes(agentSource)) {
+                const parsed = parseQuickReplies(responseText);
+                if (parsed.replies.length > 0) {
+                    displayText = parsed.cleanText;
+                    quickReplies = parsed.replies;
+                }
             }
 
             // Add AI response to messages
-            const aiMessage = {
+            const aiMessage: any = {
                 id: `ai-${Date.now()}`,
-                text: responseText,
+                text: displayText,
                 isUser: false,
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                agent: agentSource,
+                ...(showUpgrade && { upgradeButton: true }),
+                ...(quickReplies && { quickReplies }),
             };
 
             setMessages(prev => [...prev, aiMessage]);
@@ -383,6 +435,36 @@ export default function ChatScreen() {
         } finally {
             setIsTyping(false);
         }
+    };
+
+    // Quick reply: user taps a button option — send it as their message
+    const handleQuickReply = (text: string) => {
+        if (!isLoggedIn) {
+            setPendingTherapist({ name: therapistName, pendingMessage: text });
+            setShowLoginModal(true);
+            return;
+        }
+
+        Keyboard.dismiss();
+        lastSendTime.current = Date.now();
+
+        const userMessage = {
+            id: `qr-${Date.now()}`,
+            text,
+            isUser: true,
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        };
+
+        // Remove quick replies from the message that was tapped (so buttons disappear)
+        setMessages(prev => {
+            const updated = prev.map(msg =>
+                msg.quickReplies ? { ...msg, quickReplies: undefined } : msg
+            );
+            return [...updated, userMessage];
+        });
+
+        saveMessage(text, 'user');
+        sendMessageToAI(text);
     };
 
     const handleSend = () => {
@@ -441,7 +523,11 @@ export default function ChatScreen() {
     const handleStartRecording = async () => {
         try {
             const recording = await startRecording((metering: number) => {
-                setMeteringLevel(metering);
+                // Normalize dBFS (-60..0) to bar height (2..30px) and push into sliding window
+                const clamped = Math.max(-60, Math.min(0, metering));
+                const normalized = (clamped + 60) / 60;
+                const height = 2 + normalized * 28;
+                setWaveformLevels(prev => [...prev.slice(1), height]);
             });
             recordingRef.current = recording;
             setIsRecording(true);
@@ -461,6 +547,7 @@ export default function ChatScreen() {
             console.error('Error cancelling recording:', err);
         }
         setIsRecording(false);
+        setWaveformLevels(new Array(NUM_WAVEFORM_BARS).fill(2));
     };
 
     const handleSendRecording = async () => {
@@ -468,6 +555,7 @@ export default function ChatScreen() {
 
         setIsRecording(false);
         setIsTranscribing(true);
+        setWaveformLevels(new Array(NUM_WAVEFORM_BARS).fill(2));
 
         try {
             const { uri, mimeType } = await stopRecording(recordingRef.current);
@@ -505,37 +593,19 @@ export default function ChatScreen() {
         </View>
     );
 
-    const NUM_WAVEFORM_BARS = 25;
-    const VoiceWaveform = () => {
-        const [levels, setLevels] = useState<number[]>(new Array(NUM_WAVEFORM_BARS).fill(2));
-
-        useEffect(() => {
-            if (!isRecording) {
-                setLevels(new Array(NUM_WAVEFORM_BARS).fill(2));
-                return;
-            }
-            // Normalize dBFS (-60..0 is the useful speech range) to bar height (2..30px)
-            const clamped = Math.max(-60, Math.min(0, meteringLevel));
-            const normalized = (clamped + 60) / 60; // 0..1
-            const height = 2 + normalized * 28; // 2..30px
-
-            setLevels(prev => [...prev.slice(1), height]);
-        }, [meteringLevel, isRecording]);
-
-        return (
-            <View style={styles.waveformContainer}>
-                {levels.map((height, i) => (
-                    <View
-                        key={i}
-                        style={[
-                            styles.waveformBar,
-                            { height }
-                        ]}
-                    />
-                ))}
-            </View>
-        );
-    };
+    const VoiceWaveform = () => (
+        <View style={styles.waveformContainer}>
+            {waveformLevels.map((height, i) => (
+                <View
+                    key={i}
+                    style={[
+                        styles.waveformBar,
+                        { height }
+                    ]}
+                />
+            ))}
+        </View>
+    );
 
     return (
         <SafeAreaView style={styles.container}>
@@ -574,11 +644,21 @@ export default function ChatScreen() {
                 {/* Chat Area */}
                 <View style={styles.chatArea}>
                     <FlatList
+                        ref={flatListRef}
                         data={messages}
                         keyExtractor={(item) => item.id}
-                        renderItem={({ item }) => <ChatBubble message={item} />}
+                        keyboardShouldPersistTaps="always"
+                        renderItem={({ item }) => (
+                            <ChatBubble
+                                message={item}
+                                onUpgrade={() => router.push('/(main)/paywall')}
+                                onQuickReply={handleQuickReply}
+                            />
+                        )}
                         contentContainerStyle={styles.messageList}
                         ListFooterComponent={isTyping ? <TypingBubble /> : null}
+                        onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+                        onLayout={() => flatListRef.current?.scrollToEnd({ animated: false })}
                     />
                 </View>
 

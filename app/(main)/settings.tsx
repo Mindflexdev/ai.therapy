@@ -1,19 +1,157 @@
-import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Switch, Linking } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Switch, Linking, Alert, ActivityIndicator, Animated, Dimensions } from 'react-native';
 import { Theme } from '../../src/constants/Theme';
-import { ChevronLeft, User, CreditCard, Sliders, Link, ShieldCheck, Bell, Globe, Lock, MessageCircle, ChevronRight, LogOut, FileText } from 'lucide-react-native';
+import { ChevronLeft, User, CreditCard, Sliders, Link, ShieldCheck, Bell, Globe, Lock, MessageCircle, ChevronRight, LogOut, FileText, Cookie, Building2, Trash2 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
 import { useSubscription } from '../../src/context/SubscriptionContext';
+import { supabase } from '../../src/lib/supabase';
+
+// --- Delete Success Screen ---
+const DeleteSuccessScreen = ({ onDone }: { onDone: () => void }) => {
+    const scaleAnim = useRef(new Animated.Value(0)).current;
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const textFadeAnim = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        Animated.sequence([
+            Animated.parallel([
+                Animated.spring(scaleAnim, {
+                    toValue: 1,
+                    friction: 4,
+                    tension: 60,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(fadeAnim, {
+                    toValue: 1,
+                    duration: 400,
+                    useNativeDriver: true,
+                }),
+            ]),
+            Animated.timing(textFadeAnim, {
+                toValue: 1,
+                duration: 500,
+                useNativeDriver: true,
+            }),
+        ]).start();
+
+        const timer = setTimeout(onDone, 3500);
+        return () => clearTimeout(timer);
+    }, []);
+
+    return (
+        <View style={deleteSuccessStyles.container}>
+            <Animated.View style={[deleteSuccessStyles.content, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
+                <Text style={deleteSuccessStyles.checkmark}>✓</Text>
+            </Animated.View>
+
+            <Animated.View style={{ opacity: textFadeAnim, alignItems: 'center' }}>
+                <Text style={deleteSuccessStyles.title}>Account Deleted</Text>
+                <Text style={deleteSuccessStyles.subtitle}>
+                    Your account and personal data have been{'\n'}removed. Past conversations have been{'\n'}anonymized.
+                </Text>
+            </Animated.View>
+        </View>
+    );
+};
+
+const deleteSuccessStyles = StyleSheet.create({
+    container: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: Theme.colors.background,
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 100,
+    },
+    content: {
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        backgroundColor: Theme.colors.primary,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 32,
+        shadowColor: Theme.colors.primary,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.5,
+        shadowRadius: 20,
+        elevation: 10,
+    },
+    checkmark: {
+        fontSize: 48,
+        color: Theme.colors.background,
+        fontWeight: 'bold',
+    },
+    title: {
+        fontSize: 28,
+        color: Theme.colors.text.primary,
+        fontFamily: 'Inter-Bold',
+        marginBottom: 12,
+        textAlign: 'center',
+    },
+    subtitle: {
+        fontSize: 15,
+        color: Theme.colors.text.secondary,
+        fontFamily: 'Inter-Regular',
+        textAlign: 'center',
+        lineHeight: 22,
+        paddingHorizontal: 40,
+    },
+});
 
 export default function SettingsScreen() {
     const router = useRouter();
     const { logout, user } = useAuth();
     const { isPro } = useSubscription();
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
 
     const handleLogout = () => {
         logout();
         router.replace('/');
+    };
+
+    const handleDeleteSuccessDone = async () => {
+        await logout();
+        router.replace('/');
+    };
+
+    const handleDeleteAccount = () => {
+        Alert.alert(
+            'Delete Account',
+            'This will permanently delete your account, including your email and personal data. Your past conversations will be anonymized and can no longer be linked to you.',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Continue',
+                    style: 'destructive',
+                    onPress: () => {
+                        Alert.alert(
+                            'Are you sure?',
+                            'This action cannot be undone. You will be signed out immediately.',
+                            [
+                                { text: 'Go Back', style: 'cancel' },
+                                {
+                                    text: 'Delete My Account',
+                                    style: 'destructive',
+                                    onPress: async () => {
+                                        setIsDeleting(true);
+                                        try {
+                                            const { error } = await supabase.rpc('delete_own_account');
+                                            if (error) throw error;
+                                            setShowDeleteSuccess(true);
+                                        } catch (e: any) {
+                                            setIsDeleting(false);
+                                            Alert.alert('Error', e.message || 'Failed to delete account. Please try again.');
+                                        }
+                                    },
+                                },
+                            ]
+                        );
+                    },
+                },
+            ]
+        );
     };
 
     const SettingRow = ({ icon: Icon, label, value, onPress }: any) => (
@@ -31,6 +169,8 @@ export default function SettingsScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
+            {showDeleteSuccess && <DeleteSuccessScreen onDone={handleDeleteSuccessDone} />}
+
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <ChevronLeft size={28} color={Theme.colors.primary} />
@@ -55,7 +195,7 @@ export default function SettingsScreen() {
                 )}
 
                 <View style={styles.section}>
-                    <SettingRow icon={User} label="Profile" />
+                    <SettingRow icon={Trash2} label="Delete Account" onPress={handleDeleteAccount} />
                     <SettingRow icon={CreditCard} label="Billing" />
                 </View>
 
@@ -72,15 +212,17 @@ export default function SettingsScreen() {
                 </View>
 
                 <View style={styles.section}>
-                    <SettingRow icon={ShieldCheck} label="Safety & Legal" onPress={() => router.push({ pathname: '/(main)/legal', params: { section: 'safety' } })} />
-                    <SettingRow icon={Lock} label="Privacy Policy" onPress={() => Linking.openURL('https://ai.therapy.free/legal?section=privacy')} />
-                    <SettingRow icon={FileText} label="Terms of Use" onPress={() => Linking.openURL('https://ai.therapy.free/legal?section=terms')} />
+                    <SettingRow icon={Lock} label="Privacy Policy" onPress={() => router.push({ pathname: '/(main)/legal', params: { section: 'privacy' } })} />
+                    <SettingRow icon={FileText} label="Terms of Use" onPress={() => router.push({ pathname: '/(main)/legal', params: { section: 'terms' } })} />
+                    <SettingRow icon={Cookie} label="Cookie Policy" onPress={() => router.push({ pathname: '/(main)/legal', params: { section: 'cookies' } })} />
+                    <SettingRow icon={Building2} label="Imprint" onPress={() => router.push({ pathname: '/(main)/legal', params: { section: 'imprint' } })} />
                 </View>
 
                 <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
                     <LogOut size={20} color={'#ff4444'} />
                     <Text style={styles.logoutText}>Log Out</Text>
                 </TouchableOpacity>
+
             </ScrollView>
         </SafeAreaView>
     );
@@ -196,5 +338,5 @@ const styles = StyleSheet.create({
         fontFamily: 'Inter-Bold',
         marginLeft: Theme.spacing.s,
         fontSize: 16,
-    }
+    },
 });

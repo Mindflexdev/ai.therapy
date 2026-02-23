@@ -2,32 +2,15 @@
 // Records audio using expo-av, sends base64 to whisper-proxy, returns text.
 
 import { Audio } from 'expo-av';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { supabase } from './supabase';
 
-// Recording config optimized for speech transcription
-const RECORDING_OPTIONS: Audio.RecordingOptions = {
+// Use the built-in HIGH_QUALITY preset (known to work on all platforms)
+// with isMeteringEnabled for waveform visualization.
+// Custom options with non-standard sample rates can cause "recorder not prepared" on iOS.
+const RECORDING_OPTIONS = {
+  ...Audio.RecordingOptionsPresets.HIGH_QUALITY,
   isMeteringEnabled: true,
-  android: {
-    extension: '.m4a',
-    outputFormat: Audio.AndroidOutputFormat.MPEG_4,
-    audioEncoder: Audio.AndroidAudioEncoder.AAC,
-    sampleRate: 16000,
-    numberOfChannels: 1,
-    bitRate: 64000,
-  },
-  ios: {
-    extension: '.m4a',
-    outputFormat: Audio.IOSOutputFormat.MPEG4AAC,
-    audioQuality: Audio.IOSAudioQuality.MEDIUM,
-    sampleRate: 16000,
-    numberOfChannels: 1,
-    bitRate: 64000,
-  },
-  web: {
-    mimeType: 'audio/webm',
-    bitsPerSecond: 64000,
-  },
 };
 
 let currentRecording: Audio.Recording | null = null;
@@ -45,26 +28,41 @@ export async function startRecording(
     throw new Error('Microphone permission is required for voice input.');
   }
 
-  // Configure audio mode for recording
+  // Clean up any stale recording from a previous session/hot-reload.
+  // This prevents "recorder not prepared" errors caused by the native
+  // audio session retaining state from an orphaned recording.
+  if (currentRecording) {
+    try {
+      await currentRecording.stopAndUnloadAsync();
+    } catch (_) {
+      // Already stopped — ignore
+    }
+    currentRecording = null;
+  }
+
+  // Reset audio mode first, then enable recording.
+  // This forces iOS to tear down and re-create the audio session cleanly.
+  await Audio.setAudioModeAsync({
+    allowsRecordingIOS: false,
+  });
   await Audio.setAudioModeAsync({
     allowsRecordingIOS: true,
     playsInSilentModeIOS: true,
   });
 
-  const recording = new Audio.Recording();
-  await recording.prepareToRecordAsync(RECORDING_OPTIONS);
-
-  // Register metering callback for real-time audio level visualization
-  if (onMeteringUpdate) {
-    recording.setProgressUpdateInterval(100);
-    recording.setOnRecordingStatusUpdate((status) => {
-      if (status.isRecording && status.metering !== undefined) {
-        onMeteringUpdate(status.metering);
+  const statusCallback = onMeteringUpdate
+    ? (status: Audio.RecordingStatus) => {
+        if (status.isRecording && status.metering !== undefined) {
+          onMeteringUpdate(status.metering);
+        }
       }
-    });
-  }
+    : undefined;
 
-  await recording.startAsync();
+  const { recording } = await Audio.Recording.createAsync(
+    RECORDING_OPTIONS,
+    statusCallback,
+    onMeteringUpdate ? 100 : undefined
+  );
 
   currentRecording = recording;
   return recording;
@@ -108,7 +106,7 @@ export async function transcribeAudio(
 ): Promise<string> {
   // Read the file as base64
   const base64Audio = await FileSystem.readAsStringAsync(uri, {
-    encoding: FileSystem.EncodingType.Base64,
+    encoding: 'base64',
   });
 
   // Check auth

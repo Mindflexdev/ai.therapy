@@ -101,20 +101,6 @@ export const CustomDrawer = (props: DrawerContentComponentProps) => {
                     </TouchableOpacity>
                 </View>
 
-                <View style={styles.footerLinks}>
-                    <TouchableOpacity style={styles.footerLink} onPress={() => router.push({ pathname: '/(main)/legal', params: { section: 'privacy' } })}>
-                        <Text style={styles.footerLinkText}>Privacy Policy</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.footerLink} onPress={() => router.push({ pathname: '/(main)/legal', params: { section: 'terms' } })}>
-                        <Text style={styles.footerLinkText}>Terms of Use</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.footerLink} onPress={() => router.push({ pathname: '/(main)/legal', params: { section: 'cookies' } })}>
-                        <Text style={styles.footerLinkText}>Cookie Policy</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.footerLink} onPress={() => router.push({ pathname: '/(main)/legal', params: { section: 'imprint' } })}>
-                        <Text style={styles.footerLinkText}>Imprint</Text>
-                    </TouchableOpacity>
-                </View>
             </DrawerContentScrollView>
 
             <View style={styles.bottomSection}>
