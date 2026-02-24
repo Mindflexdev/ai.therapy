@@ -1,5 +1,6 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Linking, Image } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Linking, Image, Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DrawerContentComponentProps, DrawerContentScrollView } from '@react-navigation/drawer';
 import { Theme } from '../constants/Theme';
 import { LogIn, Crown, MessageSquare, ExternalLink, Lightbulb, Lock } from 'lucide-react-native';
@@ -9,15 +10,57 @@ import { useAuth } from '../context/AuthContext';
 import { useSubscription } from '../context/SubscriptionContext';
 import { Logo } from './Logo';
 
+const INITIAL_THERAPIST_KEY = 'initialTherapistId';
+
 export const CustomDrawer = (props: DrawerContentComponentProps) => {
     const { isLoggedIn, selectedTherapistId, setShowLoginModal, user, pendingTherapist } = useAuth();
     const { isPro } = useSubscription();
     const router = useRouter();
 
+    // Fixed sort order: the FIRST therapist the user ever chose stays on top forever.
+    // After that, the order never changes — even when switching chats or unlocking premium.
+    const [initialTherapistId, setInitialTherapistId] = useState<string | null>(null);
+
+    // Load the initial therapist ID from storage on mount
+    useEffect(() => {
+        (async () => {
+            try {
+                const stored = Platform.OS === 'web' && typeof window !== 'undefined'
+                    ? window.localStorage.getItem(INITIAL_THERAPIST_KEY)
+                    : await AsyncStorage.getItem(INITIAL_THERAPIST_KEY);
+                if (stored) {
+                    setInitialTherapistId(stored);
+                }
+            } catch {}
+        })();
+    }, []);
+
+    // Save the initial therapist ID the FIRST time a therapist is selected
+    useEffect(() => {
+        if (selectedTherapistId && !initialTherapistId) {
+            setInitialTherapistId(selectedTherapistId);
+            try {
+                if (Platform.OS === 'web' && typeof window !== 'undefined') {
+                    window.localStorage.setItem(INITIAL_THERAPIST_KEY, selectedTherapistId);
+                } else {
+                    AsyncStorage.setItem(INITIAL_THERAPIST_KEY, selectedTherapistId);
+                }
+            } catch {}
+        }
+    }, [selectedTherapistId, initialTherapistId]);
+
     const isUnlocked = (t: any) => {
         // Unlocked if user is Pro OR if it's the strictly selected therapist
         return isPro || (t.id === selectedTherapistId);
     };
+
+    // Sort therapists: initial choice always on top, rest in default THERAPISTS array order
+    const sortId = initialTherapistId || selectedTherapistId;
+    const sortedTherapists = [...THERAPISTS].sort((a, b) => {
+        if (a.id === sortId) return -1;
+        if (b.id === sortId) return 1;
+        return 0;
+    });
 
     const handleTherapistPress = (t: any) => {
         if (isUnlocked(t)) {
@@ -50,19 +93,22 @@ export const CustomDrawer = (props: DrawerContentComponentProps) => {
             <DrawerContentScrollView {...props} contentContainerStyle={styles.scrollContent}>
                 <Text style={styles.sectionTitle}>Available</Text>
                 <View style={styles.section}>
-                    {THERAPISTS.map((t) => {
+                    {sortedTherapists.map((t) => {
                         const unlocked = isUnlocked(t);
                         return (
                             <TouchableOpacity key={t.id} style={styles.therapistItem} onPress={() => handleTherapistPress(t)}>
-                                <View style={styles.avatarWrapper}>
-                                    <Image source={t.image} style={[styles.avatar, !unlocked && styles.lockedAvatar]} defaultSource={require('../../assets/adaptive-icon.png')} />
-                                    {unlocked ? (
+                                <View style={styles.avatarOuter}>
+                                    <View style={styles.avatarWrapper}>
+                                        <Image source={t.image} style={[styles.avatar, !unlocked && styles.lockedAvatar]} defaultSource={require('../../assets/adaptive-icon.png')} />
+                                        {!unlocked && (
+                                            <View style={styles.lockOverlay}>
+                                                <Lock size={12} color="#FFF" />
+                                            </View>
+                                        )}
+                                    </View>
+                                    {unlocked && (
                                         <View style={styles.proBadge}>
                                             <Crown size={10} color={Theme.colors.background} />
-                                        </View>
-                                    ) : (
-                                        <View style={styles.lockOverlay}>
-                                            <Lock size={12} color="#FFF" />
                                         </View>
                                     )}
                                 </View>
@@ -94,10 +140,25 @@ export const CustomDrawer = (props: DrawerContentComponentProps) => {
                 {isLoggedIn ? (
                     <TouchableOpacity style={styles.userProfile} onPress={() => props.navigation.navigate('settings')}>
                         <View style={styles.userAvatar}>
-                            <Text style={styles.userInitial}>{user?.email?.charAt(0).toUpperCase() || '?'}</Text>
+                            <Text style={styles.userInitial}>{(() => {
+                                const fullName = user?.user_metadata?.full_name || user?.user_metadata?.name;
+                                if (fullName) {
+                                    const parts = fullName.trim().split(/\s+/);
+                                    return parts.length >= 2
+                                        ? (parts[0][0] + parts[1][0]).toUpperCase()
+                                        : parts[0][0].toUpperCase();
+                                }
+                                const email = user?.email || '';
+                                if (email.includes('privaterelay') || /^\d/.test(email)) return '?';
+                                return email.charAt(0).toUpperCase() || '?';
+                            })()}</Text>
                         </View>
                         <View style={{ flex: 1 }}>
-                            <Text style={styles.userName} numberOfLines={1}>{user?.user_metadata?.full_name || user?.user_metadata?.name || 'User'}</Text>
+                            <Text style={styles.userName} numberOfLines={1}>{(() => {
+                                const fullName = user?.user_metadata?.full_name || user?.user_metadata?.name;
+                                if (fullName) return fullName.trim().split(/\s+/)[0];
+                                return 'User';
+                            })()}</Text>
                             <Text style={styles.userEmail} numberOfLines={1}>{user?.email || ''}</Text>
                         </View>
                     </TouchableOpacity>
@@ -194,14 +255,24 @@ const styles = StyleSheet.create({
         borderRadius: Theme.borderRadius.m,
         backgroundColor: 'rgba(255,255,255,0.03)',
     },
-    avatarWrapper: {
+    avatarOuter: {
         position: 'relative',
+        width: 34,
+        height: 34,
+    },
+    avatarWrapper: {
+        width: 34,
+        height: 34,
+        borderRadius: 17,
+        borderWidth: 1.5,
+        borderColor: 'rgba(212, 175, 55, 0.4)',
+        overflow: 'hidden',
+        backgroundColor: '#333',
     },
     avatar: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: '#333',
+        width: '100%',
+        height: '110%',
+        top: 1,
     },
     proBadge: {
         position: 'absolute',
@@ -214,7 +285,7 @@ const styles = StyleSheet.create({
     lockOverlay: {
         ...StyleSheet.absoluteFillObject,
         backgroundColor: 'rgba(0,0,0,0.6)',
-        borderRadius: 16,
+        borderRadius: 17,
         alignItems: 'center',
         justifyContent: 'center',
     },

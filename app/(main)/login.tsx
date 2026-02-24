@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, Alert, Modal, Image, useWindowDimensions, ActivityIndicator, Linking } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, Alert, Modal, Image, useWindowDimensions, ActivityIndicator, Linking, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { Theme } from '../../src/constants/Theme';
 import { X } from 'lucide-react-native';
 import Svg, { Path } from 'react-native-svg';
@@ -19,14 +19,10 @@ export default function LoginScreen() {
     const [emailSent, setEmailSent] = useState(false);
     const [errorMsg, setErrorMsg] = useState('');
 
-    // After successful login (email magic link), navigate to paywall
+    // After successful login, just close the modal (user stays on current screen)
     useEffect(() => {
         if (isLoggedIn && showLoginModal) {
             setShowLoginModal(false);
-            router.push({
-                pathname: '/(main)/paywall',
-                params: { name }
-            });
         }
     }, [isLoggedIn]);
 
@@ -79,11 +75,8 @@ export default function LoginScreen() {
                 activeOpacity={1}
                 onPress={() => setShowLoginModal(false)}
             >
-                <TouchableOpacity
-                    activeOpacity={1}
-                    onPress={(e) => e.stopPropagation()}
-                    style={styles.modalContent}
-                >
+                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                <View style={styles.modalContent}>
                     <SafeAreaView style={styles.container}>
                         <TouchableOpacity onPress={() => setShowLoginModal(false)} style={styles.closeButton}>
                             <X size={24} color={Theme.colors.text.secondary} />
@@ -91,7 +84,7 @@ export default function LoginScreen() {
 
                         <View style={[styles.content, isSmallScreen && { paddingTop: '5%' }]}>
                             <View style={styles.logoSection}>
-                                <Logo size="small" />
+                                <Logo size="medium" />
                             </View>
 
                             <View style={styles.form}>
@@ -139,7 +132,7 @@ export default function LoginScreen() {
                                         {errorMsg ? <Text style={styles.errorText}>{errorMsg}</Text> : null}
                                         <TextInput
                                             style={styles.input}
-                                            placeholder="Enter your email"
+                                            placeholder="Enter your personal or work email"
                                             placeholderTextColor={Theme.colors.text.muted}
                                             keyboardType="email-address"
                                             autoCapitalize="none"
@@ -174,7 +167,8 @@ export default function LoginScreen() {
                             </View>
                         </View>
                     </SafeAreaView>
-                </TouchableOpacity>
+                </View>
+                </TouchableWithoutFeedback>
             </TouchableOpacity>
         </Modal>
     );
@@ -200,7 +194,7 @@ const styles = StyleSheet.create({
     },
     closeButton: {
         position: 'absolute',
-        top: Theme.spacing.m,
+        top: 56,
         right: Theme.spacing.m,
         padding: Theme.spacing.s,
         zIndex: 1,
@@ -210,7 +204,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: Theme.spacing.xl,
         justifyContent: 'space-between',
         paddingTop: '15%',
-        paddingBottom: Theme.spacing.xxl,
+        paddingBottom: Theme.spacing.m,
     },
     logoSection: {
         alignItems: 'center',

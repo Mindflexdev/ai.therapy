@@ -50,14 +50,21 @@ import { AuthProvider, useAuth } from '../src/context/AuthContext';
 import { SubscriptionProvider } from '../src/context/SubscriptionContext';
 import { useRouter } from 'expo-router';
 
-// Handle deep link OAuth callbacks on native (fallback if WebBrowser doesn't catch it)
-function NativeOAuthDeepLinkHandler() {
+// Handle deep links on native:
+// 1. OAuth callbacks (access_token in URL)
+// 2. Character deep links (e.g. ai-therapy:///chat?name=Marcus)
+function NativeDeepLinkHandler() {
+    const router = useRouter();
+
     useEffect(() => {
         if (Platform.OS === 'web') return;
 
         const handleUrl = async (event: { url: string }) => {
             const url = event.url;
-            if (url && url.includes('access_token')) {
+            if (!url) return;
+
+            // OAuth callback — set session tokens
+            if (url.includes('access_token')) {
                 const params = new URLSearchParams(url.split('#')[1] || '');
                 const accessToken = params.get('access_token');
                 const refreshToken = params.get('refresh_token');
@@ -67,15 +74,33 @@ function NativeOAuthDeepLinkHandler() {
                         refresh_token: refreshToken,
                     });
                 }
+                return;
+            }
+
+            // Character deep link — e.g. ai-therapy:///chat?name=Marcus
+            try {
+                const parsed = new URL(url);
+                const path = parsed.pathname?.replace(/^\/+/, ''); // strip leading slashes
+                const name = parsed.searchParams?.get('name');
+
+                if (path === 'chat' && name) {
+                    router.replace({
+                        pathname: '/(main)/chat',
+                        params: { name },
+                    });
+                }
+                // For root URL (ai-therapy:///) — let Expo Router handle normally (→ index)
+            } catch (e) {
+                // Malformed URL — ignore
             }
         };
 
-        // Check if the app was opened with an OAuth URL
+        // Check if the app was opened with a deep link URL
         Linking.getInitialURL().then((url) => {
             if (url) handleUrl({ url });
         });
 
-        // Listen for subsequent deep links
+        // Listen for subsequent deep links while app is running
         const subscription = Linking.addEventListener('url', handleUrl);
         return () => subscription.remove();
     }, []);
@@ -96,7 +121,7 @@ function OAuthRedirectHandler() {
         if (!loading && pendingTherapistLoaded && isLoggedIn && !hasRedirected.current) {
             hasRedirected.current = true;
             router.replace({
-                pathname: '/(main)/paywall',
+                pathname: '/(main)/chat',
                 params: pendingTherapist?.name ? { name: pendingTherapist.name } : {}
             });
         }
@@ -121,7 +146,7 @@ function RootLayoutNav() {
                             <meta name="apple-mobile-web-app-title" content="ai.therapy" />
                         </Head>
                     )}
-                    <NativeOAuthDeepLinkHandler />
+                    <NativeDeepLinkHandler />
                     <OAuthRedirectHandler />
                     <Stack
                         screenOptions={{

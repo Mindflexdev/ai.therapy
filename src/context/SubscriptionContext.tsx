@@ -21,6 +21,7 @@ type SubscriptionContextType = {
     isLoading: boolean;
     purchasePackage: (pkg: PurchasesPackage) => Promise<boolean>;
     restorePurchases: () => Promise<void>;
+    setDevOverridePro: (val: boolean) => void; // DEV only — simulates Pro for testing
 };
 
 const SubscriptionContext = createContext<SubscriptionContextType>({
@@ -30,6 +31,7 @@ const SubscriptionContext = createContext<SubscriptionContextType>({
     isLoading: true,
     purchasePackage: async () => false,
     restorePurchases: async () => {},
+    setDevOverridePro: () => {},
 });
 
 const checkEntitlement = (info: CustomerInfo): boolean => {
@@ -38,6 +40,7 @@ const checkEntitlement = (info: CustomerInfo): boolean => {
 
 export const SubscriptionProvider = ({ children }: { children: React.ReactNode }) => {
     const [isPro, setIsPro] = useState(false);
+    const [devOverridePro, setDevOverridePro] = useState(false); // DEV: simulate Pro
     const [offerings, setOfferings] = useState<PurchasesOfferings | null>(null);
     const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -134,12 +137,13 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
     return (
         <SubscriptionContext.Provider
             value={{
-                isPro,
+                isPro: devOverridePro || isPro,
                 offerings,
                 customerInfo,
                 isLoading,
                 purchasePackage,
                 restorePurchases,
+                setDevOverridePro,
             }}
         >
             {children}

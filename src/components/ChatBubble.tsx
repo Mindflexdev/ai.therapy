@@ -1,5 +1,6 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Keyboard } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Pressable, Keyboard } from 'react-native';
+import { CheckCheck } from 'lucide-react-native';
 import { Theme } from '../constants/Theme';
 
 export interface ChallengeOption {
@@ -18,6 +19,12 @@ export interface PaywallSummary {
     sections: PaywallSection[];
 }
 
+export interface ReplyTo {
+    id: string;
+    text: string;
+    isUser: boolean;
+}
+
 export interface Message {
     id: string;
     text: string;
@@ -28,12 +35,15 @@ export interface Message {
     quickReplies?: string[];
     challengeOptions?: ChallengeOption[];
     paywallSummary?: PaywallSummary;
+    reaction?: string;
+    replyTo?: ReplyTo;
 }
 
 interface Props {
     message: Message;
     onUpgrade?: () => void;
     onQuickReply?: (text: string) => void;
+    onLongPress?: (message: Message) => void;
 }
 
 // Human-readable labels for onboarding phase keys
@@ -46,13 +56,52 @@ const PHASE_LABELS: Record<string, string> = {
     'onboarding_sales': 'Sales Agent',
 };
 
-export const ChatBubble = React.memo(({ message, onUpgrade, onQuickReply }: Props) => {
+export const ChatBubble = React.memo(({ message, onUpgrade, onQuickReply, onLongPress }: Props) => {
     const agentLabel = message.agent
         ? (PHASE_LABELS[message.agent] || message.agent)
         : null;
 
+    // Multi-select for einstellungs questions
+    const isEinstellungs = message.agent === 'onboarding_einstellungs';
+    const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
+
+    const toggleOption = (option: string) => {
+        setSelectedOptions(prev =>
+            prev.includes(option)
+                ? prev.filter(o => o !== option)
+                : [...prev, option]
+        );
+    };
+
+    const handleMultiSelectSend = () => {
+        if (selectedOptions.length > 0 && onQuickReply) {
+            onQuickReply(selectedOptions.join(', '));
+        }
+    };
+
     const hasButtons = message.upgradeButton || (message.quickReplies && message.quickReplies.length > 0) || (message.challengeOptions && message.challengeOptions.length > 0);
     const isPaywallCard = !!message.paywallSummary;
+
+    // Long press only on AI messages, not greetings
+    const isLongPressable = !message.isUser && message.agent !== 'Greeting' && onLongPress;
+
+    const handleLongPress = () => {
+        if (isLongPressable) {
+            onLongPress!(message);
+        }
+    };
+
+    // Reply quote snippet (truncated)
+    const replyPreview = message.replyTo
+        ? (message.replyTo.text.length > 80
+            ? message.replyTo.text.substring(0, 80) + '...'
+            : message.replyTo.text)
+        : null;
+
+    const BubbleWrapper = isLongPressable ? Pressable : View;
+    const wrapperProps = isLongPressable
+        ? { onLongPress: handleLongPress, delayLongPress: 400 }
+        : {};
 
     return (
         <View style={[
@@ -86,18 +135,51 @@ export const ChatBubble = React.memo(({ message, onUpgrade, onQuickReply }: Prop
                     </View>
                 ) : (
                     /* Regular message bubble */
-                    <View style={[
-                        styles.bubble,
-                        message.isUser ? styles.userBubble : styles.therapistBubble
-                    ]}>
-                        <Text style={styles.text}>{message.text}</Text>
-                        <View style={styles.footer}>
-                            {agentLabel && (
-                                <Text style={styles.agentLabel}>{agentLabel}</Text>
+                    <BubbleWrapper {...wrapperProps}>
+                        <View style={[
+                            styles.bubble,
+                            message.isUser ? styles.userBubble : styles.therapistBubble
+                        ]}>
+                            {/* Reply-to quote (WhatsApp-style colored bar) */}
+                            {message.replyTo && replyPreview && (
+                                <View style={[
+                                    styles.replyQuote,
+                                    message.replyTo.isUser ? styles.replyQuoteUser : styles.replyQuoteAi,
+                                ]}>
+                                    <Text style={styles.replyQuoteAuthor}>
+                                        {message.replyTo.isUser ? 'You' : 'Therapist'}
+                                    </Text>
+                                    <Text style={styles.replyQuoteText} numberOfLines={2}>
+                                        {replyPreview}
+                                    </Text>
+                                </View>
                             )}
-                            <Text style={styles.time}>{message.time}</Text>
-                            {message.isUser && <Text style={styles.checkmarks}>✓✓</Text>}
+                            <Text style={styles.text}>{message.text}</Text>
+                            <View style={styles.footer}>
+                                {agentLabel && (
+                                    <Text style={styles.agentLabel}>{agentLabel}</Text>
+                                )}
+                                <Text style={styles.time}>{message.time}</Text>
+                                {message.isUser && (
+                                    <CheckCheck
+                                        size={16}
+                                        color={Theme.colors.primary}
+                                        strokeWidth={2.5}
+                                        style={styles.checkmarks}
+                                    />
+                                )}
+                            </View>
                         </View>
+                    </BubbleWrapper>
+                )}
+
+                {/* Reaction badge — small emoji pill below the bubble */}
+                {message.reaction && (
+                    <View style={[
+                        styles.reactionBadge,
+                        message.isUser ? styles.reactionBadgeUser : styles.reactionBadgeAi,
+                    ]}>
+                        <Text style={styles.reactionEmoji}>{message.reaction}</Text>
                     </View>
                 )}
 
@@ -108,19 +190,37 @@ export const ChatBubble = React.memo(({ message, onUpgrade, onQuickReply }: Prop
                     </TouchableOpacity>
                 )}
 
-                {/* Quick reply buttons — Telegram-style outline buttons */}
+                {/* Quick reply buttons — multi-select for einstellungs, single-tap for others */}
                 {message.quickReplies && message.quickReplies.length > 0 && onQuickReply && (
                     <View style={styles.quickRepliesContainer}>
-                        {message.quickReplies.map((reply, index) => (
+                        {message.quickReplies.map((reply, index) => {
+                            const isSelected = isEinstellungs && selectedOptions.includes(reply);
+                            return (
+                                <TouchableOpacity
+                                    key={index}
+                                    style={[
+                                        styles.quickReplyButton,
+                                        isSelected && styles.quickReplyButtonSelected,
+                                    ]}
+                                    onPress={() => isEinstellungs ? toggleOption(reply) : onQuickReply(reply)}
+                                    activeOpacity={0.7}
+                                >
+                                    <Text style={[
+                                        styles.quickReplyText,
+                                        isSelected && styles.quickReplyTextSelected,
+                                    ]}>{reply}</Text>
+                                </TouchableOpacity>
+                            );
+                        })}
+                        {isEinstellungs && selectedOptions.length > 0 && (
                             <TouchableOpacity
-                                key={index}
-                                style={styles.quickReplyButton}
-                                onPress={() => onQuickReply(reply)}
+                                style={styles.multiSelectSendButton}
+                                onPress={handleMultiSelectSend}
                                 activeOpacity={0.7}
                             >
-                                <Text style={styles.quickReplyText}>{reply}</Text>
+                                <Text style={styles.multiSelectSendText}>Continue</Text>
                             </TouchableOpacity>
-                        ))}
+                        )}
                     </View>
                 )}
 
@@ -159,16 +259,19 @@ const styles = StyleSheet.create({
         justifyContent: 'flex-start',
     },
     bubble: {
-        padding: Theme.spacing.m,
+        paddingHorizontal: 12,
+        paddingVertical: 7,
         borderRadius: Theme.borderRadius.l,
     },
     userBubble: {
         backgroundColor: Theme.colors.bubbles.user,
-        borderBottomRightRadius: 4,
+        borderTopRightRadius: 4,
+        borderWidth: 1,
+        borderColor: 'rgba(212, 175, 55, 0.2)',
     },
     therapistBubble: {
         backgroundColor: Theme.colors.bubbles.therapist,
-        borderBottomLeftRadius: 4,
+        borderTopLeftRadius: 4,
     },
     text: {
         color: '#E0E0E0',
@@ -180,23 +283,68 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'flex-end',
-        marginTop: 4,
+        marginTop: 2,
     },
     time: {
-        fontSize: 10,
-        color: 'rgba(255,255,255,0.4)',
-        fontFamily: 'Inter-Regular',
+        fontSize: 11,
+        color: 'rgba(255,255,255,0.45)',
+        fontFamily: 'Inter-Bold',
     },
     checkmarks: {
-        fontSize: 10,
-        color: Theme.colors.primary,
-        marginLeft: 4,
+        marginLeft: 3,
     },
     agentLabel: {
         fontSize: 9,
         color: 'rgba(255,255,255,0.3)',
         fontFamily: 'Inter-Regular',
         marginRight: 8,
+    },
+    // Reply-to quote (inside bubble, WhatsApp-style)
+    replyQuote: {
+        borderLeftWidth: 3,
+        borderRadius: 4,
+        backgroundColor: 'rgba(255,255,255,0.06)',
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        marginBottom: 6,
+    },
+    replyQuoteUser: {
+        borderLeftColor: Theme.colors.primary,
+    },
+    replyQuoteAi: {
+        borderLeftColor: 'rgba(255,255,255,0.3)',
+    },
+    replyQuoteAuthor: {
+        color: Theme.colors.primary,
+        fontSize: 12,
+        fontFamily: 'Inter-Bold',
+        marginBottom: 2,
+    },
+    replyQuoteText: {
+        color: 'rgba(255,255,255,0.5)',
+        fontSize: 13,
+        fontFamily: 'Inter-Regular',
+        lineHeight: 17,
+    },
+    // Reaction badge
+    reactionBadge: {
+        position: 'absolute',
+        bottom: -10,
+        backgroundColor: 'rgba(30, 30, 30, 0.95)',
+        borderRadius: 12,
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
+    },
+    reactionBadgeUser: {
+        right: 8,
+    },
+    reactionBadgeAi: {
+        left: 8,
+    },
+    reactionEmoji: {
+        fontSize: 16,
     },
     upgradeButton: {
         backgroundColor: Theme.colors.primary,
@@ -226,6 +374,26 @@ const styles = StyleSheet.create({
     quickReplyText: {
         color: Theme.colors.primary,
         fontFamily: 'Inter-Regular',
+        fontSize: 14,
+    },
+    quickReplyButtonSelected: {
+        backgroundColor: 'rgba(235, 206, 128, 0.25)',
+        borderColor: Theme.colors.primary,
+    },
+    quickReplyTextSelected: {
+        fontFamily: 'Inter-Bold',
+    },
+    multiSelectSendButton: {
+        backgroundColor: Theme.colors.primary,
+        paddingVertical: 11,
+        paddingHorizontal: 14,
+        borderRadius: Theme.borderRadius.m,
+        alignItems: 'center',
+        marginTop: 4,
+    },
+    multiSelectSendText: {
+        color: Theme.colors.background,
+        fontFamily: 'Inter-Bold',
         fontSize: 14,
     },
     challengeCard: {

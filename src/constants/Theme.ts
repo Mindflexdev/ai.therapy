@@ -9,7 +9,7 @@ export const Theme = {
             muted: '#666666',
         },
         bubbles: {
-            user: '#3D2B1F', // Deep Chocolate Brown
+            user: '#2A2420', // Dark warm with gold accent
             therapist: '#2A2A28', // Subtle dark brown/grey
         },
         accent: '#EBCE80',

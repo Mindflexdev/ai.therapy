@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Dimensions } from 'react-native';
+
+const { height: SCREEN_HEIGHT } = Dimensions.get('screen');
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -16,6 +18,7 @@ import { Theme } from '../constants/Theme';
 
 interface SplashAnimationProps {
   onComplete: () => void;
+  onTransitionStart?: () => void;
 }
 
 const BRAND_TEXT = 'ai.therapy';
@@ -25,9 +28,10 @@ const TYPING_START = 1200; // when typing begins after logo fade
 const TYPING_DURATION = CHAR_COUNT * CHAR_DELAY; // 1200ms
 const DISCLAIMER_START = TYPING_START + TYPING_DURATION + 200; // 2600ms
 const TRANSITION_START = DISCLAIMER_START + 800; // 3400ms
-const TOTAL_DURATION = TRANSITION_START + 900; // ~4300ms
+const SLIDE_DURATION = 1200; // slower, more palatable scroll
+const TOTAL_DURATION = TRANSITION_START + SLIDE_DURATION + 200; // ~4800ms
 
-export function SplashAnimation({ onComplete }: SplashAnimationProps) {
+export function SplashAnimation({ onComplete, onTransitionStart }: SplashAnimationProps) {
   const [visibleChars, setVisibleChars] = useState(0);
   const [animationDone, setAnimationDone] = useState(false);
   const completionRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -48,11 +52,8 @@ export function SplashAnimation({ onComplete }: SplashAnimationProps) {
   // Phase 4: Disclaimer
   const disclaimerOpacity = useSharedValue(0);
 
-  // Phase 5: Transition out
-  const contentTranslateY = useSharedValue(0);
-  const contentScale = useSharedValue(1);
-  const contentOpacity = useSharedValue(1);
-  const overlayOpacity = useSharedValue(1);
+  // Phase 5: Slide up (TikTok-style)
+  const overlayTranslateY = useSharedValue(0);
 
   // Sync typedCharCount (UI thread) → visibleChars (JS thread)
   useAnimatedReaction(
@@ -125,40 +126,33 @@ export function SplashAnimation({ onComplete }: SplashAnimationProps) {
     // Hide cursor when typing is done
     // We'll handle this via the cursorVisible check in render
 
-    // Phase 5: Transition out (3400ms–4300ms)
-    contentTranslateY.value = withDelay(
+    // Phase 5: Slide entire overlay up off screen (TikTok-style swipe)
+    // Use SCREEN_HEIGHT + extra to ensure full clearance, and out easing for natural flick feel
+    overlayTranslateY.value = withDelay(
       TRANSITION_START,
-      withTiming(-100, { duration: 800, easing: Easing.inOut(Easing.cubic) })
+      withTiming(-(SCREEN_HEIGHT + 100), { duration: SLIDE_DURATION, easing: Easing.out(Easing.cubic) })
     );
-    contentScale.value = withDelay(
-      TRANSITION_START,
-      withTiming(0.65, { duration: 800, easing: Easing.inOut(Easing.cubic) })
-    );
-    contentOpacity.value = withDelay(
-      TRANSITION_START,
-      withTiming(0, { duration: 700, easing: Easing.in(Easing.cubic) })
-    );
-    overlayOpacity.value = withDelay(
-      TRANSITION_START,
-      withTiming(0, { duration: 800, easing: Easing.in(Easing.cubic) })
-    );
+
+    // Signal that the transition is starting (for coordinated welcome screen entry)
+    const transitionTimer = setTimeout(() => {
+      onTransitionStart?.();
+    }, TRANSITION_START);
 
     completionRef.current = setTimeout(finishAnimation, TOTAL_DURATION);
     return () => {
       if (completionRef.current) clearTimeout(completionRef.current);
+      clearTimeout(transitionTimer);
     };
   }, []);
 
   const handleSkip = useCallback(() => {
     if (animationDone) return;
     if (completionRef.current) clearTimeout(completionRef.current);
-    // Accelerated exit
-    contentTranslateY.value = withTiming(-100, { duration: 300, easing: Easing.inOut(Easing.cubic) });
-    contentScale.value = withTiming(0.65, { duration: 300, easing: Easing.inOut(Easing.cubic) });
-    contentOpacity.value = withTiming(0, { duration: 250, easing: Easing.in(Easing.cubic) });
-    overlayOpacity.value = withTiming(0, { duration: 300, easing: Easing.in(Easing.cubic) });
-    setTimeout(finishAnimation, 350);
-  }, [animationDone, finishAnimation]);
+    onTransitionStart?.();
+    // Accelerated slide-up exit
+    overlayTranslateY.value = withTiming(-(SCREEN_HEIGHT + 100), { duration: 600, easing: Easing.out(Easing.cubic) });
+    setTimeout(finishAnimation, 650);
+  }, [animationDone, finishAnimation, onTransitionStart]);
 
   // Animated styles
   const logoAnimatedStyle = useAnimatedStyle(() => ({
@@ -175,15 +169,11 @@ export function SplashAnimation({ onComplete }: SplashAnimationProps) {
   }));
 
   const contentAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: contentOpacity.value,
-    transform: [
-      { translateY: contentTranslateY.value },
-      { scale: contentScale.value },
-    ],
+    opacity: 1,
   }));
 
   const overlayAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: overlayOpacity.value,
+    transform: [{ translateY: overlayTranslateY.value }],
   }));
 
   const disclaimerAnimatedStyle = useAnimatedStyle(() => ({

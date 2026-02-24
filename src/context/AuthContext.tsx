@@ -6,6 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import Purchases from 'react-native-purchases';
+import { THERAPISTS } from '../constants/Therapists';
 
 const PENDING_THERAPIST_KEY = 'pendingTherapist';
 
@@ -194,6 +195,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                             console.warn('RevenueCat logIn error:', e);
                         }
                     }
+                    // Load selected_character from profile to restore sort order
+                    try {
+                        const { data: profile } = await supabase
+                            .from('profiles')
+                            .select('selected_character')
+                            .eq('id', session.user.id)
+                            .single();
+                        if (profile?.selected_character) {
+                            const therapist = THERAPISTS.find(t => t.name === profile.selected_character);
+                            if (therapist) {
+                                setSelectedTherapistId(therapist.id);
+                                if (Platform.OS === 'web' && typeof window !== 'undefined') {
+                                    window.localStorage.setItem('selectedTherapistId', therapist.id);
+                                } else {
+                                    AsyncStorage.setItem('selectedTherapistId', therapist.id);
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('Failed to load selected_character:', e);
+                    }
                 } else {
                     setIsPro(false);
                     // RevenueCat logOut is handled in the logout() function
@@ -350,6 +372,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     window.localStorage.setItem('selectedTherapistId', id);
                 } else {
                     AsyncStorage.setItem('selectedTherapistId', id);
+                }
+                // Sync to Supabase profiles table
+                const therapist = THERAPISTS.find(t => t.id === id);
+                if (therapist && user) {
+                    supabase.from('profiles')
+                        .update({ selected_character: therapist.name })
+                        .eq('id', user.id)
+                        .then(({ error }) => {
+                            if (error) console.warn('Failed to sync selected_character:', error.message);
+                        });
                 }
             } else {
                 if (Platform.OS === 'web' && typeof window !== 'undefined') {

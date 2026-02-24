@@ -9,8 +9,8 @@ interface LogoProps {
 
 const SIZES = {
     small: { image: 40, font: 22, sloganFont: 9, sloganOffset: -16, sloganMarginLeft: 48, gap: 8 },
-    medium: { image: 52, font: 28, sloganFont: 10, sloganOffset: -18, sloganMarginLeft: 60, gap: 12 },
-    large: { image: 60, font: 28, sloganFont: 10, sloganOffset: -20, sloganMarginLeft: 60, gap: 12 },
+    medium: { image: 64, font: 32, sloganFont: 11, sloganOffset: -18, sloganMarginLeft: 72, gap: 12 },
+    large: { image: 72, font: 34, sloganFont: 11, sloganOffset: -20, sloganMarginLeft: 78, gap: 14 },
 };
 
 export const Logo = ({ size = 'medium', showSlogan = true }: LogoProps) => {

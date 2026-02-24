@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, SafeAreaView, Image, TouchableOpacity, ScrollVi
 import { Theme } from '../../src/constants/Theme';
 import { ChevronLeft, Phone, Search, Image as ImageIcon, Star, Bell, Lock } from 'lucide-react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { THERAPIST_IMAGES } from '../../src/constants/Therapists';
+import { THERAPIST_IMAGES, THERAPIST_PHILOSOPHIES } from '../../src/constants/Therapists';
 
 export default function ProfileScreen() {
     const router = useRouter();
@@ -11,6 +11,7 @@ export default function ProfileScreen() {
 
     const therapistName = (name as string) || 'Marcus';
     const therapistImage = THERAPIST_IMAGES[therapistName];
+    const philosophy = THERAPIST_PHILOSOPHIES[therapistName] || 'Your companion for mental health.';
 
     return (
         <SafeAreaView style={styles.container}>
@@ -26,15 +27,17 @@ export default function ProfileScreen() {
                 <View style={styles.profileSection}>
                     <View style={styles.haloWrapper}>
                         <View style={styles.halo} />
-                        <Image
-                            source={therapistImage}
-                            style={styles.largeAvatar}
-                            defaultSource={require('../../assets/adaptive-icon.png')}
-                        />
+                        <View style={styles.avatarClip}>
+                            <Image
+                                source={therapistImage}
+                                style={styles.largeAvatar}
+                                defaultSource={require('../../assets/adaptive-icon.png')}
+                            />
+                        </View>
                     </View>
                     <Text style={styles.name}>{therapistName}</Text>
                     <Text style={styles.details}>Available for 24/7 Support</Text>
-                    <Text style={styles.quote}>"Human connection is the first step toward healing, even in the digital age."</Text>
+                    <Text style={styles.quote}>"{philosophy}"</Text>
                 </View>
 
                 <View style={styles.actionButtons}>
@@ -126,11 +129,17 @@ const styles = StyleSheet.create({
         borderRadius: 80,
         opacity: 0.5,
     },
-    largeAvatar: {
+    avatarClip: {
         width: 140,
         height: 140,
         borderRadius: 70,
+        overflow: 'hidden',
         backgroundColor: '#333',
+    },
+    largeAvatar: {
+        width: '100%',
+        height: '110%',
+        top: 3,
     },
     name: {
         color: Theme.colors.text.primary,

@@ -11,6 +11,7 @@ import { PricingSection } from '../src/components/sections/PricingSection';
 import { FAQSection } from '../src/components/sections/FAQSection';
 import { Footer } from '../src/components/sections/Footer';
 import { SplashAnimation } from '../src/components/SplashAnimation';
+import { NativeOnboarding } from '../src/components/NativeOnboarding';
 
 const THERAPISTS = [
   { id: '1', name: 'Marcus', image: require('../assets/characters/marcus.jpg') },
@@ -40,8 +41,15 @@ export default function Onboarding() {
   });
   const [splashComplete, setSplashComplete] = useState(!showSplash);
 
+  const [welcomeAnimating, setWelcomeAnimating] = useState(!showSplash);
+
+  const handleSplashTransitionStart = useCallback(() => {
+    setWelcomeAnimating(true);
+  }, []);
+
   const handleSplashComplete = useCallback(() => {
     setSplashComplete(true);
+    setWelcomeAnimating(true);
     setTimeout(() => setShowSplash(false), 100);
   }, []);
 
@@ -112,6 +120,17 @@ export default function Onboarding() {
     }, 400);
   };
 
+  // Native onboarding: 3-screen paged flow instead of scrollable landing page
+  const handleNativeOnboardingComplete = (therapist: { id: string; name: string }) => {
+    selectTherapist(therapist.id, true);
+    router.push({
+      pathname: '/(main)/chat',
+      params: { name: therapist.name },
+    });
+  };
+
+  const isNative = Platform.OS !== 'web';
+
   const handleNavigateToSection = (sectionId: string) => {
     const yPosition = sectionLayouts[sectionId];
     if (yPosition !== undefined && scrollViewRef.current) {
@@ -133,6 +152,21 @@ export default function Onboarding() {
     router.push('/(main)/paywall');
   };
 
+  // ─── Native: paged onboarding flow ────────────────────────────────────────
+  if (isNative) {
+    return (
+      <View style={styles.container}>
+        <NativeOnboarding onComplete={handleNativeOnboardingComplete} animateEntry={welcomeAnimating} />
+
+        {/* Splash overlay — renders on top on first visit */}
+        {showSplash && !splashComplete && (
+          <SplashAnimation onComplete={handleSplashComplete} onTransitionStart={handleSplashTransitionStart} />
+        )}
+      </View>
+    );
+  }
+
+  // ─── Web: scrollable landing page ────────────────────────────────────────
   return (
     <SafeAreaView style={styles.container}>
       <LandingHeader onMenuPress={() => setDrawerVisible(true)} />

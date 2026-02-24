@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, FlatList, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, Keyboard, Platform, Alert, Animated, Easing, Linking } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, FlatList, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, Keyboard, Platform, Alert, Animated, Easing, Linking, Vibration } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BlurView } from 'expo-blur';
 import { Theme } from '../../src/constants/Theme';
-import { ChatBubble } from '../../src/components/ChatBubble';
+import { ChatBubble, Message as ChatMessage_UI } from '../../src/components/ChatBubble';
+import { MessageReactionOverlay } from '../../src/components/MessageReactionOverlay';
 import { SuccessOverlay, SetupOverlay } from '../../src/components/SuccessOverlay';
-import { Menu, Phone, Video, Plus, Camera, Mic, ChevronLeft, Square, ArrowUp, Loader } from 'lucide-react-native';
+import { Menu, Phone, Video, Plus, Camera, Mic, ChevronLeft, Square, ArrowUp, Loader, X } from 'lucide-react-native';
 
 // expo-av and speech are optional — the native module may not be in the dev build.
 let Audio: any = null;
@@ -28,6 +29,7 @@ import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { useAuth } from '../../src/context/AuthContext';
 import { supabase } from '../../src/lib/supabase';
 import LoginScreen from './login';
+import { useSubscription } from '../../src/context/SubscriptionContext';
 
 const INITIAL_MESSAGES = [
     { id: '1', text: 'Hello, I am [Name]. How can I support you today?', isUser: false, time: '14:20' },
@@ -55,8 +57,8 @@ const EINSTELLUNGS_QUESTIONS = [
 ];
 
 // AI chat: onboarding uses phase-based prompts via chat-onboarding edge function,
-// regular therapy uses chatWithAgent via together-proxy edge function.
-import { chatWithAgent, chatOnboarding, ChatMessage } from '../../src/lib/together';
+// regular therapy uses Haiku routing + Sonnet response via therapy-router edge function.
+import { chatOnboarding, chatTherapy, ChatMessage } from '../../src/lib/together';
 
 // Transform second-person ("You are scared") → first-person ("I am scared")
 // Used when a user taps a problemstellung challenge card so the message reads naturally.
@@ -121,7 +123,7 @@ const transformToFirstPerson = (text: string): string => {
 };
 
 
-import { THERAPIST_IMAGES, THERAPISTS } from '../../src/constants/Therapists';
+import { THERAPIST_IMAGES, THERAPISTS, THERAPIST_GREETINGS } from '../../src/constants/Therapists';
 
 // --- Input validation constants ---
 const MAX_MESSAGE_LENGTH = 2000;
@@ -228,6 +230,9 @@ export default function ChatScreen() {
     const navigation = useNavigation<DrawerNavigationProp<any>>();
     const router = useRouter();
     const { showLoginModal, setShowLoginModal, isLoggedIn, user, setPendingTherapist, pendingTherapist, clearPendingTherapist, selectedTherapistId, selectTherapist } = useAuth();
+    const { isPro, setDevOverridePro } = useSubscription();
+    const isProRef = useRef(isPro);
+    useEffect(() => { isProRef.current = isPro; }, [isPro]);
 
     // Keep selectedTherapistId in sync with the therapist we're actually chatting with
     useEffect(() => {
@@ -239,6 +244,9 @@ export default function ChatScreen() {
     const sessionId = useRef(generateSessionId());
     const lastSendTime = useRef(0);
     const flatListRef = useRef<FlatList>(null);
+
+    // Per-character message cache — instant switching like WhatsApp
+    const messageCacheRef = useRef<Record<string, any[]>>({});
 
     // Audio metering: levels array drives the waveform bars directly
     const NUM_WAVEFORM_BARS = 25;
@@ -282,6 +290,11 @@ export default function ChatScreen() {
     }, []);
     const [showCrisisBanner, setShowCrisisBanner] = useState(false);
 
+    // Reaction overlay state
+    const [reactingToMessage, setReactingToMessage] = useState<any | null>(null);
+    // Reply-to state (quote bar above input)
+    const [replyToMessage, setReplyToMessage] = useState<{ id: string; text: string; isUser: boolean } | null>(null);
+
     // Fetch existing messages from Supabase on mount
     const fetchMessages = async () => {
         if (!isLoggedIn || !user) return;
@@ -309,9 +322,9 @@ export default function ChatScreen() {
                 setMessages(loadedMessages);
 
                 // Detect onboarding state from existing message count.
-                // The onboarding has ~10 user messages (einstellungs 2, problemfokus 3,
-                // problemstellung 1, loesungsfokus 3, paywall 1). If user has sent 11+
-                // user messages, they've passed the paywall and are in regular therapy.
+                // The onboarding has ~23 user messages across all phases (einstellungs 5,
+                // problemfokus 6, problemstellung 1, loesungsfokus 10, paywall 1).
+                // If user has sent 24+ user messages, they've passed the paywall.
                 const userMsgCount = data.filter((m: any) => m.role === 'human').length;
                 if (userMsgCount > 23) {
                     setIsOnboarding(false);
@@ -345,24 +358,139 @@ export default function ChatScreen() {
         }
     };
 
-    // Load messages on mount when logged in
+    // ── Unified chat loader ──────────────────────────────────────────
+    // Handles greeting, stored messages, and character switching.
+    // Uses messageCacheRef so switching characters feels instant (like WhatsApp).
     useEffect(() => {
-        if (isLoggedIn) {
-            fetchMessages();
+        let cancelled = false;
+
+        // 1) Instantly show cached messages if we have them (zero-delay switch)
+        const cached = messageCacheRef.current[therapistName];
+        if (cached && cached.length > 0) {
+            setMessages(cached);
+            setIsTyping(false);
+        } else {
+            // No cache yet — clear old character's messages, show typing
+            setMessages([]);
+            setIsTyping(true);
         }
-    }, [isLoggedIn, user, therapistName]);
+
+        // NOTE: Onboarding state is reset INSIDE loadChat (after we know
+        // whether stored messages exist). Resetting it here would break
+        // in-progress onboarding when auth state changes trigger a re-run.
+
+        const loadChat = async () => {
+            // Try to load stored messages from Supabase
+            let storedMessages: any[] = [];
+            if (isLoggedIn && user) {
+                try {
+                    const { data, error } = await supabase
+                        .from('messages')
+                        .select('*')
+                        .eq('session_id', sessionId.current)
+                        .eq('character_name', therapistName)
+                        .order('created_at', { ascending: true });
+
+                    if (!error && data && data.length > 0) {
+                        storedMessages = data.map((msg: any) => ({
+                            id: msg.id.toString(),
+                            text: msg.content,
+                            isUser: msg.role === 'human',
+                            time: new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                        }));
+                    }
+                } catch (err) {
+                    console.error('Error loading messages:', err);
+                }
+            }
+
+            if (cancelled) return;
+
+            if (storedMessages.length > 0) {
+                // Has stored conversation — show it
+                setMessages(storedMessages);
+                messageCacheRef.current[therapistName] = storedMessages;
+                setIsTyping(false);
+
+                // Detect onboarding state from stored messages
+                const userMsgCount = storedMessages.filter((m: any) => m.isUser).length;
+                if (userMsgCount > 23 || isProRef.current) {
+                    setIsOnboarding(false);
+                    einstellungsDone.current = true;
+                    setEinstellungsIndex(4);
+                }
+            } else if (!cached || cached.length === 0) {
+                // No stored messages AND no cache — show greeting after delay.
+                // Skip delay when returning from login (pendingMessage exists) so
+                // the greeting is in place before the draft restore fires.
+                const hasLoginDraft = !!pendingTherapist?.pendingMessage;
+                const greetingDelay = hasLoginDraft ? 200 : 1200;
+                await new Promise(resolve => setTimeout(resolve, greetingDelay));
+                if (cancelled) return;
+
+                const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const greetings = THERAPIST_GREETINGS[therapistName];
+
+                let greetingMsg: any;
+                if (isProRef.current) {
+                    // Pro user: skip onboarding
+                    setIsOnboarding(false);
+                    setEinstellungsIndex(4);
+                    einstellungsDone.current = true;
+                    greetingMsg = {
+                        id: `greeting-${therapistName}`,
+                        text: greetings?.pro || `Hi, I'm ${therapistName}!\n\nWhat's on your mind?`,
+                        isUser: false,
+                        time: now,
+                        agent: 'Greeting',
+                    };
+                } else {
+                    // Free user: start onboarding
+                    setIsOnboarding(true);
+                    setEinstellungsIndex(0);
+                    einstellungsDone.current = false;
+                    greetingMsg = {
+                        id: `greeting-${therapistName}`,
+                        text: greetings?.free || `Hi, I'm ${therapistName}!\n\nDo you want to start your onboarding?`,
+                        isUser: false,
+                        time: now,
+                        agent: 'Greeting',
+                        quickReplies: ['Yes, let\'s start'],
+                    };
+                }
+
+                setMessages([greetingMsg]);
+                messageCacheRef.current[therapistName] = [greetingMsg];
+                setIsTyping(false);
+            } else {
+                // Had cache, Supabase returned nothing — keep showing cache
+                setIsTyping(false);
+            }
+        };
+
+        loadChat();
+
+        return () => { cancelled = true; };
+    }, [therapistName, isLoggedIn, user]);
+
+    // Sync every message change to the per-character cache
+    useEffect(() => {
+        if (messages.length > 0) {
+            messageCacheRef.current[therapistName] = messages;
+        }
+    }, [messages, therapistName]);
 
     // Restore draft message from pendingTherapist (saved before OAuth redirect)
-    // Only auto-send if the user is actually logged in
-    // IMPORTANT: Do NOT clear pendingTherapist when not logged in — the user may be
-    // about to log in via OAuth, and we need the data to survive the redirect!
+    // Only auto-send if the user is actually logged in AND the greeting has loaded
+    // (messages.length > 0). This avoids the race where the draft fires before
+    // the greeting and then the greeting wipes it out.
     const hasSentDraft = useRef(false);
     useEffect(() => {
-        if (isLoggedIn && pendingTherapist?.pendingMessage && !hasSentDraft.current) {
+        if (isLoggedIn && pendingTherapist?.pendingMessage && !hasSentDraft.current && messages.length > 0) {
             hasSentDraft.current = true;
             const draftMessage = pendingTherapist.pendingMessage;
             clearPendingTherapist();
-            // Wait for the initial therapist greeting to load, then send the draft
+            // Short delay for a natural typing feel — greeting is already visible
             const timer = setTimeout(() => {
                 const userMessage = {
                     id: `draft-${Date.now()}`,
@@ -371,27 +499,12 @@ export default function ChatScreen() {
                     time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 };
                 setMessages(prev => [...prev, userMessage]);
-                // Send to Together AI and get response
+                saveMessage(draftMessage, 'user');
                 sendMessageToAI(draftMessage);
-            }, 1800); // Slightly after the 1500ms greeting delay
+            }, 500);
             return () => clearTimeout(timer);
         }
-    }, [isLoggedIn]);
-
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsTyping(false);
-            setMessages([{
-                id: '1',
-                text: `Hi, I'm ${therapistName}! \n\nAlthough I'm not a therapist, I was developed by psychologists – as a companion for your mental health who understands you and adapts to your needs. Unlike ChatGPT, I use various psychological approaches to support you more specifically. The first session with me is currently free. This project lives from people like you. If it helps you, I would be happy about your support. Your trust is important to me: Everything you write here remains private & secure.\n\nDo you want to start your onboarding?`,
-                isUser: false,
-                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                agent: 'Greeting',
-                quickReplies: ['Yes, let\'s start'],
-            }]);
-        }, 2500); // Increased delay by 1s as requested
-        return () => clearTimeout(timer);
-    }, []);
+    }, [isLoggedIn, messages.length]);
 
 
     // Fetch agent system prompt from Supabase (therapy_agents table)
@@ -455,8 +568,8 @@ export default function ChatScreen() {
                 // Advance to next question
                 setEinstellungsIndex(prev => prev + 1);
 
-                // Save AI question to Supabase too
-                await saveMessage(responseText, 'ai');
+                // Save AI question to Supabase (fire-and-forget, don't block UI)
+                saveMessage(responseText, 'ai');
 
                 // Build the message with hardcoded quick replies
                 const aiMessage: any = {
@@ -502,20 +615,19 @@ export default function ChatScreen() {
                 setOnboardingPhase(result.phase);
 
                 console.log(`[onboarding] phase=${result.phase}, userMsgs=${result.userMessageCount}`);
+
+                // Dismiss keyboard for all onboarding responses — they're long and need reading
+                Keyboard.dismiss();
             } else {
-                // REGULAR THERAPY: use the therapy agent's core_prompt
-                const systemPrompt = await fetchAgentPrompt(therapistName);
+                // REGULAR THERAPY: Haiku routing + Sonnet response via therapy-router
                 const recentHistory: ChatMessage[] = messages.slice(-20).map((msg: any) => ({
                     role: msg.isUser ? 'user' as const : 'assistant' as const,
                     content: msg.text,
                 }));
 
-                const result = await chatWithAgent(message, {
-                    name: therapistName,
-                    systemPrompt,
-                }, recentHistory);
+                const result = await chatTherapy(message, therapistName, recentHistory);
                 responseText = result.text;
-                agentSource = `${therapistName} Agent`;
+                agentSource = `${therapistName} Agent [${result.phase}${result.safety ? ' + ' + result.safety : ''}]`;
             }
 
             // Parse *..* options from AI response into quick reply buttons
@@ -621,6 +733,8 @@ export default function ChatScreen() {
             saveMessage(responseText, 'ai');
         } catch (error: any) {
             console.error('Error sending message to AI:', error);
+            // Dismiss setup overlay if it was showing (prevents stuck loading screen)
+            setShowSetupOverlay(false);
             const errorText = 'I apologize, but I am having trouble connecting right now. Please try again in a moment.';
             const errorMessage = {
                 id: `error-${Date.now()}`,
@@ -707,16 +821,18 @@ export default function ChatScreen() {
 
             lastSendTime.current = now;
 
-            const userMessage = {
+            const userMessage: any = {
                 id: Date.now().toString(),
                 text: messageText,
                 isUser: true,
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                ...(replyToMessage && { replyTo: replyToMessage }),
             };
-            
+
             setMessages(prev => [...prev, userMessage]);
             setInputText('');
-            
+            setReplyToMessage(null); // Clear reply-to after sending
+
             // Save user message to database BEFORE sending to AI
             saveMessage(messageText, 'user');
             
@@ -769,8 +885,14 @@ export default function ChatScreen() {
 
             const text = await transcribeAudio(uri, mimeType);
             if (text) {
-                // Put transcribed text in the input so user can review/edit before sending
-                setInputText(text);
+                // Auto-send: transcribe → show message → send to AI in one flow
+                const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const userMessage = { id: `voice-${Date.now()}`, text, isUser: true, time: now };
+                setMessages(prev => [...prev, userMessage]);
+                setIsTranscribing(false);
+                saveMessage(text, 'user');
+                sendMessageToAI(text);
+                return;
             }
         } catch (err: any) {
             console.error('Transcription failed:', err);
@@ -782,6 +904,58 @@ export default function ChatScreen() {
 
     const showComingSoon = () => {
         Alert.alert('Coming Soon', 'This feature is currently under development.');
+    };
+
+    // --- Message reaction handlers ---
+    const handleMessageLongPress = (message: any) => {
+        Vibration.vibrate(30); // short haptic
+        Keyboard.dismiss();
+        setReactingToMessage(message);
+    };
+
+    const handleReaction = (emoji: string) => {
+        if (!reactingToMessage) return;
+        const msgId = reactingToMessage.id;
+        const msgText = reactingToMessage.text;
+
+        // Store the reaction on the message
+        setMessages(prev => prev.map(m =>
+            m.id === msgId ? { ...m, reaction: m.reaction === emoji ? undefined : emoji } : m
+        ));
+        setReactingToMessage(null);
+
+        // Send the reaction as context to the AI
+        if (!isLoggedIn) return;
+        const reactionContext = `[reacted with ${emoji} to: "${msgText.substring(0, 100)}"]`;
+        saveMessage(reactionContext, 'user');
+        sendMessageToAI(reactionContext);
+    };
+
+    const handleReply = () => {
+        if (!reactingToMessage) return;
+        setReplyToMessage({
+            id: reactingToMessage.id,
+            text: reactingToMessage.text,
+            isUser: reactingToMessage.isUser,
+        });
+        setReactingToMessage(null);
+        // Focus input after a tick
+        setTimeout(() => {
+            // Input will auto-focus since reply bar appeared
+        }, 100);
+    };
+
+    const handleCopyMessage = () => {
+        if (!reactingToMessage) return;
+        // Use basic RN clipboard (deprecated but works without extra package)
+        try {
+            const { Clipboard } = require('react-native');
+            Clipboard.setString(reactingToMessage.text);
+        } catch {
+            // Fallback: silently fail if Clipboard isn't available
+        }
+        setReactingToMessage(null);
+        Alert.alert('Copied', 'Message copied to clipboard.');
     };
 
     const TypingBubble = () => (
@@ -841,6 +1015,36 @@ export default function ChatScreen() {
                     </TouchableOpacity>
 
                     <View style={styles.headerRight}>
+                        {/* DEV ONLY: Skip onboarding + unlock all characters */}
+                        {__DEV__ && isOnboarding && (
+                            <TouchableOpacity onPress={() => {
+                                // Simulate completed onboarding + Pro unlock
+                                const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                                const fakeMessages = [
+                                    { id: 'dev-g', text: `Hi, I'm ${therapistName}!\n\nDo you want to start your onboarding?`, isUser: false, time: now, agent: 'Greeting' },
+                                    { id: 'dev-u1', text: "Yes, let's start", isUser: true, time: now },
+                                    { id: 'dev-e1', text: 'How should I come across in our conversation?', isUser: false, time: now, agent: 'onboarding_einstellungs' },
+                                    { id: 'dev-u2', text: 'Warm and gentle', isUser: true, time: now },
+                                    { id: 'dev-e2', text: 'How deep do you want to go today?', isUser: false, time: now, agent: 'onboarding_einstellungs' },
+                                    { id: 'dev-u3', text: 'Get to the root of it', isUser: true, time: now },
+                                    { id: 'dev-e3', text: 'When things get uncomfortable, how should I respond?', isUser: false, time: now, agent: 'onboarding_einstellungs' },
+                                    { id: 'dev-u4', text: 'Hold steady, stay with me', isUser: true, time: now },
+                                    { id: 'dev-e4', text: 'What would make this conversation feel worthwhile?', isUser: false, time: now, agent: 'onboarding_einstellungs' },
+                                    { id: 'dev-u5', text: 'Feeling heard and understood', isUser: true, time: now },
+                                    { id: 'dev-skip', text: `I'm ready to talk with you. What's on your mind?`, isUser: false, time: now, agent: `${therapistName} Agent` },
+                                ];
+                                setMessages(fakeMessages);
+                                setIsOnboarding(false);
+                                setEinstellungsIndex(4);
+                                einstellungsDone.current = true;
+                                setIsTyping(false);
+                                // Unlock all characters (simulates Pro)
+                                setDevOverridePro(true);
+                                Alert.alert('Dev Skip', 'Onboarding skipped + all characters unlocked (Pro simulated).');
+                            }} style={styles.iconButton}>
+                                <Text style={{ color: '#FF6B6B', fontSize: 10, fontWeight: 'bold' }}>SKIP</Text>
+                            </TouchableOpacity>
+                        )}
                         <TouchableOpacity onPress={() => navigation.navigate('call', { name: therapistName, image: therapistImage })} style={styles.iconButton}>
                             <Phone size={22} color={Theme.colors.text.primary} />
                         </TouchableOpacity>
@@ -859,6 +1063,7 @@ export default function ChatScreen() {
                                 message={item}
                                 onUpgrade={() => router.push('/(main)/paywall')}
                                 onQuickReply={handleQuickReply}
+                                onLongPress={handleMessageLongPress}
                             />
                         )}
                         contentContainerStyle={styles.messageList}
@@ -884,6 +1089,27 @@ export default function ChatScreen() {
                     }}>
                         {inputText.length}/{MAX_MESSAGE_LENGTH}
                     </Text>
+                )}
+
+                {/* Reply-to quote bar (WhatsApp-style, above input) */}
+                {replyToMessage && (
+                    <View style={styles.replyBar}>
+                        <View style={[
+                            styles.replyBarAccent,
+                            replyToMessage.isUser ? styles.replyBarAccentUser : styles.replyBarAccentAi,
+                        ]} />
+                        <View style={styles.replyBarContent}>
+                            <Text style={styles.replyBarAuthor}>
+                                {replyToMessage.isUser ? 'You' : therapistName}
+                            </Text>
+                            <Text style={styles.replyBarText} numberOfLines={1}>
+                                {replyToMessage.text}
+                            </Text>
+                        </View>
+                        <TouchableOpacity onPress={() => setReplyToMessage(null)} style={styles.replyBarClose}>
+                            <X size={18} color="rgba(255,255,255,0.5)" />
+                        </TouchableOpacity>
+                    </View>
                 )}
 
                 {/* Input Bar */}
@@ -962,6 +1188,16 @@ export default function ChatScreen() {
                     onDone={() => setShowSetupOverlay(false)}
                 />
             )}
+
+            {/* Message reaction overlay (emoji picker + reply/copy actions) */}
+            <MessageReactionOverlay
+                visible={!!reactingToMessage}
+                messageText={reactingToMessage?.text || ''}
+                onReact={handleReaction}
+                onReply={handleReply}
+                onCopy={handleCopyMessage}
+                onClose={() => setReactingToMessage(null)}
+            />
         </SafeAreaView>
     );
 }
@@ -988,16 +1224,19 @@ const styles = StyleSheet.create({
         marginLeft: Theme.spacing.s,
     },
     avatarWrapper: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
+        width: 38,
+        height: 38,
+        borderRadius: 19,
         backgroundColor: '#333',
         marginRight: Theme.spacing.m,
         overflow: 'hidden',
+        borderWidth: 1.5,
+        borderColor: 'rgba(212, 175, 55, 0.5)',
     },
     avatar: {
         width: '100%',
-        height: '100%',
+        height: '110%',
+        top: 1,
     },
     name: {
         color: Theme.colors.text.primary,
@@ -1117,5 +1356,44 @@ const styles = StyleSheet.create({
         color: Theme.colors.primary,
         fontFamily: 'Inter-Bold',
         fontSize: 16,
-    }
+    },
+    // Reply-to bar (above input, WhatsApp-style)
+    replyBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255,255,255,0.06)',
+        marginHorizontal: 12,
+        marginBottom: 0,
+        borderRadius: 10,
+        overflow: 'hidden',
+    },
+    replyBarAccent: {
+        width: 4,
+        alignSelf: 'stretch',
+    },
+    replyBarAccentUser: {
+        backgroundColor: Theme.colors.primary,
+    },
+    replyBarAccentAi: {
+        backgroundColor: 'rgba(255,255,255,0.3)',
+    },
+    replyBarContent: {
+        flex: 1,
+        paddingHorizontal: 10,
+        paddingVertical: 8,
+    },
+    replyBarAuthor: {
+        color: Theme.colors.primary,
+        fontSize: 12,
+        fontFamily: 'Inter-Bold',
+        marginBottom: 1,
+    },
+    replyBarText: {
+        color: 'rgba(255,255,255,0.5)',
+        fontSize: 13,
+        fontFamily: 'Inter-Regular',
+    },
+    replyBarClose: {
+        padding: 10,
+    },
 });

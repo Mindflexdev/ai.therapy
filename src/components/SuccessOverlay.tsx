@@ -180,7 +180,7 @@ export const SetupOverlay = ({ therapistName, isReady, onDone }: SetupOverlayPro
     const [showSuccess, setShowSuccess] = useState(false);
     const hasTriggeredSuccess = useRef(false);
 
-    // Loading phase: fade in + start pulsing
+    // Loading phase: fade in + start pulsing + max timeout safety net
     useEffect(() => {
         Animated.timing(fadeAnim, {
             toValue: 1,
@@ -203,7 +203,18 @@ export const SetupOverlay = ({ therapistName, isReady, onDone }: SetupOverlayPro
             ])
         );
         pulse.start();
-        return () => pulse.stop();
+
+        // Safety net: auto-dismiss after 12 seconds if AI never responds
+        const maxTimeout = setTimeout(() => {
+            if (!hasTriggeredSuccess.current) {
+                onDone();
+            }
+        }, 12000);
+
+        return () => {
+            pulse.stop();
+            clearTimeout(maxTimeout);
+        };
     }, []);
 
     // When AI response arrives → switch to success phase
