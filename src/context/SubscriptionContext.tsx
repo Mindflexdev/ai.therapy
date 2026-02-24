@@ -56,13 +56,20 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
 
         const init = async () => {
             try {
+                const apiKey = Platform.OS === 'ios' ? API_KEYS.ios : API_KEYS.android;
+
+                // Guard: skip RevenueCat if API key is missing (prevents native crash)
+                if (!apiKey) {
+                    console.warn('RevenueCat API key not set — skipping initialization');
+                    setIsLoading(false);
+                    return;
+                }
+
                 if (__DEV__) {
                     Purchases.setLogLevel(LOG_LEVEL.DEBUG);
                 }
 
-                Purchases.configure({
-                    apiKey: Platform.OS === 'ios' ? API_KEYS.ios : API_KEYS.android,
-                });
+                Purchases.configure({ apiKey });
 
                 // Identify user with RevenueCat if already logged in
                 // This ties the subscription to the Supabase user, not the device
