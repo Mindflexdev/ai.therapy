@@ -2,6 +2,12 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Pressable, Keyboard } from 'react-native';
 import { CheckCheck } from 'lucide-react-native';
 import { Theme } from '../constants/Theme';
+import { LOCALE } from '../constants/Locale';
+
+// WhatsApp-style message truncation — 760 chars including spaces
+const MESSAGE_TRUNCATE_LENGTH = 760;
+const READ_MORE_LABEL = LOCALE === 'de' ? 'Mehr lesen' : 'Read more';
+const READ_LESS_LABEL = LOCALE === 'de' ? 'Weniger' : 'Read less';
 
 export interface ChallengeOption {
     title: string;
@@ -66,6 +72,14 @@ export const ChatBubble = React.memo(({ message, onUpgrade, onQuickReply, onLong
     const isEinstellungs = message.agent === 'onboarding_einstellungs';
     const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
     const [showZepDebug, setShowZepDebug] = useState(false);
+
+    // WhatsApp-style "Read more" — only for therapy agent messages (not onboarding)
+    const [isExpanded, setIsExpanded] = useState(false);
+    const isOnboardingMessage = message.agent?.startsWith('onboarding_') || message.agent === 'Greeting';
+    const canTruncate = !isOnboardingMessage && message.text.length > MESSAGE_TRUNCATE_LENGTH;
+    const displayText = canTruncate && !isExpanded
+        ? message.text.substring(0, MESSAGE_TRUNCATE_LENGTH) + '…'
+        : message.text;
 
     const toggleOption = (option: string) => {
         setSelectedOptions(prev =>
@@ -157,7 +171,16 @@ export const ChatBubble = React.memo(({ message, onUpgrade, onQuickReply, onLong
                                 </View>
                             )}
                             <Text style={styles.text}>
-                                {message.text}
+                                {displayText}
+                                {/* "Read more" / "Weniger" toggle for long messages */}
+                                {canTruncate && (
+                                    <Text
+                                        style={styles.readMoreLink}
+                                        onPress={() => setIsExpanded(prev => !prev)}
+                                    >
+                                        {' '}{isExpanded ? READ_LESS_LABEL : READ_MORE_LABEL}
+                                    </Text>
+                                )}
                                 {/* Invisible spacer reserves space for the time overlay */}
                                 <Text style={styles.timeSpacer}>
                                     {'  ' + message.time + (message.isUser ? '  ✓✓' : '')}
@@ -302,6 +325,11 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontFamily: 'Inter-Regular',
         lineHeight: 22,
+    },
+    readMoreLink: {
+        color: 'rgba(255,255,255,0.45)',
+        fontSize: 14,
+        fontFamily: 'Inter-Regular',
     },
     footer: {
         flexDirection: 'row',
