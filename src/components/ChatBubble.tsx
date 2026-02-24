@@ -178,7 +178,7 @@ export const ChatBubble = React.memo(({ message, onUpgrade, onQuickReply, onLong
                                         style={styles.readMoreLink}
                                         onPress={() => setIsExpanded(prev => !prev)}
                                     >
-                                        {' '}{isExpanded ? READ_LESS_LABEL : READ_MORE_LABEL}
+                                        {'\n'}{isExpanded ? READ_LESS_LABEL : READ_MORE_LABEL}
                                     </Text>
                                 )}
                                 {/* Invisible spacer reserves space for the time overlay */}
