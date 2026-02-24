@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BlurView } from 'expo-blur';
 import { Theme } from '../../src/constants/Theme';
 import { ChatBubble } from '../../src/components/ChatBubble';
+import { SuccessOverlay, SetupOverlay } from '../../src/components/SuccessOverlay';
 import { Menu, Phone, Video, Plus, Camera, Mic, ChevronLeft, Square, ArrowUp, Loader } from 'lucide-react-native';
 
 // expo-av and speech are optional — the native module may not be in the dev build.
@@ -32,9 +33,92 @@ const INITIAL_MESSAGES = [
     { id: '1', text: 'Hello, I am [Name]. How can I support you today?', isUser: false, time: '14:20' },
 ];
 
+// Hardcoded Einstellungsagent questions — shown locally, no AI call needed.
+// After all 4 are answered, the edge function takes over at problemfokus.
+const EINSTELLUNGS_QUESTIONS = [
+    {
+        text: 'How should I come across in our conversation?',
+        options: ['Warm and gentle', 'Direct and honest', 'Laid-back and casual'],
+    },
+    {
+        text: 'How deep do you want to go today?',
+        options: ['Focus on what I can do', 'Understand why I feel this way', 'Get to the root of it'],
+    },
+    {
+        text: 'When things get uncomfortable, how should I respond?',
+        options: ['Ease off, give me room', 'Hold steady, stay with me', 'Push through, don\'t let me avoid it'],
+    },
+    {
+        text: 'What would make this conversation feel worthwhile?',
+        options: ['Feeling heard and understood', 'Seeing things differently', 'Something concrete to try'],
+    },
+];
+
 // AI chat: onboarding uses phase-based prompts via chat-onboarding edge function,
 // regular therapy uses chatWithAgent via together-proxy edge function.
 import { chatWithAgent, chatOnboarding, ChatMessage } from '../../src/lib/together';
+
+// Transform second-person ("You are scared") → first-person ("I am scared")
+// Used when a user taps a problemstellung challenge card so the message reads naturally.
+const transformToFirstPerson = (text: string): string => {
+    // Order matters: longer phrases first to avoid partial replacements
+    const replacements: [RegExp, string][] = [
+        [/\bYou are\b/g, 'I am'],
+        [/\byou are\b/g, 'I am'],
+        [/\bYou feel\b/g, 'I feel'],
+        [/\byou feel\b/g, 'I feel'],
+        [/\bYou have\b/g, 'I have'],
+        [/\byou have\b/g, 'I have'],
+        [/\bYou don't\b/g, "I don't"],
+        [/\byou don't\b/g, "I don't"],
+        [/\bYou do not\b/g, 'I do not'],
+        [/\byou do not\b/g, 'I do not'],
+        [/\bYou can't\b/g, "I can't"],
+        [/\byou can't\b/g, "I can't"],
+        [/\bYou cannot\b/g, 'I cannot'],
+        [/\byou cannot\b/g, 'I cannot'],
+        [/\bYou were\b/g, 'I was'],
+        [/\byou were\b/g, 'I was'],
+        [/\bYou've\b/g, "I've"],
+        [/\byou've\b/g, "I've"],
+        [/\bYou'll\b/g, "I'll"],
+        [/\byou'll\b/g, "I'll"],
+        [/\bYou would\b/g, 'I would'],
+        [/\byou would\b/g, 'I would'],
+        [/\bYou could\b/g, 'I could'],
+        [/\byou could\b/g, 'I could'],
+        [/\bYou should\b/g, 'I should'],
+        [/\byou should\b/g, 'I should'],
+        [/\bYou need\b/g, 'I need'],
+        [/\byou need\b/g, 'I need'],
+        [/\bYou want\b/g, 'I want'],
+        [/\byou want\b/g, 'I want'],
+        [/\bYou think\b/g, 'I think'],
+        [/\byou think\b/g, 'I think'],
+        [/\bYou know\b/g, 'I know'],
+        [/\byou know\b/g, 'I know'],
+        [/\bYou seem\b/g, 'I seem'],
+        [/\byou seem\b/g, 'I seem'],
+        [/\bYou tend\b/g, 'I tend'],
+        [/\byou tend\b/g, 'I tend'],
+        [/\bYou struggle\b/g, 'I struggle'],
+        [/\byou struggle\b/g, 'I struggle'],
+        [/\bYou avoid\b/g, 'I avoid'],
+        [/\byou avoid\b/g, 'I avoid'],
+        [/\bYour\b/g, 'My'],
+        [/\byour\b/g, 'my'],
+        [/\bYourself\b/g, 'Myself'],
+        [/\byourself\b/g, 'myself'],
+        // Catch-all for remaining "You <verb>" at start of sentence
+        [/\bYou\b/g, 'I'],
+        [/\byou\b/g, 'I'],
+    ];
+    let result = text;
+    for (const [pattern, replacement] of replacements) {
+        result = result.replace(pattern, replacement);
+    }
+    return result;
+};
 
 
 import { THERAPIST_IMAGES, THERAPISTS } from '../../src/constants/Therapists';
@@ -160,6 +244,16 @@ export default function ChatScreen() {
     const NUM_WAVEFORM_BARS = 25;
     const [waveformLevels, setWaveformLevels] = useState<number[]>(new Array(NUM_WAVEFORM_BARS).fill(2));
 
+    // Einstellungsagent: tracks which hardcoded question to show next (0-3).
+    // When >= 4, einstellungs is done and we switch to the edge function.
+    const [einstellungsIndex, setEinstellungsIndex] = useState(0);
+    const einstellungsDone = useRef(false); // ref to survive closures
+
+    // Setup overlay — shown after all 4 einstellungs questions are answered.
+    // Two-phase: loading (while AI call runs) → success (when response arrives).
+    const [showSetupOverlay, setShowSetupOverlay] = useState(false);
+    const [isSetupReady, setIsSetupReady] = useState(false);
+
     // Onboarding state: new users go through the onboarding flow.
     // Once onboarding completes (paywall phase), isOnboarding becomes false.
     const [isOnboarding, setIsOnboarding] = useState(true);
@@ -219,7 +313,7 @@ export default function ChatScreen() {
                 // problemstellung 1, loesungsfokus 3, paywall 1). If user has sent 11+
                 // user messages, they've passed the paywall and are in regular therapy.
                 const userMsgCount = data.filter((m: any) => m.role === 'human').length;
-                if (userMsgCount > 10) {
+                if (userMsgCount > 23) {
                     setIsOnboarding(false);
                 }
             }
@@ -289,10 +383,11 @@ export default function ChatScreen() {
             setIsTyping(false);
             setMessages([{
                 id: '1',
-                text: `Hi, I'm ${therapistName}! \n\nAlthough I'm not a therapist, I was developed by psychologists – as a companion for your mental health who understands you and adapts to your needs. Unlike ChatGPT, I use various psychological approaches to support you more specifically. The first session with me is currently free. This project lives from people like you. If it helps you, I would be happy about your support. Your trust is important to me: Everything you write here remains private & secure.\n\nWhat do you want support with?`,
+                text: `Hi, I'm ${therapistName}! \n\nAlthough I'm not a therapist, I was developed by psychologists – as a companion for your mental health who understands you and adapts to your needs. Unlike ChatGPT, I use various psychological approaches to support you more specifically. The first session with me is currently free. This project lives from people like you. If it helps you, I would be happy about your support. Your trust is important to me: Everything you write here remains private & secure.\n\nDo you want to start your onboarding?`,
                 isUser: false,
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 agent: 'Greeting',
+                quickReplies: ['Yes, let\'s start'],
             }]);
         }, 2500); // Increased delay by 1s as requested
         return () => clearTimeout(timer);
@@ -348,23 +443,64 @@ export default function ChatScreen() {
 
             let responseText: string;
             let agentSource: string;
+            let onboardingUserMsgCount = 0; // track for lösungsfokus button logic
 
-            if (isOnboarding) {
-                // ONBOARDING FLOW: send full history to chat-onboarding edge function.
-                // It determines the phase, fetches the right prompt, templates in the
-                // therapist's name/personality, and calls Anthropic Sonnet 4.5.
+            if (isOnboarding && einstellungsIndex < EINSTELLUNGS_QUESTIONS.length) {
+                // EINSTELLUNGSAGENT: hardcoded questions, no AI call needed.
+                // Show the next question with its options after a short delay.
+                const nextQ = EINSTELLUNGS_QUESTIONS[einstellungsIndex];
+                responseText = nextQ.text;
+                agentSource = 'onboarding_einstellungs';
+
+                // Advance to next question
+                setEinstellungsIndex(prev => prev + 1);
+
+                // Save AI question to Supabase too
+                await saveMessage(responseText, 'ai');
+
+                // Build the message with hardcoded quick replies
+                const aiMessage: any = {
+                    id: `einst-${Date.now()}`,
+                    text: responseText,
+                    isUser: false,
+                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    agent: agentSource,
+                    quickReplies: nextQ.options,
+                };
+
+                setMessages(prev => [...prev, aiMessage]);
+                setIsTyping(false);
+                return; // Skip the rest — no AI call, no parsing needed
+
+            } else if (isOnboarding) {
+                // ONBOARDING FLOW (post-einstellungs): send full history to
+                // chat-onboarding edge function for problemfokus and beyond.
+
                 const history: ChatMessage[] = messages.map((msg: any) => ({
                     role: msg.isUser ? 'user' as const : 'assistant' as const,
                     content: msg.text,
                 }));
 
+                // Show setup overlay on first edge function call (transition from einstellungs).
+                // Phase 1 (loading) shows immediately; phase 2 (success) when AI responds.
+                if (!einstellungsDone.current) {
+                    einstellungsDone.current = true;
+                    setShowSetupOverlay(true);
+                    setIsSetupReady(false);
+                }
+
                 const result = await chatOnboarding(message, therapistName, history);
+
+                // Flip overlay to success phase (confetti) — einstellungsDone.current
+                // tells us if this is the first call where the overlay was shown.
+                // We can't rely on showSetupOverlay state (stale in closure).
+                setIsSetupReady(true);
+
                 responseText = result.text;
-                agentSource = result.phase;
+                agentSource = `${result.phase} #${result.userMessageCount}`;
+                onboardingUserMsgCount = result.userMessageCount;
                 setOnboardingPhase(result.phase);
 
-                // After the paywall message, switch to sales mode (still onboarding edge fn)
-                // After sales phase, could optionally switch to regular therapy
                 console.log(`[onboarding] phase=${result.phase}, userMsgs=${result.userMessageCount}`);
             } else {
                 // REGULAR THERAPY: use the therapy agent's core_prompt
@@ -385,27 +521,87 @@ export default function ChatScreen() {
             // Parse *..* options from AI response into quick reply buttons
             const parseQuickReplies = (text: string): { cleanText: string; replies: string[] } => {
                 const replies: string[] = [];
-                // Match lines that are just *text* (italic options)
-                const cleanText = text.replace(/^\*([^*]+)\*$/gm, (_, option) => {
+                // Match lines that are just *text* (allow leading/trailing whitespace)
+                const cleanText = text.replace(/^\s*\*([^*]+)\*\s*$/gm, (_, option) => {
                     replies.push(option.trim());
                     return '';
                 }).replace(/\n{3,}/g, '\n\n').trim();
                 return { cleanText, replies };
             };
 
-            // Phases that use *..* quick reply buttons
-            const quickReplyPhases = ['onboarding_einstellungs', 'onboarding_problemstellung'];
-            const showUpgrade = agentSource === 'onboarding_paywall' || agentSource === 'onboarding_sales';
+            // Parse challenge options from problemstellung: *Title: description*
+            const parseChallengeOptions = (text: string): { cleanText: string; challenges: { title: string; description: string; fullText: string }[] } => {
+                const challenges: { title: string; description: string; fullText: string }[] = [];
+                const cleanText = text.replace(/^\s*\*([^*]+)\*\s*$/gm, (_, content) => {
+                    const colonIdx = content.indexOf(':');
+                    if (colonIdx > 0) {
+                        const title = content.substring(0, colonIdx).trim();
+                        const description = content.substring(colonIdx + 1).trim();
+                        challenges.push({ title, description, fullText: content.trim() });
+                    }
+                    return '';
+                }).replace(/\n{3,}/g, '\n\n').trim();
+                return { cleanText, challenges };
+            };
+
+            const isProblemstellung = agentSource.startsWith('onboarding_problemstellung');
+            const isLoesungsfokusSetup = agentSource.startsWith('onboarding_loesungsfokus') && onboardingUserMsgCount === 12;
+            const showUpgrade = agentSource.startsWith('onboarding_paywall') || agentSource.startsWith('onboarding_sales');
 
             let displayText = responseText;
             let quickReplies: string[] | undefined;
+            let challengeOptions: { title: string; description: string; fullText: string }[] | undefined;
 
-            if (quickReplyPhases.includes(agentSource)) {
-                const parsed = parseQuickReplies(responseText);
-                if (parsed.replies.length > 0) {
+            if (isProblemstellung) {
+                // Problemstellung: parse challenge cards + dismiss keyboard
+                const parsed = parseChallengeOptions(responseText);
+                if (parsed.challenges.length > 0) {
                     displayText = parsed.cleanText;
-                    quickReplies = parsed.replies;
+                    challengeOptions = parsed.challenges;
                 }
+                Keyboard.dismiss();
+            }
+
+            // Lösungsfokus setup: message 12 proposes a therapeutic approach.
+            // Also catch retry responses (msg 13+) when user previously said "No, different approach".
+            const isLoesungsfokusRetry = agentSource.startsWith('onboarding_loesungsfokus')
+                && onboardingUserMsgCount > 12
+                && message.toLowerCase().includes('different approach');
+            if (isLoesungsfokusSetup || isLoesungsfokusRetry) {
+                // Add Yes/No buttons so user can accept or request a different approach
+                quickReplies = ['Yes', 'No, different approach'];
+                Keyboard.dismiss();
+            }
+
+            // Parse paywall summary into structured sections for the card design
+            let paywallSummary: { intro: string; sections: { heading: string; bullets: string[] }[] } | undefined;
+            if (showUpgrade && agentSource.startsWith('onboarding_paywall')) {
+                const lines = responseText.split('\n').map(l => l.trim()).filter(Boolean);
+                const introLines: string[] = [];
+                const sections: { heading: string; bullets: string[] }[] = [];
+                let currentSection: { heading: string; bullets: string[] } | null = null;
+
+                for (const line of lines) {
+                    // Detect section headings (e.g. "What we achieved:" or "How we would continue:")
+                    if (line.endsWith(':') && !line.startsWith('-') && !line.startsWith('•')) {
+                        if (currentSection) sections.push(currentSection);
+                        currentSection = { heading: line, bullets: [] };
+                    } else if (currentSection && (line.startsWith('- ') || line.startsWith('• '))) {
+                        currentSection.bullets.push(line.replace(/^[-•]\s*/, ''));
+                    } else if (!currentSection) {
+                        introLines.push(line);
+                    }
+                }
+                if (currentSection) sections.push(currentSection);
+
+                if (sections.length > 0) {
+                    paywallSummary = {
+                        intro: introLines.join('\n'),
+                        sections,
+                    };
+                    displayText = ''; // card replaces the text
+                }
+                Keyboard.dismiss();
             }
 
             // Add AI response to messages
@@ -417,6 +613,8 @@ export default function ChatScreen() {
                 agent: agentSource,
                 ...(showUpgrade && { upgradeButton: true }),
                 ...(quickReplies && { quickReplies }),
+                ...(challengeOptions && { challengeOptions }),
+                ...(paywallSummary && { paywallSummary }),
             };
 
             setMessages(prev => [...prev, aiMessage]);
@@ -448,23 +646,31 @@ export default function ChatScreen() {
         Keyboard.dismiss();
         lastSendTime.current = Date.now();
 
+        // Check if this was a challengeOption tap (problemstellung) — transform "You" → "I"
+        const isChallengeOption = messages.some(msg =>
+            msg.challengeOptions?.some((c: any) => c.fullText === text)
+        );
+        const displayText = isChallengeOption ? transformToFirstPerson(text) : text;
+
         const userMessage = {
             id: `qr-${Date.now()}`,
-            text,
+            text: displayText,
             isUser: true,
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         };
 
-        // Remove quick replies from the message that was tapped (so buttons disappear)
+        // Remove quick replies AND challenge options from the message that was tapped (so buttons disappear)
         setMessages(prev => {
             const updated = prev.map(msg =>
-                msg.quickReplies ? { ...msg, quickReplies: undefined } : msg
+                (msg.quickReplies || msg.challengeOptions)
+                    ? { ...msg, quickReplies: undefined, challengeOptions: undefined }
+                    : msg
             );
             return [...updated, userMessage];
         });
 
-        saveMessage(text, 'user');
-        sendMessageToAI(text);
+        saveMessage(displayText, 'user');
+        sendMessageToAI(displayText);
     };
 
     const handleSend = () => {
@@ -746,6 +952,16 @@ export default function ChatScreen() {
 
             {/* Login Modal */}
             {showLoginModal && <LoginScreen />}
+
+            {/* Setup overlay — two-phase: loading (pulsing) → success (confetti).
+                Shows after einstellungs, loading while AI runs, confetti when response arrives. */}
+            {showSetupOverlay && (
+                <SetupOverlay
+                    therapistName={therapistName}
+                    isReady={isSetupReady}
+                    onDone={() => setShowSetupOverlay(false)}
+                />
+            )}
         </SafeAreaView>
     );
 }

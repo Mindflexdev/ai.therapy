@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Animated, Dimensions } from 'react-native';
 import { Theme } from '../constants/Theme';
 
@@ -148,6 +148,127 @@ export const SuccessOverlay = ({ title, subtitle, onDone, showConfetti = false, 
     );
 };
 
+// --- Two-phase Setup Overlay (loading → success) ---
+// Phase 1: pulsing circle + "Setting up your 24/7 support..."
+// Phase 2: checkmark + confetti + "Setup Complete" (auto-dismisses after 1.8s)
+interface SetupOverlayProps {
+    therapistName: string;
+    isReady: boolean;       // flip to true when AI response arrives
+    onDone: () => void;     // called when the whole overlay should dismiss
+}
+
+export const SetupOverlay = ({ therapistName, isReady, onDone }: SetupOverlayProps) => {
+    const pulseAnim = useRef(new Animated.Value(0.6)).current;
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const textFadeAnim = useRef(new Animated.Value(0)).current;
+
+    // Success phase animations
+    const successScaleAnim = useRef(new Animated.Value(0)).current;
+    const successFadeAnim = useRef(new Animated.Value(0)).current;
+    const successTextFadeAnim = useRef(new Animated.Value(0)).current;
+
+    const confettiPieces = useRef<ConfettiPiece[]>(
+        Array.from({ length: NUM_CONFETTI }, () => ({
+            x: Math.random() * SCREEN_WIDTH,
+            delay: Math.random() * 600,
+            color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
+            size: 8 + Math.random() * 8,
+            rotation: 2 + Math.random() * 8,
+        }))
+    ).current;
+
+    const [showSuccess, setShowSuccess] = useState(false);
+    const hasTriggeredSuccess = useRef(false);
+
+    // Loading phase: fade in + start pulsing
+    useEffect(() => {
+        Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 400,
+            useNativeDriver: true,
+        }).start();
+
+        Animated.timing(textFadeAnim, {
+            toValue: 1,
+            duration: 600,
+            delay: 200,
+            useNativeDriver: true,
+        }).start();
+
+        // Pulse loop
+        const pulse = Animated.loop(
+            Animated.sequence([
+                Animated.timing(pulseAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
+                Animated.timing(pulseAnim, { toValue: 0.6, duration: 800, useNativeDriver: true }),
+            ])
+        );
+        pulse.start();
+        return () => pulse.stop();
+    }, []);
+
+    // When AI response arrives → switch to success phase
+    useEffect(() => {
+        if (isReady && !hasTriggeredSuccess.current) {
+            hasTriggeredSuccess.current = true;
+            setShowSuccess(true);
+
+            // Animate success in
+            Animated.sequence([
+                Animated.parallel([
+                    Animated.spring(successScaleAnim, {
+                        toValue: 1,
+                        friction: 4,
+                        tension: 60,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(successFadeAnim, {
+                        toValue: 1,
+                        duration: 400,
+                        useNativeDriver: true,
+                    }),
+                ]),
+                Animated.timing(successTextFadeAnim, {
+                    toValue: 1,
+                    duration: 400,
+                    useNativeDriver: true,
+                }),
+            ]).start();
+
+            // Dismiss after 1.8s
+            setTimeout(onDone, 1800);
+        }
+    }, [isReady]);
+
+    return (
+        <View style={styles.container}>
+            {showSuccess ? (
+                <>
+                    {confettiPieces.map((piece, i) => (
+                        <ConfettiParticle key={i} piece={piece} />
+                    ))}
+                    <Animated.View style={[styles.checkmarkCircle, { opacity: successFadeAnim, transform: [{ scale: successScaleAnim }] }]}>
+                        <Text style={styles.checkmark}>✓</Text>
+                    </Animated.View>
+                    <Animated.View style={{ opacity: successTextFadeAnim, alignItems: 'center' }}>
+                        <Text style={styles.title}>Setup Complete</Text>
+                        <Text style={styles.subtitle}>{`${therapistName} is now personalised to you.\nYour 24/7 support is ready.`}</Text>
+                    </Animated.View>
+                </>
+            ) : (
+                <>
+                    <Animated.View style={[styles.loadingCircle, { opacity: fadeAnim, transform: [{ scale: pulseAnim }] }]}>
+                        <Text style={styles.loadingIcon}>⚙️</Text>
+                    </Animated.View>
+                    <Animated.View style={{ opacity: textFadeAnim, alignItems: 'center' }}>
+                        <Text style={styles.loadingTitle}>Setting up your 24/7 support...</Text>
+                        <Text style={styles.subtitle}>{`Personalising ${therapistName} to your preferences`}</Text>
+                    </Animated.View>
+                </>
+            )}
+        </View>
+    );
+};
+
 const styles = StyleSheet.create({
     container: {
         ...StyleSheet.absoluteFillObject,
@@ -189,5 +310,26 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         lineHeight: 22,
         paddingHorizontal: 40,
+    },
+    loadingCircle: {
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        backgroundColor: 'rgba(235, 206, 128, 0.15)',
+        borderWidth: 2,
+        borderColor: 'rgba(235, 206, 128, 0.3)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 32,
+    },
+    loadingIcon: {
+        fontSize: 40,
+    },
+    loadingTitle: {
+        fontSize: 22,
+        color: Theme.colors.text.primary,
+        fontFamily: 'Inter-Bold',
+        marginBottom: 12,
+        textAlign: 'center',
     },
 });
