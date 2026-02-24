@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, SafeAreaView, Image, TouchableOpacity, ScrollVi
 import { Theme } from '../../src/constants/Theme';
 import { ChevronLeft, Phone, Search, Image as ImageIcon, Star, Bell, Lock } from 'lucide-react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { THERAPIST_IMAGES, THERAPIST_PHILOSOPHIES } from '../../src/constants/Therapists';
+import { THERAPIST_IMAGES, getPhilosophy } from '../../src/constants/Therapists';
 
 export default function ProfileScreen() {
     const router = useRouter();
@@ -11,7 +11,7 @@ export default function ProfileScreen() {
 
     const therapistName = (name as string) || 'Marcus';
     const therapistImage = THERAPIST_IMAGES[therapistName];
-    const philosophy = THERAPIST_PHILOSOPHIES[therapistName] || 'Your companion for mental health.';
+    const philosophy = getPhilosophy(therapistName) || 'Your companion for mental health.';
 
     return (
         <SafeAreaView style={styles.container}>

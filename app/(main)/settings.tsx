@@ -102,7 +102,7 @@ export default function SettingsScreen() {
                 {!isPro && (
                     <View style={styles.upgradeCard}>
                         <Text style={styles.upgradeTitle}>Upgrade to ai.therapy Pro</Text>
-                        <Text style={styles.upgradeText}>Unlock all characters, unlimited calls, and long-term memory.</Text>
+                        <Text style={styles.upgradeText}>Unlock all characters, long-term memory, enhanced discernment and reminders.</Text>
                         <TouchableOpacity style={styles.upgradeBtn} onPress={() => router.push('/(main)/paywall')}>
                             <Text style={styles.upgradeBtnText}>Upgrade</Text>
                         </TouchableOpacity>

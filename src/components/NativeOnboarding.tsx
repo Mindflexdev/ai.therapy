@@ -12,8 +12,77 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Theme } from '../constants/Theme';
 import { THERAPISTS } from '../constants/Therapists';
+import { LOCALE, Locale } from '../constants/Locale';
 import { Logo } from './Logo';
 import { supabase } from '../lib/supabase';
+
+// ─── Locale-aware UI texts ─────────────────────────────────────────────────────
+
+const TEXTS: Record<Locale, {
+    welcome: { title: string; subtitle: string; button: string; footer: string };
+    bridge: { title: string; subtitle: string; features: string[]; button: string };
+    choose: { title: string; subtitle: string; button: string };
+    confirm: { companion: string; startButton: string; backButton: string };
+}> = {
+    en: {
+        welcome: {
+            title: 'Your space to sort your thoughts.',
+            subtitle: 'A companion for your mental health\ndeveloped by psychologists.\nAlways available. Completely private.',
+            button: 'Get started',
+            footer: 'Free first session \u00B7 No credit card required',
+        },
+        bridge: {
+            title: 'Every journey is personal',
+            subtitle: "That's why you'll choose a companion\nwho fits the way you want to be supported.",
+            features: [
+                'Each one has a different approach',
+                'Built on real psychological methods',
+                'Adapts to how you communicate',
+            ],
+            button: 'Meet them',
+        },
+        choose: {
+            title: 'Choose your companion',
+            subtitle: 'Who do you want to talk to?',
+            button: 'Continue',
+        },
+        confirm: {
+            companion: 'This will be your companion for your journey.',
+            startButton: 'Start my journey',
+            backButton: 'Choose someone else',
+        },
+    },
+    de: {
+        welcome: {
+            title: 'Um deine Gedanken zu sortieren.',
+            subtitle: 'Ein Begleiter f\u00FCr deine mentale Gesundheit\nentwickelt von Psychologen.\nImmer verf\u00FCgbar. Komplett privat.',
+            button: 'Loslegen',
+            footer: 'Erste Sitzung kostenlos \u00B7 Keine Kreditkarte n\u00F6tig',
+        },
+        bridge: {
+            title: 'Jeder Weg ist pers\u00F6nlich',
+            subtitle: 'Deshalb w\u00E4hlst du einen Begleiter,\nder zu deiner Art der Unterst\u00FCtzung passt.',
+            features: [
+                'Jeder hat einen anderen Ansatz',
+                'Basiert auf echten psychologischen Methoden',
+                'Passt sich deiner Kommunikation an',
+            ],
+            button: 'Lerne sie kennen',
+        },
+        choose: {
+            title: 'W\u00E4hle deinen Begleiter',
+            subtitle: 'Mit wem m\u00F6chtest du sprechen?',
+            button: 'Weiter',
+        },
+        confirm: {
+            companion: 'Das wird dein Begleiter auf deinem Weg.',
+            startButton: 'Meine Reise starten',
+            backButton: 'Jemand anderen w\u00E4hlen',
+        },
+    },
+};
+
+const t = TEXTS[LOCALE];
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -124,22 +193,20 @@ function WelcomeScreen({ onContinue }: { onContinue: () => void }) {
 
             {/* Title + divider + subtitle centered as one block */}
             <View style={styles.welcomeContent}>
-                <Text style={styles.welcomeTitle}>Your space to sort your thoughts.</Text>
+                <Text style={styles.welcomeTitle}>{t.welcome.title}</Text>
 
                 <View style={styles.welcomeDivider} />
 
                 <Text style={styles.welcomeSubtitle}>
-                    A companion for your mental health{'\n'}
-                    developed by psychologists.{'\n'}
-                    Always available. Completely private.
+                    {t.welcome.subtitle}
                 </Text>
             </View>
 
             <View style={styles.bottomArea}>
                 <TouchableOpacity style={styles.primaryButton} onPress={onContinue} activeOpacity={0.8}>
-                    <Text style={styles.primaryButtonText}>Get started</Text>
+                    <Text style={styles.primaryButtonText}>{t.welcome.button}</Text>
                 </TouchableOpacity>
-                <Text style={styles.footerNote}>Free first session · No credit card required</Text>
+                <Text style={styles.footerNote}>{t.welcome.footer}</Text>
             </View>
         </View>
     );
@@ -152,24 +219,23 @@ function BridgeScreen({ onContinue }: { onContinue: () => void }) {
         <View style={styles.screen}>
             <View style={styles.bridgeContent}>
                 <Text style={styles.bridgeEmoji}>🤝</Text>
-                <Text style={styles.bridgeTitle}>Every journey is personal</Text>
+                <Text style={styles.bridgeTitle}>{t.bridge.title}</Text>
                 <Text style={styles.bridgeSubtitle}>
-                    That's why you'll choose a companion{'\n'}
-                    who fits the way you want to be supported.
+                    {t.bridge.subtitle}
                 </Text>
 
                 <View style={styles.bridgeDivider} />
 
                 <View style={styles.bridgeFeatures}>
-                    <Text style={styles.bridgeFeature}>Each one has a different approach</Text>
-                    <Text style={styles.bridgeFeature}>Built on real psychological methods</Text>
-                    <Text style={styles.bridgeFeature}>Adapts to how you communicate</Text>
+                    {t.bridge.features.map((feat, i) => (
+                        <Text key={i} style={styles.bridgeFeature}>{feat}</Text>
+                    ))}
                 </View>
             </View>
 
             <View style={styles.bottomArea}>
                 <TouchableOpacity style={styles.primaryButton} onPress={onContinue} activeOpacity={0.8}>
-                    <Text style={styles.primaryButtonText}>Meet them</Text>
+                    <Text style={styles.primaryButtonText}>{t.bridge.button}</Text>
                 </TouchableOpacity>
             </View>
         </View>
@@ -190,10 +256,10 @@ function ChooseScreen({
     return (
         <View style={styles.screen}>
             <View style={styles.chooseHeader}>
-                <Text style={styles.chooseTitle}>Choose your companion</Text>
+                <Text style={styles.chooseTitle}>{t.choose.title}</Text>
                 <View style={styles.chooseDivider} />
                 <Text style={styles.chooseSubtitle}>
-                    Who do you want to talk to?
+                    {t.choose.subtitle}
                 </Text>
             </View>
 
@@ -241,7 +307,7 @@ function ChooseScreen({
                     activeOpacity={0.8}
                 >
                     <Text style={[styles.primaryButtonText, !selectedId && styles.buttonTextDisabled]}>
-                        Continue
+                        {t.choose.button}
                     </Text>
                 </TouchableOpacity>
             </View>
@@ -284,16 +350,16 @@ function ConfirmScreen({
                 )}
                 <View style={styles.confirmDivider} />
                 <Text style={styles.confirmWarning}>
-                    This will be your companion for your journey.
+                    {t.confirm.companion}
                 </Text>
             </View>
 
             <View style={styles.confirmBottomArea}>
                 <TouchableOpacity style={styles.primaryButton} onPress={onConfirm} activeOpacity={0.8}>
-                    <Text style={styles.primaryButtonText}>Start my journey</Text>
+                    <Text style={styles.primaryButtonText}>{t.confirm.startButton}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.secondaryButton} onPress={onBack} activeOpacity={0.7}>
-                    <Text style={styles.secondaryButtonText}>Choose someone else</Text>
+                    <Text style={styles.secondaryButtonText}>{t.confirm.backButton}</Text>
                 </TouchableOpacity>
             </View>
         </View>

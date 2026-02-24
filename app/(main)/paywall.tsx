@@ -55,14 +55,18 @@ export default function PaywallScreen() {
         router.back();
     };
 
-    const FeatureRow = ({ label, free, pro }: any) => (
+    const FeatureRow = ({ label, free, pro, proLabel }: any) => (
         <View style={styles.featureRow}>
             <Text style={styles.featureLabel}>{label}</Text>
             <View style={styles.featureStatus}>
                 <Text style={styles.statusText}>{free ? '✓' : '—'}</Text>
             </View>
             <View style={[styles.featureStatus, styles.proStatus]}>
-                <Check size={18} color={Theme.colors.primary} />
+                {proLabel ? (
+                    <Text style={styles.comingSoonText}>{proLabel}</Text>
+                ) : (
+                    <Check size={18} color={Theme.colors.primary} />
+                )}
             </View>
         </View>
     );
@@ -99,7 +103,9 @@ export default function PaywallScreen() {
                     <FeatureRow label="Unlimited Messages" free={true} pro={true} />
                     <FeatureRow label="Unlock All Characters" free={false} pro={true} />
                     <FeatureRow label="Long-term Memory" free={false} pro={true} />
-                    <FeatureRow label="Voice & Phone Calls" free={false} pro={true} />
+                    <FeatureRow label="Enhanced Discernment" free={false} pro={true} />
+                    <FeatureRow label="Reminders" free={false} pro={true} />
+                    <FeatureRow label="Voice Calls" free={false} pro={true} proLabel="Coming soon" />
                 </View>
 
                 {hasTrialOffer && (
@@ -268,6 +274,12 @@ const styles = StyleSheet.create({
     statusText: {
         color: Theme.colors.text.muted,
         fontSize: 16,
+    },
+    comingSoonText: {
+        color: Theme.colors.primary,
+        fontSize: 11,
+        fontFamily: 'Inter-SemiBold',
+        opacity: 0.8,
     },
     trialSection: {
         flexDirection: 'row',

@@ -1,8 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, Image, TouchableOpacity, Animated } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, Image, TouchableOpacity, Animated, Modal } from 'react-native';
 import { Theme } from '../../src/constants/Theme';
-import { ChevronDown, Users, MicOff, Volume2, VideoOff, PhoneOff, MoreHorizontal } from 'lucide-react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { ChevronDown, Users, MicOff, Volume2, VideoOff, PhoneOff, MoreHorizontal, Phone, Star } from 'lucide-react-native';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
 import LoginScreen from './login';
 
@@ -18,23 +18,22 @@ export default function CallScreen() {
     const therapistImage = THERAPIST_IMAGES[therapistName];
 
     const { isLoggedIn, isPro, showLoginModal, setShowLoginModal } = useAuth();
+    const [showComingSoon, setShowComingSoon] = useState(false);
     const scale = useRef(new Animated.Value(1)).current;
     const opacity = useRef(new Animated.Value(0.5)).current;
 
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            if (!isLoggedIn) {
-                setShowLoginModal(true);
-            } else if (!isPro) {
-                router.replace({
-                    pathname: '/(main)/paywall',
-                    params: { name: therapistName }
-                });
-            }
-        }, 2500);
+    // Reset and re-trigger the coming soon modal every time the screen gains focus
+    // (useEffect with [] only fires on mount — React Navigation caches the screen)
+    useFocusEffect(
+        useCallback(() => {
+            setShowComingSoon(false);
+            const timer = setTimeout(() => {
+                setShowComingSoon(true);
+            }, 1500);
 
-        return () => clearTimeout(timer);
-    }, [isLoggedIn, isPro]);
+            return () => clearTimeout(timer);
+        }, [])
+    );
 
     useEffect(() => {
         Animated.loop(
@@ -103,6 +102,36 @@ export default function CallScreen() {
                     </TouchableOpacity>
                 </View>
             </View>
+
+            {/* Coming Soon Modal */}
+            <Modal
+                visible={showComingSoon}
+                transparent
+                animationType="fade"
+                onRequestClose={() => { setShowComingSoon(false); router.back(); }}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.comingSoonCard}>
+                        <View style={styles.comingSoonIcon}>
+                            <Phone size={28} color={Theme.colors.primary} />
+                        </View>
+                        <Text style={styles.comingSoonTitle}>Voice Calls Coming Soon</Text>
+                        <Text style={styles.comingSoonText}>
+                            We're building real-time voice sessions with your therapist. This feature is currently in production.
+                        </Text>
+                        <View style={styles.proBadgeRow}>
+                            <Star size={14} color={Theme.colors.primary} />
+                            <Text style={styles.proBadgeText}>Available first to Pro users</Text>
+                        </View>
+                        <TouchableOpacity
+                            style={styles.comingSoonBtn}
+                            onPress={() => { setShowComingSoon(false); router.back(); }}
+                        >
+                            <Text style={styles.comingSoonBtnText}>Got it</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
 
             {/* Login Modal */}
             {showLoginModal && <LoginScreen />}
@@ -196,5 +225,71 @@ const styles = StyleSheet.create({
     },
     activeControlBtn: {
         backgroundColor: '#FFF',
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.7)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 32,
+    },
+    comingSoonCard: {
+        backgroundColor: Theme.colors.card,
+        borderRadius: 24,
+        padding: 32,
+        alignItems: 'center',
+        width: '100%',
+        maxWidth: 340,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.06)',
+    },
+    comingSoonIcon: {
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        backgroundColor: 'rgba(235,206,128,0.12)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    comingSoonTitle: {
+        color: Theme.colors.text.primary,
+        fontFamily: 'Inter-Bold',
+        fontSize: 20,
+        marginBottom: 12,
+        textAlign: 'center',
+    },
+    comingSoonText: {
+        color: Theme.colors.text.muted,
+        fontSize: 15,
+        lineHeight: 22,
+        textAlign: 'center',
+        marginBottom: 16,
+    },
+    proBadgeRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        backgroundColor: 'rgba(235,206,128,0.1)',
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 20,
+        marginBottom: 24,
+    },
+    proBadgeText: {
+        color: Theme.colors.primary,
+        fontSize: 13,
+        fontFamily: 'Inter-SemiBold',
+    },
+    comingSoonBtn: {
+        backgroundColor: Theme.colors.primary,
+        paddingVertical: 14,
+        paddingHorizontal: 48,
+        borderRadius: 14,
+    },
+    comingSoonBtnText: {
+        color: Theme.colors.background,
+        fontFamily: 'Inter-Bold',
+        fontSize: 16,
     },
 });

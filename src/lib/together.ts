@@ -63,8 +63,10 @@ export async function chatOnboarding(
 export async function chatTherapy(
   message: string,
   therapistName: string,
-  history: ChatMessage[] = []
-): Promise<{ text: string; model: string; phase: string; safety: string | null }> {
+  history: ChatMessage[] = [],
+  currentPhase: string = 'skill_phase1',
+  isPro: boolean = false
+): Promise<{ text: string; model: string; phase: string; safety: string | null; hasMemory: boolean; zepContext: string | null }> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.access_token) {
     throw new Error('User must be logged in to chat.');
@@ -76,7 +78,7 @@ export async function chatTherapy(
   ];
 
   const { data, error } = await supabase.functions.invoke('therapy-router', {
-    body: { therapistName, messages },
+    body: { therapistName, messages, currentPhase, isPro },
   });
 
   if (error) {
@@ -92,5 +94,7 @@ export async function chatTherapy(
     model: data?.model || 'claude-sonnet-4-20250514',
     phase: data?.phase || 'unknown',
     safety: data?.safety || null,
+    hasMemory: data?.hasMemory || false,
+    zepContext: data?.zepContext || null,
   };
 }

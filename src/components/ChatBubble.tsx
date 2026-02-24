@@ -37,6 +37,7 @@ export interface Message {
     paywallSummary?: PaywallSummary;
     reaction?: string;
     replyTo?: ReplyTo;
+    zepContext?: string;
 }
 
 interface Props {
@@ -64,6 +65,7 @@ export const ChatBubble = React.memo(({ message, onUpgrade, onQuickReply, onLong
     // Multi-select for einstellungs questions
     const isEinstellungs = message.agent === 'onboarding_einstellungs';
     const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
+    const [showZepDebug, setShowZepDebug] = useState(false);
 
     const toggleOption = (option: string) => {
         setSelectedOptions(prev =>
@@ -154,8 +156,14 @@ export const ChatBubble = React.memo(({ message, onUpgrade, onQuickReply, onLong
                                     </Text>
                                 </View>
                             )}
-                            <Text style={styles.text}>{message.text}</Text>
-                            <View style={styles.footer}>
+                            <Text style={styles.text}>
+                                {message.text}
+                                {/* Invisible spacer reserves space for the time overlay */}
+                                <Text style={styles.timeSpacer}>
+                                    {'  ' + message.time + (message.isUser ? '  ✓✓' : '')}
+                                </Text>
+                            </Text>
+                            <View style={styles.footerOverlay}>
                                 {agentLabel && (
                                     <Text style={styles.agentLabel}>{agentLabel}</Text>
                                 )}
@@ -181,6 +189,22 @@ export const ChatBubble = React.memo(({ message, onUpgrade, onQuickReply, onLong
                     ]}>
                         <Text style={styles.reactionEmoji}>{message.reaction}</Text>
                     </View>
+                )}
+
+                {/* Zep memory debug — tappable to expand/collapse */}
+                {message.zepContext && (
+                    <TouchableOpacity
+                        onPress={() => setShowZepDebug(prev => !prev)}
+                        style={styles.zepDebugToggle}
+                        activeOpacity={0.6}
+                    >
+                        <Text style={styles.zepDebugLabel}>
+                            {showZepDebug ? '🧠 Memory ▾' : '🧠 Memory ▸'}
+                        </Text>
+                        {showZepDebug && (
+                            <Text style={styles.zepDebugText}>{message.zepContext}</Text>
+                        )}
+                    </TouchableOpacity>
                 )}
 
                 {/* Upgrade button — Telegram-style filled golden button */}
@@ -284,6 +308,17 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'flex-end',
         marginTop: 2,
+    },
+    timeSpacer: {
+        fontSize: 11,
+        color: 'transparent',
+    },
+    footerOverlay: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        position: 'absolute',
+        bottom: 7,
+        right: 12,
     },
     time: {
         fontSize: 11,
@@ -415,6 +450,28 @@ const styles = StyleSheet.create({
         fontFamily: 'Inter-Regular',
         fontSize: 13,
         lineHeight: 18,
+    },
+    // Zep memory debug
+    zepDebugToggle: {
+        marginTop: 4,
+        backgroundColor: 'rgba(147, 130, 220, 0.08)',
+        borderWidth: 1,
+        borderColor: 'rgba(147, 130, 220, 0.2)',
+        borderRadius: 8,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+    },
+    zepDebugLabel: {
+        color: 'rgba(147, 130, 220, 0.7)',
+        fontSize: 11,
+        fontFamily: 'Inter-SemiBold',
+    },
+    zepDebugText: {
+        color: 'rgba(255,255,255,0.5)',
+        fontSize: 11,
+        fontFamily: 'Inter-Regular',
+        lineHeight: 16,
+        marginTop: 4,
     },
     // Paywall summary card styles
     paywallCard: {

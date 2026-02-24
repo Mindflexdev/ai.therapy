@@ -37,24 +37,47 @@ const INITIAL_MESSAGES = [
 
 // Hardcoded Einstellungsagent questions — shown locally, no AI call needed.
 // After all 4 are answered, the edge function takes over at problemfokus.
-const EINSTELLUNGS_QUESTIONS = [
-    {
-        text: 'How should I come across in our conversation?',
-        options: ['Warm and gentle', 'Direct and honest', 'Laid-back and casual'],
-    },
-    {
-        text: 'How deep do you want to go today?',
-        options: ['Focus on what I can do', 'Understand why I feel this way', 'Get to the root of it'],
-    },
-    {
-        text: 'When things get uncomfortable, how should I respond?',
-        options: ['Ease off, give me room', 'Hold steady, stay with me', 'Push through, don\'t let me avoid it'],
-    },
-    {
-        text: 'What would make this conversation feel worthwhile?',
-        options: ['Feeling heard and understood', 'Seeing things differently', 'Something concrete to try'],
-    },
-];
+import { LOCALE, Locale } from '../../src/constants/Locale';
+
+const EINSTELLUNGS_QUESTIONS_I18N: Record<Locale, { text: string; options: string[] }[]> = {
+    en: [
+        {
+            text: 'How should I come across in our conversation?',
+            options: ['Warm and gentle', 'Direct and honest', 'Laid-back and casual'],
+        },
+        {
+            text: 'How deep do you want to go today?',
+            options: ['Focus on what I can do', 'Understand why I feel this way', 'Get to the root of it'],
+        },
+        {
+            text: 'When things get uncomfortable, how should I respond?',
+            options: ['Ease off, give me room', 'Hold steady, stay with me', 'Push through, don\'t let me avoid it'],
+        },
+        {
+            text: 'What would make this conversation feel worthwhile?',
+            options: ['Feeling heard and understood', 'Seeing things differently', 'Something concrete to try'],
+        },
+    ],
+    de: [
+        {
+            text: 'Wie soll ich in unserem Gespr\u00E4ch r\u00FCberkommen?',
+            options: ['Warm und einf\u00FChlsam', 'Direkt und ehrlich', 'Locker und entspannt'],
+        },
+        {
+            text: 'Wie tief m\u00F6chtest du heute gehen?',
+            options: ['Fokus auf das, was ich tun kann', 'Verstehen, warum ich so f\u00FChle', 'Der Sache auf den Grund gehen'],
+        },
+        {
+            text: 'Wenn es unangenehm wird, wie soll ich reagieren?',
+            options: ['Zur\u00FCckhalten, gib mir Raum', 'Dranbleiben, bleib bei mir', 'Weitermachen, lass mich nicht ausweichen'],
+        },
+        {
+            text: 'Was w\u00FCrde dieses Gespr\u00E4ch f\u00FCr dich wertvoll machen?',
+            options: ['Geh\u00F6rt und verstanden werden', 'Dinge anders sehen', 'Etwas Konkretes zum Ausprobieren'],
+        },
+    ],
+};
+const EINSTELLUNGS_QUESTIONS = EINSTELLUNGS_QUESTIONS_I18N[LOCALE];
 
 // AI chat: onboarding uses phase-based prompts via chat-onboarding edge function,
 // regular therapy uses Haiku routing + Sonnet response via therapy-router edge function.
@@ -123,7 +146,7 @@ const transformToFirstPerson = (text: string): string => {
 };
 
 
-import { THERAPIST_IMAGES, THERAPISTS, THERAPIST_GREETINGS } from '../../src/constants/Therapists';
+import { THERAPIST_IMAGES, THERAPISTS, getGreeting } from '../../src/constants/Therapists';
 
 // --- Input validation constants ---
 const MAX_MESSAGE_LENGTH = 2000;
@@ -146,30 +169,51 @@ const detectCrisis = (text: string): boolean => {
     return CRISIS_PATTERNS.some(pattern => lower.includes(pattern));
 };
 
-// Crisis resources banner component
-const CrisisResourcesBanner = ({ onDismiss }: { onDismiss: () => void }) => (
-    <View style={crisisBannerStyles.container}>
-        <Text style={crisisBannerStyles.title}>💛 You're not alone</Text>
-        <Text style={crisisBannerStyles.text}>
-            If you're in crisis or need immediate support, please reach out:
-        </Text>
-        <TouchableOpacity onPress={() => Linking.openURL('tel:08001110111')}>
-            <Text style={crisisBannerStyles.link}>🇩🇪 Germany: 0800 111 0 111 (Telefonseelsorge)</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => Linking.openURL('tel:08001110222')}>
-            <Text style={crisisBannerStyles.link}>🇩🇪 Germany: 0800 111 0 222</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => Linking.openURL('https://findahelpline.com')}>
-            <Text style={crisisBannerStyles.link}>🌍 International: findahelpline.com</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => Linking.openURL('tel:988')}>
-            <Text style={crisisBannerStyles.link}>🇺🇸 US: 988 Suicide & Crisis Lifeline</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={onDismiss} style={crisisBannerStyles.dismissButton}>
-            <Text style={crisisBannerStyles.dismissText}>Understood</Text>
-        </TouchableOpacity>
-    </View>
-);
+// Crisis resources banner component — locale-aware
+const CRISIS_TEXTS: Record<Locale, { title: string; text: string; international: string; us: string; de: string; dismiss: string }> = {
+    en: {
+        title: '\uD83D\uDC9B You\'re not alone',
+        text: 'If you\'re in crisis or need immediate support, please reach out:',
+        international: '\uD83C\uDF0D International: findahelpline.com',
+        us: '\uD83C\uDDFA\uD83C\uDDF8 US: 988 Suicide & Crisis Lifeline',
+        de: '',
+        dismiss: 'Understood',
+    },
+    de: {
+        title: '\uD83D\uDC9B Du bist nicht allein',
+        text: 'Wenn du in einer Krise bist oder sofortige Hilfe brauchst, wende dich bitte an:',
+        international: '\uD83C\uDF0D International: findahelpline.com',
+        us: '',
+        de: '\uD83C\uDDE9\uD83C\uDDEA Deutschland: 0800 111 0 111 (Telefonseelsorge)',
+        dismiss: 'Verstanden',
+    },
+};
+
+const CrisisResourcesBanner = ({ onDismiss }: { onDismiss: () => void }) => {
+    const ct = CRISIS_TEXTS[LOCALE];
+    return (
+        <View style={crisisBannerStyles.container}>
+            <Text style={crisisBannerStyles.title}>{ct.title}</Text>
+            <Text style={crisisBannerStyles.text}>{ct.text}</Text>
+            <TouchableOpacity onPress={() => Linking.openURL('https://findahelpline.com')} style={crisisBannerStyles.linkButton}>
+                <Text style={crisisBannerStyles.link}>{ct.international}</Text>
+            </TouchableOpacity>
+            {ct.us ? (
+                <TouchableOpacity onPress={() => Linking.openURL('tel:988')} style={crisisBannerStyles.linkButton}>
+                    <Text style={crisisBannerStyles.link}>{ct.us}</Text>
+                </TouchableOpacity>
+            ) : null}
+            {ct.de ? (
+                <TouchableOpacity onPress={() => Linking.openURL('tel:08001110111')} style={crisisBannerStyles.linkButton}>
+                    <Text style={crisisBannerStyles.link}>{ct.de}</Text>
+                </TouchableOpacity>
+            ) : null}
+            <TouchableOpacity onPress={onDismiss} style={crisisBannerStyles.dismissButton}>
+                <Text style={crisisBannerStyles.dismissText}>{ct.dismiss}</Text>
+            </TouchableOpacity>
+        </View>
+    );
+};
 
 const crisisBannerStyles = StyleSheet.create({
     container: {
@@ -193,10 +237,16 @@ const crisisBannerStyles = StyleSheet.create({
         marginBottom: 8,
         lineHeight: 18,
     },
+    linkButton: {
+        paddingVertical: 10,
+        paddingHorizontal: 12,
+        marginVertical: 3,
+        borderRadius: 8,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+    },
     link: {
         color: '#7CB9FF',
-        fontSize: 14,
-        paddingVertical: 4,
+        fontSize: 15,
         textDecorationLine: 'underline',
     },
     dismissButton: {
@@ -261,11 +311,14 @@ export default function ChatScreen() {
     // Two-phase: loading (while AI call runs) → success (when response arrives).
     const [showSetupOverlay, setShowSetupOverlay] = useState(false);
     const [isSetupReady, setIsSetupReady] = useState(false);
+    // Resolves when overlay is dismissed — used to delay first problemfokus message
+    const overlayDismissResolve = useRef<(() => void) | null>(null);
 
     // Onboarding state: new users go through the onboarding flow.
     // Once onboarding completes (paywall phase), isOnboarding becomes false.
     const [isOnboarding, setIsOnboarding] = useState(true);
     const [onboardingPhase, setOnboardingPhase] = useState('onboarding_einstellungs');
+    const [therapyPhase, setTherapyPhase] = useState('skill_phase1');
 
     // Auto-scroll to bottom when messages change or typing indicator appears
     useEffect(() => {
@@ -424,12 +477,11 @@ export default function ChatScreen() {
                 // Skip delay when returning from login (pendingMessage exists) so
                 // the greeting is in place before the draft restore fires.
                 const hasLoginDraft = !!pendingTherapist?.pendingMessage;
-                const greetingDelay = hasLoginDraft ? 200 : 1200;
+                const greetingDelay = hasLoginDraft ? 200 : 1500;
                 await new Promise(resolve => setTimeout(resolve, greetingDelay));
                 if (cancelled) return;
 
                 const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                const greetings = THERAPIST_GREETINGS[therapistName];
 
                 let greetingMsg: any;
                 if (isProRef.current) {
@@ -439,7 +491,7 @@ export default function ChatScreen() {
                     einstellungsDone.current = true;
                     greetingMsg = {
                         id: `greeting-${therapistName}`,
-                        text: greetings?.pro || `Hi, I'm ${therapistName}!\n\nWhat's on your mind?`,
+                        text: getGreeting(therapistName, true),
                         isUser: false,
                         time: now,
                         agent: 'Greeting',
@@ -451,11 +503,11 @@ export default function ChatScreen() {
                     einstellungsDone.current = false;
                     greetingMsg = {
                         id: `greeting-${therapistName}`,
-                        text: greetings?.free || `Hi, I'm ${therapistName}!\n\nDo you want to start your onboarding?`,
+                        text: getGreeting(therapistName, false),
                         isUser: false,
                         time: now,
                         agent: 'Greeting',
-                        quickReplies: ['Yes, let\'s start'],
+                        quickReplies: [LOCALE === 'de' ? 'Ja, lass uns starten' : 'Yes, let\'s start'],
                     };
                 }
 
@@ -556,17 +608,21 @@ export default function ChatScreen() {
 
             let responseText: string;
             let agentSource: string;
+            let zepDebugContext: string | null = null;
             let onboardingUserMsgCount = 0; // track for lösungsfokus button logic
 
             if (isOnboarding && einstellungsIndex < EINSTELLUNGS_QUESTIONS.length) {
                 // EINSTELLUNGSAGENT: hardcoded questions, no AI call needed.
-                // Show the next question with its options after a short delay.
+                // Show typing indicator for a natural delay, then reveal the question.
                 const nextQ = EINSTELLUNGS_QUESTIONS[einstellungsIndex];
                 responseText = nextQ.text;
                 agentSource = 'onboarding_einstellungs';
 
                 // Advance to next question
                 setEinstellungsIndex(prev => prev + 1);
+
+                // Simulate typing delay (1.5s) for a more natural feel
+                await new Promise(resolve => setTimeout(resolve, 1500));
 
                 // Save AI question to Supabase (fire-and-forget, don't block UI)
                 saveMessage(responseText, 'ai');
@@ -596,7 +652,8 @@ export default function ChatScreen() {
 
                 // Show setup overlay on first edge function call (transition from einstellungs).
                 // Phase 1 (loading) shows immediately; phase 2 (success) when AI responds.
-                if (!einstellungsDone.current) {
+                const isFirstProblemfokus = !einstellungsDone.current;
+                if (isFirstProblemfokus) {
                     einstellungsDone.current = true;
                     setShowSetupOverlay(true);
                     setIsSetupReady(false);
@@ -608,6 +665,17 @@ export default function ChatScreen() {
                 // tells us if this is the first call where the overlay was shown.
                 // We can't rely on showSetupOverlay state (stale in closure).
                 setIsSetupReady(true);
+
+                // Wait for overlay dismiss + add typing delay for first problemfokus message
+                if (isFirstProblemfokus) {
+                    // Wait until user taps to close overlay
+                    await new Promise<void>(resolve => {
+                        overlayDismissResolve.current = resolve;
+                    });
+                    // Show typing indicator for 1.5s after overlay closes
+                    setIsTyping(true);
+                    await new Promise(resolve => setTimeout(resolve, 1500));
+                }
 
                 responseText = result.text;
                 agentSource = `${result.phase} #${result.userMessageCount}`;
@@ -625,9 +693,11 @@ export default function ChatScreen() {
                     content: msg.text,
                 }));
 
-                const result = await chatTherapy(message, therapistName, recentHistory);
+                const result = await chatTherapy(message, therapistName, recentHistory, therapyPhase, isProRef.current);
                 responseText = result.text;
-                agentSource = `${therapistName} Agent [${result.phase}${result.safety ? ' + ' + result.safety : ''}]`;
+                setTherapyPhase(result.phase);
+                zepDebugContext = result.zepContext || null;
+                agentSource = `${therapistName} Agent [${result.phase}${result.safety ? ' + ' + result.safety : ''}${result.hasMemory ? ' \uD83E\uDDE0' : ''}]`;
             }
 
             // Parse *..* options from AI response into quick reply buttons
@@ -678,10 +748,10 @@ export default function ChatScreen() {
             // Also catch retry responses (msg 13+) when user previously said "No, different approach".
             const isLoesungsfokusRetry = agentSource.startsWith('onboarding_loesungsfokus')
                 && onboardingUserMsgCount > 12
-                && message.toLowerCase().includes('different approach');
+                && (message.toLowerCase().includes('different approach') || message.toLowerCase().includes('anderer ansatz'));
             if (isLoesungsfokusSetup || isLoesungsfokusRetry) {
                 // Add Yes/No buttons so user can accept or request a different approach
-                quickReplies = ['Yes', 'No, different approach'];
+                quickReplies = LOCALE === 'de' ? ['Ja', 'Nein, anderer Ansatz'] : ['Yes', 'No, different approach'];
                 Keyboard.dismiss();
             }
 
@@ -727,6 +797,7 @@ export default function ChatScreen() {
                 ...(quickReplies && { quickReplies }),
                 ...(challengeOptions && { challengeOptions }),
                 ...(paywallSummary && { paywallSummary }),
+                ...(zepDebugContext && { zepContext: zepDebugContext }),
             };
 
             setMessages(prev => [...prev, aiMessage]);
@@ -735,6 +806,10 @@ export default function ChatScreen() {
             console.error('Error sending message to AI:', error);
             // Dismiss setup overlay if it was showing (prevents stuck loading screen)
             setShowSetupOverlay(false);
+            if (overlayDismissResolve.current) {
+                overlayDismissResolve.current();
+                overlayDismissResolve.current = null;
+            }
             const errorText = 'I apologize, but I am having trouble connecting right now. Please try again in a moment.';
             const errorMessage = {
                 id: `error-${Date.now()}`,
@@ -969,7 +1044,7 @@ export default function ChatScreen() {
             marginBottom: Theme.spacing.m,
             marginTop: Theme.spacing.m,
         }}>
-            <Text style={{ color: Theme.colors.text.secondary, fontSize: 12 }}>typing...</Text>
+            <Text style={{ color: Theme.colors.text.secondary, fontSize: 12 }}>{LOCALE === 'de' ? 'schreibt...' : 'typing...'}</Text>
         </View>
     );
 
@@ -1010,7 +1085,7 @@ export default function ChatScreen() {
                         </View>
                         <View>
                             <Text style={styles.name}>{therapistName}</Text>
-                            <Text style={styles.status}>online</Text>
+                            <Text style={styles.status}>{LOCALE === 'de' ? 'online' : 'online'}</Text>
                         </View>
                     </TouchableOpacity>
 
@@ -1020,18 +1095,19 @@ export default function ChatScreen() {
                             <TouchableOpacity onPress={() => {
                                 // Simulate completed onboarding + Pro unlock
                                 const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                                const eq = EINSTELLUNGS_QUESTIONS;
                                 const fakeMessages = [
-                                    { id: 'dev-g', text: `Hi, I'm ${therapistName}!\n\nDo you want to start your onboarding?`, isUser: false, time: now, agent: 'Greeting' },
-                                    { id: 'dev-u1', text: "Yes, let's start", isUser: true, time: now },
-                                    { id: 'dev-e1', text: 'How should I come across in our conversation?', isUser: false, time: now, agent: 'onboarding_einstellungs' },
-                                    { id: 'dev-u2', text: 'Warm and gentle', isUser: true, time: now },
-                                    { id: 'dev-e2', text: 'How deep do you want to go today?', isUser: false, time: now, agent: 'onboarding_einstellungs' },
-                                    { id: 'dev-u3', text: 'Get to the root of it', isUser: true, time: now },
-                                    { id: 'dev-e3', text: 'When things get uncomfortable, how should I respond?', isUser: false, time: now, agent: 'onboarding_einstellungs' },
-                                    { id: 'dev-u4', text: 'Hold steady, stay with me', isUser: true, time: now },
-                                    { id: 'dev-e4', text: 'What would make this conversation feel worthwhile?', isUser: false, time: now, agent: 'onboarding_einstellungs' },
-                                    { id: 'dev-u5', text: 'Feeling heard and understood', isUser: true, time: now },
-                                    { id: 'dev-skip', text: `I'm ready to talk with you. What's on your mind?`, isUser: false, time: now, agent: `${therapistName} Agent` },
+                                    { id: 'dev-g', text: getGreeting(therapistName, false), isUser: false, time: now, agent: 'Greeting' },
+                                    { id: 'dev-u1', text: LOCALE === 'de' ? 'Ja, lass uns starten' : "Yes, let's start", isUser: true, time: now },
+                                    { id: 'dev-e1', text: eq[0].text, isUser: false, time: now, agent: 'onboarding_einstellungs' },
+                                    { id: 'dev-u2', text: eq[0].options[0], isUser: true, time: now },
+                                    { id: 'dev-e2', text: eq[1].text, isUser: false, time: now, agent: 'onboarding_einstellungs' },
+                                    { id: 'dev-u3', text: eq[1].options[2], isUser: true, time: now },
+                                    { id: 'dev-e3', text: eq[2].text, isUser: false, time: now, agent: 'onboarding_einstellungs' },
+                                    { id: 'dev-u4', text: eq[2].options[1], isUser: true, time: now },
+                                    { id: 'dev-e4', text: eq[3].text, isUser: false, time: now, agent: 'onboarding_einstellungs' },
+                                    { id: 'dev-u5', text: eq[3].options[0], isUser: true, time: now },
+                                    { id: 'dev-skip', text: LOCALE === 'de' ? `Ich bin bereit, mit dir zu sprechen. Was besch\u00E4ftigt dich?` : `I'm ready to talk with you. What's on your mind?`, isUser: false, time: now, agent: `${therapistName} Agent` },
                                 ];
                                 setMessages(fakeMessages);
                                 setIsOnboarding(false);
@@ -1144,7 +1220,7 @@ export default function ChatScreen() {
                             <View style={styles.inputContainer}>
                                 <TextInput
                                     style={styles.input}
-                                    placeholder="Message..."
+                                    placeholder={LOCALE === 'de' ? 'Nachricht...' : 'Message...'}
                                     placeholderTextColor={Theme.colors.text.muted}
                                     value={inputText}
                                     onChangeText={setInputText}
@@ -1185,7 +1261,14 @@ export default function ChatScreen() {
                 <SetupOverlay
                     therapistName={therapistName}
                     isReady={isSetupReady}
-                    onDone={() => setShowSetupOverlay(false)}
+                    onDone={() => {
+                        setShowSetupOverlay(false);
+                        // Resolve the promise so first problemfokus message can show
+                        if (overlayDismissResolve.current) {
+                            overlayDismissResolve.current();
+                            overlayDismissResolve.current = null;
+                        }
+                    }}
                 />
             )}
 
