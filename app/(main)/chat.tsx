@@ -6,7 +6,7 @@ import { Theme } from '../../src/constants/Theme';
 import { ChatBubble, Message as ChatMessage_UI } from '../../src/components/ChatBubble';
 import { MessageReactionOverlay } from '../../src/components/MessageReactionOverlay';
 import { SuccessOverlay, SetupOverlay } from '../../src/components/SuccessOverlay';
-import { Menu, Phone, Video, Plus, Camera, Mic, ChevronLeft, Square, ArrowUp, Loader, X } from 'lucide-react-native';
+import { Menu, Phone, Video, Plus, Camera, Mic, ChevronLeft, Square, ArrowUp, Loader, X, RotateCcw } from 'lucide-react-native';
 
 // expo-av and speech are optional — the native module may not be in the dev build.
 let Audio: any = null;
@@ -313,6 +313,12 @@ export default function ChatScreen() {
     const [isSetupReady, setIsSetupReady] = useState(false);
     // Resolves when overlay is dismissed — used to delay first problemfokus message
     const overlayDismissResolve = useRef<(() => void) | null>(null);
+    // Stores first problemfokus API result while overlay is showing (decoupled flow)
+    const firstProblemfokusResult = useRef<any>(null);
+    // Retry button: shown after 15s of typing with no response
+    const [showRetry, setShowRetry] = useState(false);
+    const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const pendingMessageRef = useRef<string>('');
 
     // Onboarding state: new users go through the onboarding flow.
     // Once onboarding completes (paywall phase), isOnboarding becomes false.
@@ -326,7 +332,7 @@ export default function ChatScreen() {
             flatListRef.current?.scrollToEnd({ animated: true });
         }, 100);
         return () => clearTimeout(timer);
-    }, [messages, isTyping]);
+    }, [messages, isTyping, showRetry]);
 
     // Load persisted session ID from AsyncStorage (or save the new one)
     useEffect(() => {
@@ -601,10 +607,38 @@ export default function ChatScreen() {
         }
     };
 
+    // Helper: clear retry timer and hide retry button
+    const clearRetryTimer = () => {
+        if (retryTimerRef.current) {
+            clearTimeout(retryTimerRef.current);
+            retryTimerRef.current = null;
+        }
+        setShowRetry(false);
+    };
+
+    // Helper: start 15s retry timer (for all API call paths)
+    const startRetryTimer = () => {
+        clearRetryTimer();
+        retryTimerRef.current = setTimeout(() => {
+            setShowRetry(true);
+        }, 15000);
+    };
+
+    // Retry handler: resend the pending message
+    const handleRetry = () => {
+        const msg = pendingMessageRef.current;
+        if (!msg) return;
+        clearRetryTimer();
+        setIsTyping(false); // reset so sendMessageToAI can set it fresh
+        sendMessageToAI(msg);
+    };
+
     // Send message to AI — routes between onboarding and regular therapy
     const sendMessageToAI = async (message: string) => {
         try {
             setIsTyping(true);
+            clearRetryTimer();
+            pendingMessageRef.current = message;
 
             let responseText: string;
             let agentSource: string;
@@ -651,41 +685,81 @@ export default function ChatScreen() {
                 }));
 
                 // Show setup overlay on first edge function call (transition from einstellungs).
-                // Phase 1 (loading) shows immediately; phase 2 (success) when AI responds.
+                // DECOUPLED: Track A (UX) runs on a fixed timer, Track B (API) runs in background.
                 const isFirstProblemfokus = !einstellungsDone.current;
                 if (isFirstProblemfokus) {
                     einstellungsDone.current = true;
                     setShowSetupOverlay(true);
                     setIsSetupReady(false);
-                }
+                    firstProblemfokusResult.current = null;
 
-                const result = await chatOnboarding(message, therapistName, history);
+                    // Track A: auto-switch to confetti after 2.5s (fixed UX timeline)
+                    setTimeout(() => setIsSetupReady(true), 2500);
 
-                // Flip overlay to success phase (confetti) — einstellungsDone.current
-                // tells us if this is the first call where the overlay was shown.
-                // We can't rely on showSetupOverlay state (stale in closure).
-                setIsSetupReady(true);
+                    // Track B: fire API in background, store result in ref
+                    chatOnboarding(message, therapistName, history).then(result => {
+                        firstProblemfokusResult.current = result;
+                    }).catch(err => {
+                        console.error('[onboarding] first problemfokus API error:', err);
+                        firstProblemfokusResult.current = { error: err };
+                    });
 
-                // Wait for overlay dismiss + add typing delay for first problemfokus message
-                if (isFirstProblemfokus) {
-                    // Wait until user taps to close overlay
+                    // Wait for overlay dismiss (user taps after confetti)
                     await new Promise<void>(resolve => {
                         overlayDismissResolve.current = resolve;
                     });
-                    // Show typing indicator for 1.5s after overlay closes
+
+                    // Overlay closed — show typing indicator
                     setIsTyping(true);
-                    await new Promise(resolve => setTimeout(resolve, 1500));
+
+                    // Check if API result already cached
+                    if (firstProblemfokusResult.current && !firstProblemfokusResult.current.error) {
+                        // Result arrived during overlay — wait 1.5s for natural feel
+                        await new Promise(resolve => setTimeout(resolve, 1500));
+                    } else if (firstProblemfokusResult.current?.error) {
+                        // API failed during overlay — throw to catch block
+                        throw firstProblemfokusResult.current.error;
+                    } else {
+                        // API still in flight — wait for it with retry timer
+                        startRetryTimer();
+                        await new Promise<void>((resolve, reject) => {
+                            const checkInterval = setInterval(() => {
+                                const result = firstProblemfokusResult.current;
+                                if (result) {
+                                    clearInterval(checkInterval);
+                                    if (result.error) {
+                                        reject(result.error);
+                                    } else {
+                                        resolve();
+                                    }
+                                }
+                            }, 200);
+                        });
+                        clearRetryTimer();
+                        // Small delay for natural typing feel after response arrives
+                        await new Promise(resolve => setTimeout(resolve, 800));
+                    }
+
+                    const result = firstProblemfokusResult.current;
+                    responseText = result.text;
+                    agentSource = `${result.phase} #${result.userMessageCount}`;
+                    onboardingUserMsgCount = result.userMessageCount;
+                    setOnboardingPhase(result.phase);
+                    console.log(`[onboarding] phase=${result.phase}, userMsgs=${result.userMessageCount}`);
+                    Keyboard.dismiss();
+                } else {
+                    // Normal onboarding call (not first problemfokus) — with retry timer
+                    startRetryTimer();
+                    const result = await chatOnboarding(message, therapistName, history);
+                    clearRetryTimer();
+
+                    responseText = result.text;
+                    agentSource = `${result.phase} #${result.userMessageCount}`;
+                    onboardingUserMsgCount = result.userMessageCount;
+                    setOnboardingPhase(result.phase);
+                    console.log(`[onboarding] phase=${result.phase}, userMsgs=${result.userMessageCount}`);
+                    Keyboard.dismiss();
                 }
-
-                responseText = result.text;
-                agentSource = `${result.phase} #${result.userMessageCount}`;
-                onboardingUserMsgCount = result.userMessageCount;
-                setOnboardingPhase(result.phase);
-
-                console.log(`[onboarding] phase=${result.phase}, userMsgs=${result.userMessageCount}`);
-
-                // Dismiss keyboard for all onboarding responses — they're long and need reading
-                Keyboard.dismiss();
             } else {
                 // REGULAR THERAPY: Haiku routing + Sonnet response via therapy-router
                 const recentHistory: ChatMessage[] = messages.slice(-20).map((msg: any) => ({
@@ -693,7 +767,10 @@ export default function ChatScreen() {
                     content: msg.text,
                 }));
 
+                startRetryTimer();
                 const result = await chatTherapy(message, therapistName, recentHistory, therapyPhase, isProRef.current);
+                clearRetryTimer();
+
                 responseText = result.text;
                 setTherapyPhase(result.phase);
                 zepDebugContext = result.zepContext || null;
@@ -804,13 +881,16 @@ export default function ChatScreen() {
             saveMessage(responseText, 'ai');
         } catch (error: any) {
             console.error('Error sending message to AI:', error);
+            clearRetryTimer();
             // Dismiss setup overlay if it was showing (prevents stuck loading screen)
             setShowSetupOverlay(false);
             if (overlayDismissResolve.current) {
                 overlayDismissResolve.current();
                 overlayDismissResolve.current = null;
             }
-            const errorText = 'I apologize, but I am having trouble connecting right now. Please try again in a moment.';
+            const errorText = LOCALE === 'de'
+                ? 'Entschuldige, ich habe gerade Verbindungsprobleme. Bitte versuche es gleich nochmal.'
+                : 'I apologize, but I am having trouble connecting right now. Please try again in a moment.';
             const errorMessage = {
                 id: `error-${Date.now()}`,
                 text: errorText,
@@ -820,6 +900,7 @@ export default function ChatScreen() {
             setMessages(prev => [...prev, errorMessage]);
             saveMessage(errorText, 'ai');
         } finally {
+            clearRetryTimer();
             setIsTyping(false);
         }
     };
@@ -1034,17 +1115,39 @@ export default function ChatScreen() {
     };
 
     const TypingBubble = () => (
-        <View style={{
-            alignSelf: 'flex-start',
-            backgroundColor: Theme.colors.bubbles.therapist,
-            borderRadius: Theme.borderRadius.l,
-            borderBottomLeftRadius: 4,
-            padding: Theme.spacing.m,
-            marginLeft: Theme.spacing.m,
-            marginBottom: Theme.spacing.m,
-            marginTop: Theme.spacing.m,
-        }}>
-            <Text style={{ color: Theme.colors.text.secondary, fontSize: 12 }}>{LOCALE === 'de' ? 'schreibt...' : 'typing...'}</Text>
+        <View style={{ marginLeft: Theme.spacing.m, marginBottom: Theme.spacing.m, marginTop: Theme.spacing.m }}>
+            <View style={{
+                alignSelf: 'flex-start',
+                backgroundColor: Theme.colors.bubbles.therapist,
+                borderRadius: Theme.borderRadius.l,
+                borderBottomLeftRadius: 4,
+                padding: Theme.spacing.m,
+            }}>
+                <Text style={{ color: Theme.colors.text.secondary, fontSize: 12 }}>{LOCALE === 'de' ? 'schreibt...' : 'typing...'}</Text>
+            </View>
+            {showRetry && (
+                <TouchableOpacity
+                    onPress={handleRetry}
+                    style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        alignSelf: 'flex-start',
+                        gap: 6,
+                        marginTop: 10,
+                        paddingVertical: 8,
+                        paddingHorizontal: 14,
+                        borderRadius: 20,
+                        backgroundColor: 'rgba(235, 206, 128, 0.12)',
+                        borderWidth: 1,
+                        borderColor: 'rgba(235, 206, 128, 0.25)',
+                    }}
+                >
+                    <RotateCcw size={14} color={Theme.colors.primary} />
+                    <Text style={{ color: Theme.colors.primary, fontSize: 13, fontFamily: 'Inter-Medium' }}>
+                        {LOCALE === 'de' ? 'Erneut senden' : 'Resend'}
+                    </Text>
+                </TouchableOpacity>
+            )}
         </View>
     );
 
