@@ -7,6 +7,7 @@ import { useAuth } from '../../src/context/AuthContext';
 import { useSubscription } from '../../src/context/SubscriptionContext';
 import { supabase } from '../../src/lib/supabase';
 import { SuccessOverlay } from '../../src/components/SuccessOverlay';
+import { registerForPushNotifications, isNotificationsAvailable } from '../../src/lib/notifications';
 
 export default function SettingsScreen() {
     const router = useRouter();
@@ -123,7 +124,18 @@ export default function SettingsScreen() {
                 <View style={styles.section}>
                     <SettingRow icon={Globe} label="Appearance" value="System" />
                     <SettingRow icon={MessageCircle} label="Input Language" value="EN" />
-                    <SettingRow icon={Bell} label="Notifications" />
+                    <SettingRow icon={Bell} label="Notifications" onPress={async () => {
+                        if (!isNotificationsAvailable()) {
+                            Alert.alert('Not Available', 'Push notifications require the latest app build. Please update your app.');
+                            return;
+                        }
+                        const token = await registerForPushNotifications();
+                        if (token) {
+                            Alert.alert('Notifications Enabled', 'You will receive reminders from your therapist.');
+                        } else {
+                            Alert.alert('Notifications', 'Please enable notifications in your device settings.');
+                        }
+                    }} />
                 </View>
 
                 <View style={styles.section}>

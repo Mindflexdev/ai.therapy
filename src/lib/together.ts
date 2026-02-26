@@ -66,7 +66,7 @@ export async function chatTherapy(
   history: ChatMessage[] = [],
   currentPhase: string = 'skill_phase1',
   isPro: boolean = false
-): Promise<{ text: string; model: string; phase: string; safety: string | null; topic: string | null; hasMemory: boolean; zepContext: string | null }> {
+): Promise<{ text: string; model: string; phase: string; safety: string | null; topic: string | null; hasMemory: boolean; zepContext: string | null; reminderCreated: boolean }> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.access_token) {
     throw new Error('User must be logged in to chat.');
@@ -97,5 +97,6 @@ export async function chatTherapy(
     topic: data?.topic || null,
     hasMemory: data?.hasMemory || false,
     zepContext: data?.zepContext || null,
+    reminderCreated: data?.reminderCreated || false,
   };
 }

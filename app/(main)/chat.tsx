@@ -30,6 +30,7 @@ import { useAuth } from '../../src/context/AuthContext';
 import { supabase } from '../../src/lib/supabase';
 import LoginScreen from './login';
 import { useSubscription } from '../../src/context/SubscriptionContext';
+import { configureNotificationHandler, registerForPushNotifications, addNotificationResponseListener } from '../../src/lib/notifications';
 
 const INITIAL_MESSAGES = [
     { id: '1', text: 'Hello, I am [Name]. How can I support you today?', isUser: false, time: '14:20' },
@@ -283,6 +284,52 @@ export default function ChatScreen() {
     const { isPro, setDevOverridePro } = useSubscription();
     const isProRef = useRef(isPro);
     useEffect(() => { isProRef.current = isPro; }, [isPro]);
+
+    // Push notifications: register token + listen for notification taps
+    // Also auto-detect device timezone and save to profile if not yet set
+    useEffect(() => {
+        if (!isLoggedIn) return;
+
+        configureNotificationHandler();
+        registerForPushNotifications().catch(err =>
+            console.warn('Push registration failed:', err?.message)
+        );
+
+        // Auto-detect timezone from device and save to profile
+        (async () => {
+            try {
+                const deviceTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                if (!deviceTz) return;
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('timezone')
+                    .eq('id', user?.id)
+                    .single();
+                // Only update if still default or empty
+                if (!profile?.timezone || profile.timezone === 'Europe/Berlin') {
+                    if (deviceTz !== 'Europe/Berlin') {
+                        await supabase
+                            .from('profiles')
+                            .update({ timezone: deviceTz })
+                            .eq('id', user?.id);
+                        console.log('Device timezone saved:', deviceTz);
+                    }
+                }
+            } catch (e: any) {
+                console.warn('Timezone auto-detect failed:', e?.message);
+            }
+        })();
+
+        const sub = addNotificationResponseListener((characterName) => {
+            if (characterName !== therapistName) {
+                router.push({ pathname: '/(main)/chat', params: { name: characterName } });
+            } else {
+                fetchMessages();
+            }
+        });
+
+        return () => sub.remove();
+    }, [isLoggedIn]);
 
     // Keep selectedTherapistId in sync with the therapist we're actually chatting with
     useEffect(() => {

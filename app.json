@@ -17,7 +17,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.ai.therapy.app",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIBackgroundModes": ["remote-notification"]
       }
     },
     "android": {
@@ -44,7 +45,13 @@
         }
       ],
       "./plugins/withFollyNoCoroutines",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-notifications",
+        {
+          "color": "#EBCE80"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
