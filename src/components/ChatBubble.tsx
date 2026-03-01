@@ -31,6 +31,11 @@ export interface ReplyTo {
     isUser: boolean;
 }
 
+export interface SessionSummary {
+    intro: string;
+    sections: { heading: string; bullets: string[] }[];
+}
+
 export interface Message {
     id: string;
     text: string;
@@ -41,6 +46,7 @@ export interface Message {
     quickReplies?: string[];
     challengeOptions?: ChallengeOption[];
     paywallSummary?: PaywallSummary;
+    sessionSummary?: SessionSummary;
     reaction?: string;
     replyTo?: ReplyTo;
     zepContext?: string;
@@ -71,6 +77,8 @@ export const ChatBubble = React.memo(({ message, onUpgrade, onQuickReply, onLong
     // Multi-select for einstellungs questions
     const isEinstellungs = message.agent === 'onboarding_einstellungs';
     const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
+    // Multi-select for challenge cards (therapy Problemfokus)
+    const [selectedChallenges, setSelectedChallenges] = useState<string[]>([]);
     const [showZepDebug, setShowZepDebug] = useState(false);
 
     // WhatsApp-style "Read more" — only for therapy agent messages (not onboarding)
@@ -97,6 +105,7 @@ export const ChatBubble = React.memo(({ message, onUpgrade, onQuickReply, onLong
 
     const hasButtons = message.upgradeButton || (message.quickReplies && message.quickReplies.length > 0) || (message.challengeOptions && message.challengeOptions.length > 0);
     const isPaywallCard = !!message.paywallSummary;
+    const isSessionSummaryCard = !!message.sessionSummary;
 
     // Long press only on AI messages, not greetings
     const isLongPressable = !message.isUser && message.agent !== 'Greeting' && onLongPress;
@@ -124,8 +133,32 @@ export const ChatBubble = React.memo(({ message, onUpgrade, onQuickReply, onLong
             styles.container,
             message.isUser ? styles.userContainer : styles.therapistContainer
         ]}>
-            <View style={{ width: (hasButtons || isPaywallCard) ? '90%' : undefined, maxWidth: '90%' }}>
-                {isPaywallCard && message.paywallSummary ? (
+            <View style={{ width: (hasButtons || isPaywallCard || isSessionSummaryCard) ? '90%' : undefined, maxWidth: '90%' }}>
+                {isSessionSummaryCard && message.sessionSummary ? (
+                    /* Therapy session summary card */
+                    <View style={styles.sessionCard}>
+                        <Text style={styles.sessionIntro}>{message.sessionSummary.intro}</Text>
+                        {message.sessionSummary.sections.map((section, sIdx) => (
+                            <View key={sIdx} style={styles.sessionSection}>
+                                <Text style={styles.sessionHeading}>{section.heading}</Text>
+                                {section.bullets.map((bullet, bIdx) => (
+                                    <View key={bIdx} style={styles.sessionBulletRow}>
+                                        <Text style={styles.sessionBulletDot}>
+                                            {sIdx === 0 ? '✓' : sIdx === 1 ? '💡' : '→'}
+                                        </Text>
+                                        <Text style={styles.sessionBulletText}>{bullet}</Text>
+                                    </View>
+                                ))}
+                            </View>
+                        ))}
+                        <View style={styles.footer}>
+                            {agentLabel && (
+                                <Text style={styles.agentLabel}>{agentLabel}</Text>
+                            )}
+                            <Text style={styles.time}>{message.time}</Text>
+                        </View>
+                    </View>
+                ) : isPaywallCard && message.paywallSummary ? (
                     /* Paywall summary card — structured session recap */
                     <View style={styles.paywallCard}>
                         <Text style={styles.paywallIntro}>{message.paywallSummary.intro}</Text>
@@ -271,20 +304,56 @@ export const ChatBubble = React.memo(({ message, onUpgrade, onQuickReply, onLong
                     </View>
                 )}
 
-                {/* Challenge option cards — for problemstellung */}
+                {/* Challenge option cards — multi-select with confirm button */}
                 {message.challengeOptions && message.challengeOptions.length > 0 && onQuickReply && (
                     <View style={styles.quickRepliesContainer}>
-                        {message.challengeOptions.map((challenge, index) => (
+                        {message.challengeOptions.map((challenge, index) => {
+                            const isSelected = selectedChallenges.includes(challenge.fullText);
+                            return (
+                                <TouchableOpacity
+                                    key={index}
+                                    style={[
+                                        styles.challengeCard,
+                                        isSelected && styles.challengeCardSelected,
+                                    ]}
+                                    onPress={() => {
+                                        setSelectedChallenges(prev =>
+                                            prev.includes(challenge.fullText)
+                                                ? prev.filter(c => c !== challenge.fullText)
+                                                : [...prev, challenge.fullText]
+                                        );
+                                    }}
+                                    activeOpacity={0.7}
+                                >
+                                    <View style={styles.challengeCardHeader}>
+                                        <Text style={[
+                                            styles.challengeTitle,
+                                            isSelected && styles.challengeTitleSelected,
+                                        ]}>{challenge.title}</Text>
+                                        <View style={[
+                                            styles.challengeCheckbox,
+                                            isSelected && styles.challengeCheckboxSelected,
+                                        ]}>
+                                            {isSelected && <Text style={styles.challengeCheckmark}>✓</Text>}
+                                        </View>
+                                    </View>
+                                    <Text style={styles.challengeDescription}>{challenge.description}</Text>
+                                </TouchableOpacity>
+                            );
+                        })}
+                        {selectedChallenges.length > 0 && (
                             <TouchableOpacity
-                                key={index}
-                                style={styles.challengeCard}
-                                onPress={() => onQuickReply(challenge.fullText)}
+                                style={styles.challengeConfirmButton}
+                                onPress={() => onQuickReply(selectedChallenges.join(' | '))}
                                 activeOpacity={0.7}
                             >
-                                <Text style={styles.challengeTitle}>{challenge.title}</Text>
-                                <Text style={styles.challengeDescription}>{challenge.description}</Text>
+                                <Text style={styles.challengeConfirmText}>
+                                    {LOCALE === 'de'
+                                        ? `${selectedChallenges.length === 1 ? 'Thema' : 'Themen'} bearbeiten`
+                                        : `Work on ${selectedChallenges.length === 1 ? 'topic' : 'topics'}`}
+                                </Text>
                             </TouchableOpacity>
-                        ))}
+                        )}
                     </View>
                 )}
             </View>
@@ -467,17 +536,61 @@ const styles = StyleSheet.create({
         paddingHorizontal: 14,
         borderRadius: Theme.borderRadius.m,
     },
+    challengeCardSelected: {
+        backgroundColor: 'rgba(235, 206, 128, 0.18)',
+        borderColor: Theme.colors.primary,
+    },
+    challengeCardHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 4,
+    },
     challengeTitle: {
         color: Theme.colors.primary,
         fontFamily: 'Inter-Bold',
         fontSize: 14,
-        marginBottom: 4,
+        flex: 1,
+    },
+    challengeTitleSelected: {
+        color: Theme.colors.primary,
+    },
+    challengeCheckbox: {
+        width: 22,
+        height: 22,
+        borderRadius: 11,
+        borderWidth: 1.5,
+        borderColor: 'rgba(235, 206, 128, 0.4)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginLeft: 10,
+    },
+    challengeCheckboxSelected: {
+        backgroundColor: Theme.colors.primary,
+        borderColor: Theme.colors.primary,
+    },
+    challengeCheckmark: {
+        color: Theme.colors.background,
+        fontSize: 13,
+        fontWeight: 'bold',
     },
     challengeDescription: {
         color: 'rgba(255,255,255,0.7)',
         fontFamily: 'Inter-Regular',
         fontSize: 13,
         lineHeight: 18,
+    },
+    challengeConfirmButton: {
+        backgroundColor: Theme.colors.primary,
+        paddingVertical: 12,
+        borderRadius: Theme.borderRadius.m,
+        alignItems: 'center',
+        marginTop: 4,
+    },
+    challengeConfirmText: {
+        color: Theme.colors.background,
+        fontFamily: 'Inter-Bold',
+        fontSize: 15,
     },
     // Zep memory debug
     zepDebugToggle: {
@@ -500,6 +613,48 @@ const styles = StyleSheet.create({
         fontFamily: 'Inter-Regular',
         lineHeight: 16,
         marginTop: 4,
+    },
+    // Session summary card styles (therapy session closure) — gold theme matching paywall
+    sessionCard: {
+        backgroundColor: 'rgba(235, 206, 128, 0.06)',
+        borderWidth: 1,
+        borderColor: 'rgba(235, 206, 128, 0.2)',
+        borderRadius: Theme.borderRadius.l,
+        padding: 18,
+    },
+    sessionIntro: {
+        color: '#E0E0E0',
+        fontSize: 15,
+        fontFamily: 'Inter-Regular',
+        lineHeight: 22,
+        marginBottom: 16,
+    },
+    sessionSection: {
+        marginBottom: 14,
+    },
+    sessionHeading: {
+        color: Theme.colors.primary,
+        fontSize: 14,
+        fontFamily: 'Inter-Bold',
+        marginBottom: 8,
+    },
+    sessionBulletRow: {
+        flexDirection: 'row',
+        marginBottom: 6,
+        paddingRight: 8,
+    },
+    sessionBulletDot: {
+        color: Theme.colors.primary,
+        fontSize: 13,
+        width: 22,
+        marginTop: 1,
+    },
+    sessionBulletText: {
+        color: 'rgba(255,255,255,0.8)',
+        fontSize: 14,
+        fontFamily: 'Inter-Regular',
+        lineHeight: 20,
+        flex: 1,
     },
     // Paywall summary card styles
     paywallCard: {

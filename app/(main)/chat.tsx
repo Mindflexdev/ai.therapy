@@ -901,6 +901,16 @@ export default function ChatScreen() {
                 }
             }
 
+            // Therapy Lösungsfokus: closure check — AI asks if user wants to wrap up
+            // Detected by :::closure_check marker at end of response
+            if (responseText.includes(':::closure_check')) {
+                displayText = responseText.replace(/\n?:::closure_check\s*$/, '').trim();
+                quickReplies = LOCALE === 'de'
+                    ? ['Ja, lass uns abrunden', 'Nein, ich brauche noch Unterstützung']
+                    : ['Yes, let\'s wrap up', 'No, I still need support'];
+                Keyboard.dismiss();
+            }
+
             // Parse paywall summary into structured sections for the card design
             let paywallSummary: { intro: string; sections: { heading: string; bullets: string[] }[] } | undefined;
             if (showUpgrade && agentSource.startsWith('onboarding_paywall')) {
@@ -932,6 +942,40 @@ export default function ChatScreen() {
                 Keyboard.dismiss();
             }
 
+            // Parse therapy session summary (:::session_summary ... :::) into structured card
+            let sessionSummary: { intro: string; sections: { heading: string; bullets: string[] }[] } | undefined;
+            const sessionSummaryMatch = responseText.match(/:::session_summary\s*\n([\s\S]*?):::/);
+            if (sessionSummaryMatch) {
+                const summaryContent = sessionSummaryMatch[1];
+                const lines = summaryContent.split('\n').map(l => l.trim()).filter(Boolean);
+                const introLines: string[] = [];
+                const sections: { heading: string; bullets: string[] }[] = [];
+                let currentSection: { heading: string; bullets: string[] } | null = null;
+
+                for (const line of lines) {
+                    if (line.endsWith(':') && !line.startsWith('-') && !line.startsWith('•')) {
+                        if (currentSection) sections.push(currentSection);
+                        currentSection = { heading: line, bullets: [] };
+                    } else if (currentSection && (line.startsWith('- ') || line.startsWith('• '))) {
+                        currentSection.bullets.push(line.replace(/^[-•]\s*/, ''));
+                    } else if (!currentSection) {
+                        introLines.push(line);
+                    }
+                }
+                if (currentSection) sections.push(currentSection);
+
+                if (sections.length > 0) {
+                    sessionSummary = {
+                        intro: introLines.join('\n'),
+                        sections,
+                    };
+                    // Remove the :::session_summary::: block from display text
+                    displayText = responseText.replace(/:::session_summary\s*\n[\s\S]*?:::/, '').trim();
+                    if (!displayText) displayText = ''; // card replaces the text entirely
+                }
+                Keyboard.dismiss();
+            }
+
             // Add AI response to messages
             const aiMessage: any = {
                 id: `ai-${Date.now()}`,
@@ -943,6 +987,7 @@ export default function ChatScreen() {
                 ...(quickReplies && { quickReplies }),
                 ...(challengeOptions && { challengeOptions }),
                 ...(paywallSummary && { paywallSummary }),
+                ...(sessionSummary && { sessionSummary }),
                 ...(zepDebugContext && { zepContext: zepDebugContext }),
             };
 
@@ -985,10 +1030,13 @@ export default function ChatScreen() {
         Keyboard.dismiss();
         lastSendTime.current = Date.now();
 
-        // Check if this was a challengeOption tap (problemstellung or therapy flow) — transform "You" → "I"
-        const isChallengeOption = messages.some(msg =>
-            msg.challengeOptions?.some((c: any) => c.fullText === text)
+        // Check if this was a challengeOption tap (problemstellung or therapy flow)
+        // Multi-select sends multiple challenges joined with " | "
+        const allChallengeTexts = messages.flatMap(msg =>
+            (msg.challengeOptions || []).map((c: any) => c.fullText)
         );
+        const isChallengeOption = allChallengeTexts.includes(text) ||
+            (text.includes(' | ') && text.split(' | ').every(part => allChallengeTexts.includes(part.trim())));
         const displayText = isChallengeOption ? transformToFirstPerson(text) : text;
 
         // Therapy flow: when user taps a challenge card from Problemfokus → switch to Lösungsfokus
