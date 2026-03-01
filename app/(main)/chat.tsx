@@ -353,6 +353,7 @@ export default function ChatScreen() {
     // When >= 4, einstellungs is done and we switch to the edge function.
     const [einstellungsIndex, setEinstellungsIndex] = useState(0);
     const einstellungsDone = useRef(false); // ref to survive closures
+    const approachProposalExpected = useRef(false); // true after user taps challenge card → AI will propose approach
 
     // Setup overlay — shown after all 4 einstellungs questions are answered.
     // Two-phase: loading (while AI call runs) → success (when response arrives).
@@ -371,7 +372,7 @@ export default function ChatScreen() {
     // Once onboarding completes (paywall phase), isOnboarding becomes false.
     const [isOnboarding, setIsOnboarding] = useState(true);
     const [onboardingPhase, setOnboardingPhase] = useState('onboarding_einstellungs');
-    const [therapyPhase, setTherapyPhase] = useState('skill_phase1');
+    const [therapyPhase, setTherapyPhase] = useState('skill_problemfokus');
 
     // Auto-scroll to bottom when messages change or typing indicator appears
     useEffect(() => {
@@ -663,12 +664,14 @@ export default function ChatScreen() {
         setShowRetry(false);
     };
 
-    // Helper: start 15s retry timer (for all API call paths)
+    // Helper: start 45s retry timer (for all API call paths)
+    // Therapy-router does Haiku + Sonnet sequentially + cold starts can take 30-50s
+    // Changed from 60s → 45s to give users an escape hatch sooner
     const startRetryTimer = () => {
         clearRetryTimer();
         retryTimerRef.current = setTimeout(() => {
             setShowRetry(true);
-        }, 15000);
+        }, 45000);
     };
 
     // Retry handler: resend the pending message
@@ -681,7 +684,7 @@ export default function ChatScreen() {
     };
 
     // Send message to AI — routes between onboarding and regular therapy
-    const sendMessageToAI = async (message: string) => {
+    const sendMessageToAI = async (message: string, overridePhase?: string) => {
         try {
             setIsTyping(true);
             clearRetryTimer();
@@ -815,7 +818,8 @@ export default function ChatScreen() {
                 }));
 
                 startRetryTimer();
-                const result = await chatTherapy(message, therapistName, recentHistory, therapyPhase, isProRef.current);
+                const phaseToSend = overridePhase || therapyPhase;
+                const result = await chatTherapy(message, therapistName, recentHistory, phaseToSend, isProRef.current);
                 clearRetryTimer();
 
                 responseText = result.text;
@@ -851,6 +855,7 @@ export default function ChatScreen() {
             };
 
             const isProblemstellung = agentSource.startsWith('onboarding_problemstellung');
+            const isTherapyProblemfokus = !isOnboarding && agentSource.includes('skill_problemfokus');
             const isLoesungsfokusSetup = agentSource.startsWith('onboarding_loesungsfokus') && onboardingUserMsgCount === 12;
             const showUpgrade = agentSource.startsWith('onboarding_paywall') || agentSource.startsWith('onboarding_sales');
 
@@ -858,8 +863,8 @@ export default function ChatScreen() {
             let quickReplies: string[] | undefined;
             let challengeOptions: { title: string; description: string; fullText: string }[] | undefined;
 
-            if (isProblemstellung) {
-                // Problemstellung: parse challenge cards + dismiss keyboard
+            if (isProblemstellung || isTherapyProblemfokus) {
+                // Problemstellung / Therapy Problemfokus: parse challenge cards + dismiss keyboard
                 const parsed = parseChallengeOptions(responseText);
                 if (parsed.challenges.length > 0) {
                     displayText = parsed.cleanText;
@@ -877,6 +882,23 @@ export default function ChatScreen() {
                 // Add Yes/No buttons so user can accept or request a different approach
                 quickReplies = LOCALE === 'de' ? ['Ja', 'Nein, anderer Ansatz'] : ['Yes', 'No, different approach'];
                 Keyboard.dismiss();
+            }
+
+            // Therapy Lösungsfokus: show approach selection buttons (Ja / Nein, anderer Ansatz)
+            // Triggered when: (1) AI proposes approach after user picked a challenge card, or
+            // (2) user rejected the previous approach and AI proposes an alternative.
+            const isTherapyLoesungsfokus = !isOnboarding && agentSource.includes('skill_loesungsfokus');
+            if (isTherapyLoesungsfokus) {
+                const userMsg = message.toLowerCase();
+                const isFirstProposal = approachProposalExpected.current;
+                const isRetryProposal = userMsg.includes('anderer ansatz') || userMsg.includes('different approach') || userMsg.includes('nein');
+                if (isFirstProposal || isRetryProposal) {
+                    quickReplies = LOCALE === 'de'
+                        ? ['Ja, lass uns das machen', 'Nein, anderer Ansatz']
+                        : ['Yes, let\'s do it', 'No, different approach'];
+                    approachProposalExpected.current = false;
+                    Keyboard.dismiss();
+                }
             }
 
             // Parse paywall summary into structured sections for the card design
@@ -963,11 +985,17 @@ export default function ChatScreen() {
         Keyboard.dismiss();
         lastSendTime.current = Date.now();
 
-        // Check if this was a challengeOption tap (problemstellung) — transform "You" → "I"
+        // Check if this was a challengeOption tap (problemstellung or therapy flow) — transform "You" → "I"
         const isChallengeOption = messages.some(msg =>
             msg.challengeOptions?.some((c: any) => c.fullText === text)
         );
         const displayText = isChallengeOption ? transformToFirstPerson(text) : text;
+
+        // Therapy flow: when user taps a challenge card from Problemfokus → switch to Lösungsfokus
+        if (isChallengeOption && !isOnboarding) {
+            setTherapyPhase('skill_loesungsfokus');
+            approachProposalExpected.current = true; // AI will propose a therapeutic approach next
+        }
 
         const userMessage = {
             id: `qr-${Date.now()}`,
@@ -987,7 +1015,10 @@ export default function ChatScreen() {
         });
 
         saveMessage(displayText, 'user');
-        sendMessageToAI(displayText);
+        // Pass phase directly to avoid React state batching race condition —
+        // setTherapyPhase is async, so therapyPhase closure still holds the old value
+        const phaseOverride = (isChallengeOption && !isOnboarding) ? 'skill_loesungsfokus' : undefined;
+        sendMessageToAI(displayText, phaseOverride);
     };
 
     const handleSend = () => {
@@ -1082,11 +1113,22 @@ export default function ChatScreen() {
         setIsTranscribing(true);
         setWaveformLevels(new Array(NUM_WAVEFORM_BARS).fill(2));
 
+        // 35s safety timeout — guarantees UI never gets stuck on "Transcribing..."
+        // This is the outermost safety net (whisper-proxy has 25s, speech.ts has 30s)
+        const safetyTimeout = setTimeout(() => {
+            setIsTranscribing(false);
+            Alert.alert(
+                LOCALE === 'de' ? 'Transkription fehlgeschlagen' : 'Transcription Failed',
+                LOCALE === 'de' ? 'Die Transkription hat zu lange gedauert. Bitte versuche es nochmal.' : 'Transcription took too long. Please try again.'
+            );
+        }, 35000);
+
         try {
             const { uri, mimeType } = await stopRecording(recordingRef.current);
             recordingRef.current = null;
 
             const text = await transcribeAudio(uri, mimeType);
+            clearTimeout(safetyTimeout);
             if (text) {
                 // Auto-send: transcribe → show message → send to AI in one flow
                 const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -1098,9 +1140,14 @@ export default function ChatScreen() {
                 return;
             }
         } catch (err: any) {
+            clearTimeout(safetyTimeout);
             console.error('Transcription failed:', err);
-            Alert.alert('Transcription Error', err.message || 'Could not transcribe audio. Please try again.');
+            Alert.alert(
+                LOCALE === 'de' ? 'Transkription fehlgeschlagen' : 'Transcription Error',
+                err.message || (LOCALE === 'de' ? 'Konnte Audio nicht transkribieren. Bitte versuche es nochmal.' : 'Could not transcribe audio. Please try again.')
+            );
         } finally {
+            clearTimeout(safetyTimeout);
             setIsTranscribing(false);
         }
     };

@@ -98,6 +98,7 @@ export async function stopRecording(
 /**
  * Transcribe an audio file by sending it to the whisper-proxy edge function.
  * Returns the transcribed text.
+ * Uses a 30s AbortController timeout to prevent indefinite hangs.
  */
 export async function transcribeAudio(
   uri: string,
@@ -117,14 +118,32 @@ export async function transcribeAudio(
     throw new Error('User must be logged in to use voice input.');
   }
 
-  // Call the whisper-proxy edge function
-  const { data, error } = await supabase.functions.invoke('whisper-proxy', {
-    body: {
-      audio: base64Audio,
-      mimeType,
-      language,
-    },
-  });
+  // 30s timeout — prevents indefinite hang if edge function or OpenAI is unresponsive
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+  let data: any;
+  let error: any;
+  try {
+    const result = await supabase.functions.invoke('whisper-proxy', {
+      body: {
+        audio: base64Audio,
+        mimeType,
+        language,
+      },
+      // @ts-ignore — signal is supported by fetch but not typed in supabase-js
+      signal: controller.signal,
+    });
+    data = result.data;
+    error = result.error;
+  } catch (e: any) {
+    clearTimeout(timeoutId);
+    if (e.name === 'AbortError') {
+      throw new Error('Transkription hat zu lange gedauert. Bitte versuche es nochmal.');
+    }
+    throw e;
+  }
+  clearTimeout(timeoutId);
 
   if (error) {
     console.error('Whisper proxy error:', error);

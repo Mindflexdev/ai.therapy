@@ -33,9 +33,28 @@ export async function chatOnboarding(
     { role: 'user', content: message },
   ];
 
-  const { data, error } = await supabase.functions.invoke('chat-onboarding', {
-    body: { therapistName, messages },
-  });
+  // Use AbortController with 90s timeout to prevent silent network timeouts
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 90000);
+
+  let data: any;
+  let error: any;
+  try {
+    const result = await supabase.functions.invoke('chat-onboarding', {
+      body: { therapistName, messages },
+      // @ts-ignore — signal is supported by fetch but not typed in supabase-js
+      signal: controller.signal,
+    });
+    data = result.data;
+    error = result.error;
+  } catch (e: any) {
+    clearTimeout(timeoutId);
+    if (e.name === 'AbortError') {
+      throw new Error('Die Antwort hat zu lange gedauert. Bitte versuche es nochmal.');
+    }
+    throw e;
+  }
+  clearTimeout(timeoutId);
 
   if (error) {
     console.error('Onboarding proxy error:', error);
@@ -64,7 +83,7 @@ export async function chatTherapy(
   message: string,
   therapistName: string,
   history: ChatMessage[] = [],
-  currentPhase: string = 'skill_phase1',
+  currentPhase: string = 'skill_problemfokus',
   isPro: boolean = false
 ): Promise<{ text: string; model: string; phase: string; safety: string | null; topic: string | null; hasMemory: boolean; zepContext: string | null; reminderCreated: boolean }> {
   const { data: { session } } = await supabase.auth.getSession();
@@ -77,9 +96,29 @@ export async function chatTherapy(
     { role: 'user', content: message },
   ];
 
-  const { data, error } = await supabase.functions.invoke('therapy-router', {
-    body: { therapistName, messages, currentPhase, isPro },
-  });
+  // Use AbortController with 90s timeout to prevent silent network timeouts
+  // that cause truncated responses (e.g. message cut off at "Wie...")
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 90000);
+
+  let data: any;
+  let error: any;
+  try {
+    const result = await supabase.functions.invoke('therapy-router', {
+      body: { therapistName, messages, currentPhase, isPro },
+      // @ts-ignore — signal is supported by fetch but not typed in supabase-js
+      signal: controller.signal,
+    });
+    data = result.data;
+    error = result.error;
+  } catch (e: any) {
+    clearTimeout(timeoutId);
+    if (e.name === 'AbortError') {
+      throw new Error('Die Antwort hat zu lange gedauert. Bitte versuche es nochmal.');
+    }
+    throw e;
+  }
+  clearTimeout(timeoutId);
 
   if (error) {
     console.error('Therapy router error:', error);
